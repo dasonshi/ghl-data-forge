@@ -18,7 +18,7 @@ export function AuthStatus() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/auth/status');
+      const response = await fetch('https://importer.savvysales.ai/api/auth/status');
       const data = await response.json();
       setAuthData(data);
     } catch (error) {
@@ -47,7 +47,7 @@ export function AuthStatus() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('https://importer.savvysales.ai/api/auth/logout', { method: 'POST' });
       setAuthData({ authenticated: false });
       toast({
         title: "Logged Out",

@@ -50,7 +50,7 @@ export function ImportRecordsTab() {
 
   const fetchObjects = async () => {
     try {
-      const response = await fetch('/api/objects');
+      const response = await fetch('https://importer.savvysales.ai/api/objects');
       if (response.ok) {
         const data = await response.json();
         setObjects(data);
@@ -66,7 +66,7 @@ export function ImportRecordsTab() {
 
   const fetchFields = async (objectKey: string) => {
     try {
-      const response = await fetch(`/api/objects/custom_objects.${objectKey}/fields`);
+      const response = await fetch(`https://importer.savvysales.ai/api/objects/custom_objects.${objectKey}/fields`);
       if (response.ok) {
         const fields: CustomField[] = await response.json();
         setAvailableFields(fields.map(field => field.key));
@@ -79,7 +79,7 @@ export function ImportRecordsTab() {
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch('/templates/records');
+      const response = await fetch('https://importer.savvysales.ai/templates/records');
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -144,7 +144,7 @@ export function ImportRecordsTab() {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch('/import/mock-location-id', {
+      const response = await fetch('https://importer.savvysales.ai/import/mock-location-id', {
         method: 'POST',
         body: formData,
       });

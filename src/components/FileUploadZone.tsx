@@ -68,9 +68,9 @@ export function FileUploadZone({
   }, [externalSelectedFile]);
 
   return (
-    <Card
+    <div
       className={cn(
-        "border-2 border-dashed transition-all duration-200 cursor-pointer",
+        "border-2 border-dashed transition-all duration-200 rounded-lg",
         isDragOver 
           ? "border-primary bg-primary/5" 
           : "border-muted-foreground/30 hover:border-primary/50",
@@ -80,7 +80,10 @@ export function FileUploadZone({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="p-8 text-center space-y-4">
+      <label 
+        htmlFor="file-upload"
+        className="relative block p-8 text-center space-y-4 cursor-pointer hover:bg-muted/30 transition-colors rounded-lg"
+      >
         {selectedFile ? (
           <div className="space-y-4">
             <div className="flex items-center justify-center space-x-2 text-success">
@@ -89,8 +92,12 @@ export function FileUploadZone({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={clearFile}
+                onClick={(e) => {
+                  e.preventDefault();
+                  clearFile();
+                }}
                 className="h-6 w-6 p-0"
+                type="button"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -111,22 +118,20 @@ export function FileUploadZone({
                 Supports {acceptedTypes} files up to {maxSize}MB
               </p>
             </div>
+            <Button variant="outline" type="button" className="mt-4">
+              Browse Files
+            </Button>
           </>
         )}
         
         <input
+          id="file-upload"
           type="file"
           accept={acceptedTypes}
           onChange={handleFileSelect}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
-        
-        {!selectedFile && (
-          <Button variant="outline" className="mt-4">
-            Browse Files
-          </Button>
-        )}
-      </div>
-    </Card>
+      </label>
+    </div>
   );
 }
