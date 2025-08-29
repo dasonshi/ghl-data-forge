@@ -18,6 +18,12 @@ interface CustomObject {
   };
 }
 
+interface AuthData {
+  authenticated: boolean;
+  locationId?: string;
+  tokenStatus?: string;
+}
+
 type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
 
 export function AddFieldsTab() {
@@ -28,7 +34,19 @@ export function AddFieldsTab() {
   const [fieldsData, setFieldsData] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState(0);
+  const [authData, setAuthData] = useState<AuthData | null>(null);
   const { toast } = useToast();
+
+  const fetchAuthStatus = async () => {
+    try {
+      const response = await fetch('https://importer.savvysales.ai/api/auth/status');
+      const data = await response.json();
+      setAuthData(data);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      setAuthData({ authenticated: false });
+    }
+  };
 
   const fetchObjects = async () => {
     try {
@@ -96,7 +114,7 @@ export function AddFieldsTab() {
   };
 
   const handleImport = async () => {
-    if (!fieldsFile || !selectedObject) return;
+    if (!fieldsFile || !selectedObject || !authData?.locationId) return;
 
     setCurrentStep("importing");
     setProgress(0);
@@ -111,7 +129,7 @@ export function AddFieldsTab() {
         setProgress(prev => Math.min(prev + 15, 90));
       }, 300);
 
-      const response = await fetch('https://importer.savvysales.ai/import/mock-location-id', {
+      const response = await fetch(`https://importer.savvysales.ai/import/${authData.locationId}`, {
         method: 'POST',
         body: formData,
       });
@@ -148,6 +166,7 @@ export function AddFieldsTab() {
   };
 
   useEffect(() => {
+    fetchAuthStatus();
     fetchObjects();
   }, []);
 
