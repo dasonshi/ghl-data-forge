@@ -8,6 +8,7 @@ interface FileUploadZoneProps {
   onFileSelect: (file: File) => void;
   acceptedTypes?: string;
   maxSize?: number; // in MB
+  selectedFile?: File | null;
   className?: string;
 }
 
@@ -15,10 +16,14 @@ export function FileUploadZone({
   onFileSelect, 
   acceptedTypes = ".csv",
   maxSize = 10,
+  selectedFile: externalSelectedFile,
   className 
 }: FileUploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [internalSelectedFile, setInternalSelectedFile] = useState<File | null>(null);
+  
+  // Use external file if provided, otherwise use internal state
+  const selectedFile = externalSelectedFile || internalSelectedFile;
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -38,7 +43,9 @@ export function FileUploadZone({
     if (files.length > 0) {
       const file = files[0];
       if (file.size <= maxSize * 1024 * 1024) {
-        setSelectedFile(file);
+        if (!externalSelectedFile) {
+          setInternalSelectedFile(file);
+        }
         onFileSelect(file);
       }
     }
@@ -47,14 +54,18 @@ export function FileUploadZone({
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      if (!externalSelectedFile) {
+        setInternalSelectedFile(file);
+      }
       onFileSelect(file);
     }
-  }, [onFileSelect]);
+  }, [onFileSelect, externalSelectedFile]);
 
   const clearFile = useCallback(() => {
-    setSelectedFile(null);
-  }, []);
+    if (!externalSelectedFile) {
+      setInternalSelectedFile(null);
+    }
+  }, [externalSelectedFile]);
 
   return (
     <Card
