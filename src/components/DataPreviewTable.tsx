@@ -36,14 +36,14 @@ export function DataPreviewTable({ data, mapping, onMappingChange, availableFiel
                   </Badge>
                 </label>
                 <Select
-                  value={mapping[column] || ""}
-                  onValueChange={(value) => onMappingChange(column, value)}
+                  value={mapping[column] || "__UNMAPPED__"}
+                  onValueChange={(value) => onMappingChange(column, value === "__UNMAPPED__" ? "" : value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select GHL field" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Don't map</SelectItem>
+                    <SelectItem value="__UNMAPPED__">Don't map</SelectItem>
                     {availableFields.map((field) => (
                       <SelectItem key={field} value={field}>
                         {field}
