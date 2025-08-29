@@ -251,7 +251,7 @@ export function ImportObjectsTab() {
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Review your data carefully before importing. This action will create new custom objects in GoHighLevel.
+          Review your data carefully before importing. This action will create new custom objects in your subaccount.
         </AlertDescription>
       </Alert>
 
@@ -317,7 +317,7 @@ export function ImportObjectsTab() {
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
         <h3 className="text-2xl font-bold">Import Completed!</h3>
         <p className="text-muted-foreground">
-          Your custom objects have been successfully imported to GoHighLevel
+          Your custom objects have been successfully imported to your subaccount
         </p>
       </div>
 
@@ -350,7 +350,7 @@ export function ImportObjectsTab() {
       <div>
         <h2 className="text-2xl font-bold">Import Custom Objects</h2>
         <p className="text-muted-foreground">
-          Create new custom objects and their associated fields in GoHighLevel
+          Create new custom objects and their associated fields in your subaccount
         </p>
       </div>
 

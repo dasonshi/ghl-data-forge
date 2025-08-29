@@ -119,7 +119,7 @@ export function BrowseDataTab() {
             <div className="text-center py-8 text-muted-foreground">
               <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No custom objects found</p>
-              <p className="text-sm">Create custom objects in GoHighLevel to see them here</p>
+              <p className="text-sm">Create custom objects in your subaccount to see them here</p>
             </div>
           ) : (
             <div className="space-y-3">

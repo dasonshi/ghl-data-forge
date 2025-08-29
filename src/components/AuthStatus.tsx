@@ -30,7 +30,7 @@ export function AuthStatus() {
   };
 
   const handleLogin = () => {
-    window.open('/oauth/install', '_blank', 'width=600,height=700');
+    window.open('https://importer.savvysales.ai/launch', '_blank', 'width=600,height=700');
     // Listen for auth completion
     const checkInterval = setInterval(() => {
       checkAuthStatus().then(() => {
@@ -38,7 +38,7 @@ export function AuthStatus() {
           clearInterval(checkInterval);
           toast({
             title: "Authentication Successful",
-            description: "You are now connected to GoHighLevel.",
+            description: "You are now connected to your subaccount.",
           });
         }
       });
@@ -51,7 +51,7 @@ export function AuthStatus() {
       setAuthData({ authenticated: false });
       toast({
         title: "Logged Out",
-        description: "You have been disconnected from GoHighLevel.",
+        description: "You have been disconnected from your subaccount.",
       });
     } catch (error) {
       toast({
@@ -89,7 +89,7 @@ export function AuthStatus() {
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">Connected to GoHighLevel</span>
+                    <span className="font-medium">Connected to Subaccount</span>
                     <Badge variant="outline" className="bg-success/10 text-success border-success/20">
                       Authenticated
                     </Badge>
@@ -113,7 +113,7 @@ export function AuthStatus() {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Connect to GoHighLevel to access import features
+                    Connect to your subaccount to access import features
                   </p>
                 </div>
               </>
@@ -129,7 +129,7 @@ export function AuthStatus() {
             ) : (
               <Button variant="gradient" size="sm" onClick={handleLogin}>
                 <User className="h-4 w-4 mr-2" />
-                Connect to GHL
+                Connect Account
               </Button>
             )}
           </div>

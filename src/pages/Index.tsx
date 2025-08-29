@@ -16,11 +16,14 @@ const Index = () => {
         <div className="space-y-6">
           {/* Header */}
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Custom Object Importer
+            <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              Savvy Sales
             </h1>
+            <h2 className="text-3xl font-bold text-foreground">
+              Custom Object Importer
+            </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Professional CSV import tool for GoHighLevel custom objects, fields, and records
+              Professional CSV import tool for custom objects, fields, and records
             </p>
           </div>
 
