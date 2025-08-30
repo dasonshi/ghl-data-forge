@@ -19,7 +19,7 @@ interface CustomObject {
 
 interface CustomField {
   id: string;
-  key: string;
+  fieldKey: string;
   name: string;
   dataType: string;
   description?: string;
@@ -191,7 +191,7 @@ export function BrowseDataTab() {
                                    {fields.map((field) => (
                                      <TableRow key={field.id}>
                                        <TableCell className="font-medium">{field.name}</TableCell>
-                                       <TableCell className="font-mono text-sm">{field.key}</TableCell>
+                                       <TableCell className="font-mono text-sm">{field.fieldKey}</TableCell>
                                        <TableCell>
                                          <Badge variant="outline">{field.dataType}</Badge>
                                        </TableCell>
