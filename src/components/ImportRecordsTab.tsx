@@ -55,7 +55,7 @@ export function ImportRecordsTab() {
       });
       if (response.ok) {
         const data = await response.json();
-        setObjects(data);
+        setObjects(data.objects || data || []);
       }
     } catch (error) {
       toast({
