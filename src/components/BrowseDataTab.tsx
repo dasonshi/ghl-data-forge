@@ -41,7 +41,7 @@ export function BrowseDataTab() {
       });
       if (response.ok) {
         const data = await response.json();
-        setObjects(data);
+        setObjects(data.objects || []);
       } else {
         throw new Error('Failed to fetch objects');
       }
