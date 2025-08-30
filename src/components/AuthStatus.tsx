@@ -21,6 +21,12 @@ export function AuthStatus() {
       const response = await fetch('https://importer.savvysales.ai/api/auth/status', {
         credentials: 'include',
       });
+      
+      if (response.status === 429) {
+        console.warn('Rate limit exceeded, skipping auth check');
+        return;
+      }
+      
       const data = await response.json();
       setAuthData(data);
     } catch (error) {
@@ -33,7 +39,7 @@ export function AuthStatus() {
 
   const handleLogin = () => {
     window.open('https://importer.savvysales.ai/launch', '_blank', 'width=600,height=700');
-    // Listen for auth completion
+    // Listen for auth completion with longer interval to avoid rate limiting
     const checkInterval = setInterval(() => {
       checkAuthStatus().then(() => {
         if (authData?.authenticated) {
@@ -44,7 +50,12 @@ export function AuthStatus() {
           });
         }
       });
-    }, 2000);
+    }, 5000); // Increased from 2s to 5s to avoid rate limiting
+    
+    // Clear interval after 2 minutes to prevent infinite polling
+    setTimeout(() => {
+      clearInterval(checkInterval);
+    }, 120000);
   };
 
   const handleLogout = async () => {
