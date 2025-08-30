@@ -33,7 +33,9 @@ export function ImportObjectsTab() {
 
   const downloadTemplate = async (type: 'objects' | 'fields') => {
     try {
-      const response = await fetch(`https://importer.savvysales.ai/templates/${type}`);
+      const response = await fetch(`https://importer.savvysales.ai/templates/${type}`, {
+        credentials: 'include',
+      });
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -116,6 +118,7 @@ export function ImportObjectsTab() {
       const response = await fetch('https://importer.savvysales.ai/import/mock-location-id', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       clearInterval(progressInterval);

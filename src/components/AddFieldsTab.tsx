@@ -39,7 +39,9 @@ export function AddFieldsTab() {
 
   const fetchAuthStatus = async () => {
     try {
-      const response = await fetch('https://importer.savvysales.ai/api/auth/status');
+      const response = await fetch('https://importer.savvysales.ai/api/auth/status', {
+        credentials: 'include',
+      });
       const data = await response.json();
       setAuthData(data);
     } catch (error) {
@@ -50,7 +52,9 @@ export function AddFieldsTab() {
 
   const fetchObjects = async () => {
     try {
-      const response = await fetch('https://importer.savvysales.ai/api/objects');
+      const response = await fetch('https://importer.savvysales.ai/api/objects', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setObjects(data);
@@ -66,7 +70,9 @@ export function AddFieldsTab() {
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch('https://importer.savvysales.ai/templates/fields');
+      const response = await fetch('https://importer.savvysales.ai/templates/fields', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -132,6 +138,7 @@ export function AddFieldsTab() {
       const response = await fetch(`https://importer.savvysales.ai/import/${authData.locationId}`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       clearInterval(progressInterval);

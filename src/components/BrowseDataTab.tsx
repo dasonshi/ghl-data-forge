@@ -36,7 +36,9 @@ export function BrowseDataTab() {
   const fetchObjects = async () => {
     setLoadingObjects(true);
     try {
-      const response = await fetch('https://importer.savvysales.ai/api/objects');
+      const response = await fetch('https://importer.savvysales.ai/api/objects', {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setObjects(data);
@@ -57,7 +59,9 @@ export function BrowseDataTab() {
   const fetchFields = async (objectKey: string) => {
     setLoadingFields(true);
     try {
-      const response = await fetch(`https://importer.savvysales.ai/api/objects/custom_objects.${objectKey}/fields`);
+      const response = await fetch(`https://importer.savvysales.ai/api/objects/custom_objects.${objectKey}/fields`, {
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setFields(data);
