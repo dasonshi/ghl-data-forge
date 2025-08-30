@@ -115,7 +115,12 @@ export function ImportRecordsTab() {
   const handleObjectSelect = (objectKey: string) => {
     setSelectedObject(objectKey);
     fetchFields(objectKey);
-    setCurrentStep("upload");
+  };
+
+  const handleContinueToUpload = () => {
+    if (selectedObject) {
+      setCurrentStep("upload");
+    }
   };
 
   const handleRecordsFile = (file: File) => {
@@ -232,6 +237,15 @@ export function ImportRecordsTab() {
             <p className="text-sm text-muted-foreground text-center py-4">
               No custom objects found. Create custom objects first before importing records.
             </p>
+          )}
+
+          {selectedObject && (
+            <Button 
+              onClick={handleContinueToUpload}
+              className="w-full"
+            >
+              Continue to Upload
+            </Button>
           )}
         </CardContent>
       </Card>
