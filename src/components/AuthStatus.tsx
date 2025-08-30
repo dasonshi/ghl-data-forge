@@ -14,6 +14,7 @@ interface AuthData {
 export function AuthStatus() {
   const [authData, setAuthData] = useState<AuthData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
   const { toast } = useToast();
 
   const checkAuthStatus = async () => {
@@ -76,23 +77,33 @@ export function AuthStatus() {
     }, 1000);
   };
 
-  const handleLogout = async () => {
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
     try {
-      await fetch('https://importer.savvysales.ai/api/auth/logout', { 
+      const response = await fetch('https://importer.savvysales.ai/api/auth/disconnect', { 
         method: 'POST',
         credentials: 'include',
       });
-      setAuthData({ authenticated: false });
-      toast({
-        title: "Logged Out",
-        description: "You have been disconnected from your subaccount.",
-      });
+      
+      if (response.ok) {
+        setAuthData({ authenticated: false });
+        toast({
+          title: "Disconnected",
+          description: "You have been disconnected from your subaccount.",
+        });
+        // Start OAuth flow again
+        handleLogin();
+      } else {
+        throw new Error('Failed to disconnect');
+      }
     } catch (error) {
       toast({
-        title: "Logout Error",
-        description: "Failed to logout. Please try again.",
+        title: "Disconnect Error",
+        description: "Failed to disconnect. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -156,8 +167,17 @@ export function AuthStatus() {
           
           <div className="flex items-center gap-2">
             {authData?.authenticated ? (
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <User className="h-4 w-4 mr-2" />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+              >
+                {disconnecting ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
+                ) : (
+                  <User className="h-4 w-4 mr-2" />
+                )}
                 Disconnect
               </Button>
             ) : (
