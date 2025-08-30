@@ -64,7 +64,7 @@ export function BrowseDataTab() {
       });
       if (response.ok) {
         const data = await response.json();
-        setFields(data);
+        setFields(data.fields || data || []);
       } else {
         throw new Error('Failed to fetch fields');
       }
