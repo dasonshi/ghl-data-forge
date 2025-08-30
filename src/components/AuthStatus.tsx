@@ -38,8 +38,42 @@ export function AuthStatus() {
   };
 
   const handleLogin = () => {
-    // Redirect to OAuth install in the same window
-    window.location.href = 'https://importer.savvysales.ai/oauth/install';
+    const popup = window.open(
+      'https://importer.savvysales.ai/oauth/install', 
+      'oauth', 
+      'width=600,height=600'
+    );
+
+    // Listen for success message from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://importer.savvysales.ai') return;
+      
+      if (event.data.type === 'oauth_success') {
+        console.log('OAuth successful for location:', event.data.locationId);
+        popup?.close();
+        
+        // Refresh auth status
+        checkAuthStatus();
+        
+        toast({
+          title: "Authentication Successful",
+          description: "You are now connected to your subaccount.",
+        });
+        
+        // Clean up listener
+        window.removeEventListener('message', handleMessage);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    // Clean up if popup is closed manually
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        window.removeEventListener('message', handleMessage);
+        clearInterval(checkClosed);
+      }
+    }, 1000);
   };
 
   const handleLogout = async () => {
