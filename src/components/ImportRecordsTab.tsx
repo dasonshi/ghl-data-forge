@@ -83,8 +83,17 @@ export function ImportRecordsTab() {
   };
 
   const downloadTemplate = async () => {
+    if (!selectedObject) {
+      toast({
+        title: "No Object Selected",
+        description: "Please select a custom object first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const response = await fetch('https://importer.savvysales.ai/templates/records', {
+      const response = await fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/template`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -92,7 +101,7 @@ export function ImportRecordsTab() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'records-template.csv';
+        a.download = `${selectedObject}-template.csv`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -100,7 +109,7 @@ export function ImportRecordsTab() {
         
         toast({
           title: "Template Downloaded",
-          description: "Records CSV template downloaded successfully.",
+          description: `CSV template for ${selectedObjectData?.labels.singular} downloaded successfully.`,
         });
       }
     } catch (error) {
