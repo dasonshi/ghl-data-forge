@@ -68,12 +68,13 @@ export function ImportRecordsTab() {
 
   const fetchFields = async (objectKey: string) => {
     try {
-      const response = await fetch(`https://importer.savvysales.ai/api/objects/custom_objects.${objectKey}/fields`, {
+      const response = await fetch(`https://importer.savvysales.ai/api/objects/${objectKey}/fields`, {
         credentials: 'include',
       });
       if (response.ok) {
-        const fields: CustomField[] = await response.json();
-        setAvailableFields(fields.map(field => field.key));
+        const data = await response.json();
+        const fields = data.fields || [];
+        setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
       }
     } catch (error) {
       // Use mock fields if API fails
