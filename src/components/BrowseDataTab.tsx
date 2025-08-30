@@ -21,8 +21,8 @@ interface CustomField {
   id: string;
   key: string;
   name: string;
-  type: string;
-  required?: boolean;
+  dataType: string;
+  description?: string;
 }
 
 export function BrowseDataTab() {
@@ -184,27 +184,25 @@ export function BrowseDataTab() {
                                     <TableHead>Field Name</TableHead>
                                     <TableHead>Key</TableHead>
                                     <TableHead>Type</TableHead>
-                                    <TableHead>Required</TableHead>
+                                    <TableHead>Description</TableHead>
                                   </TableRow>
                                 </TableHeader>
-                                <TableBody>
-                                  {fields.map((field) => (
-                                    <TableRow key={field.id}>
-                                      <TableCell className="font-medium">{field.name}</TableCell>
-                                      <TableCell className="font-mono text-sm">{field.key}</TableCell>
-                                      <TableCell>
-                                        <Badge variant="outline">{field.type}</Badge>
-                                      </TableCell>
-                                      <TableCell>
-                                        {field.required ? (
-                                          <Badge variant="secondary">Required</Badge>
-                                        ) : (
-                                          <span className="text-muted-foreground">Optional</span>
-                                        )}
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
+                                 <TableBody>
+                                   {fields.map((field) => (
+                                     <TableRow key={field.id}>
+                                       <TableCell className="font-medium">{field.name}</TableCell>
+                                       <TableCell className="font-mono text-sm">{field.key}</TableCell>
+                                       <TableCell>
+                                         <Badge variant="outline">{field.dataType}</Badge>
+                                       </TableCell>
+                                       <TableCell>
+                                         <span className="text-muted-foreground">
+                                           {field.description || 'No description'}
+                                         </span>
+                                       </TableCell>
+                                     </TableRow>
+                                   ))}
+                                 </TableBody>
                               </Table>
                             )}
                           </CardContent>
