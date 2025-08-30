@@ -38,24 +38,8 @@ export function AuthStatus() {
   };
 
   const handleLogin = () => {
-    window.open('https://importer.savvysales.ai/launch', '_blank', 'width=600,height=700');
-    // Listen for auth completion with longer interval to avoid rate limiting
-    const checkInterval = setInterval(() => {
-      checkAuthStatus().then(() => {
-        if (authData?.authenticated) {
-          clearInterval(checkInterval);
-          toast({
-            title: "Authentication Successful",
-            description: "You are now connected to your subaccount.",
-          });
-        }
-      });
-    }, 5000); // Increased from 2s to 5s to avoid rate limiting
-    
-    // Clear interval after 2 minutes to prevent infinite polling
-    setTimeout(() => {
-      clearInterval(checkInterval);
-    }, 120000);
+    // Redirect to OAuth install in the same window
+    window.location.href = 'https://importer.savvysales.ai/oauth/install';
   };
 
   const handleLogout = async () => {
