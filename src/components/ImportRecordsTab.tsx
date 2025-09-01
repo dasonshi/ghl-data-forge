@@ -21,10 +21,11 @@ interface CustomObject {
 
 interface CustomField {
   id: string;
-  key: string;
+  fieldKey: string;
   name: string;
-  type: string;
+  dataType: string;
   required?: boolean;
+  picklistValues?: Array<{ value: string; label: string }>;
 }
 
 type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
@@ -42,6 +43,7 @@ export function ImportRecordsTab() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
   const [availableFields, setAvailableFields] = useState<string[]>([]);
+  const [fieldsData, setFieldsData] = useState<CustomField[]>([]);
   const [recordsFile, setRecordsFile] = useState<File | null>(null);
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
@@ -74,11 +76,13 @@ export function ImportRecordsTab() {
       if (response.ok) {
         const data = await response.json();
         const fields = data.fields || [];
+        setFieldsData(fields);
         setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
       }
     } catch (error) {
       // Use mock fields if API fails
       setAvailableFields(["name", "email", "phone", "company", "notes"]);
+      setFieldsData([]);
     }
   };
 
@@ -93,19 +97,13 @@ export function ImportRecordsTab() {
     }
 
     try {
-      // Fetch template and fields data in parallel
-      const [templateResponse, fieldsResponse] = await Promise.all([
-        fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/template`, {
-          credentials: 'include',
-        }),
-        fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/fields`, {
-          credentials: 'include',
-        })
-      ]);
+      // Only fetch template since we already have fields data
+      const templateResponse = await fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/template`, {
+        credentials: 'include',
+      });
 
-      if (templateResponse.ok && fieldsResponse.ok) {
+      if (templateResponse.ok) {
         const csvText = await templateResponse.text();
-        const fieldsData = await fieldsResponse.json();
         
         // Parse CSV and filter out external_id and object_key columns
         const lines = csvText.split('\n');
@@ -117,7 +115,7 @@ export function ImportRecordsTab() {
           
           // Generate sample data based on field types
           const generateSampleValue = (fieldName: string) => {
-            const field = fieldsData.fields?.find((f: any) => f.fieldKey === `custom_objects.${selectedObject.split('.').pop()}.${fieldName}`);
+            const field = fieldsData.find((f: any) => f.fieldKey === `custom_objects.${selectedObject.split('.').pop()}.${fieldName.trim()}`);
             if (!field) return 'sample_value';
             
             switch (field.dataType) {
