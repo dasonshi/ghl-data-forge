@@ -49,7 +49,9 @@ export const ImportCustomValuesTab = () => {
   const fetchCustomValues = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/custom-values');
+      const response = await fetch('https://importer.savvysales.ai/api/custom-values', {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch custom values');
       }
@@ -115,9 +117,10 @@ export const ImportCustomValuesTab = () => {
     formData.append('customValues', file);
 
     try {
-      const response = await fetch('/api/custom-values/import', {
+      const response = await fetch('https://importer.savvysales.ai/api/custom-values/import', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       const result = await response.json();
