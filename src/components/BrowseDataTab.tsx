@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Database, Eye, Layers, Folder } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { ChevronRight, Database, Eye, Layers, Folder } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomObject {
@@ -33,6 +33,7 @@ export function BrowseDataTab() {
   const [fields, setFields] = useState<CustomField[]>([]);
   const [loadingObjects, setLoadingObjects] = useState(false);
   const [loadingFields, setLoadingFields] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchObjects = async () => {
@@ -97,6 +98,7 @@ export function BrowseDataTab() {
   const handleViewFields = (objectKey: string) => {
     setSelectedObject(objectKey);
     fetchFields(objectKey);
+    setDrawerOpen(true);
   };
 
   useEffect(() => {
@@ -143,110 +145,109 @@ export function BrowseDataTab() {
           ) : (
             <div className="space-y-3">
               {objects.map((object) => (
-                <Collapsible key={object.id}>
-                  <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="p-0 h-auto">
-                            {selectedObject === object.key ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                        <div>
-                          <h3 className="font-medium">{object.labels.singular}</h3>
-                          <p className="text-sm text-muted-foreground">{object.key}</p>
-                          {object.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{object.description}</p>
-                          )}
-                        </div>
+                <div key={object.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="p-0 h-auto"
+                        onClick={() => handleViewFields(object.key)}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <div>
+                        <h3 className="font-medium">{object.labels.singular}</h3>
+                        <p className="text-sm text-muted-foreground">{object.key}</p>
+                        {object.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{object.description}</p>
+                        )}
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewFields(object.key)}
-                      disabled={loadingFields && selectedObject === object.key}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Fields
-                    </Button>
                   </div>
-                  
-                  <CollapsibleContent>
-                    {selectedObject === object.key && (
-                      <div className="mt-3 pl-7">
-                        <Card>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-lg">Custom Fields</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            {loadingFields ? (
-                              <div className="flex items-center justify-center py-4">
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                              </div>
-                            ) : fields.length === 0 ? (
-                              <p className="text-muted-foreground text-center py-4">
-                                No custom fields found for this object
-                              </p>
-                            ) : (
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Field Name</TableHead>
-                                    <TableHead>Key</TableHead>
-                                    <TableHead>Type</TableHead>
-                                    <TableHead>Folder</TableHead>
-                                    <TableHead>Description</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                 <TableBody>
-                                   {fields.map((field) => (
-                                     <TableRow key={field.id}>
-                                       <TableCell className="font-medium">{field.name}</TableCell>
-                                       <TableCell className="font-mono text-sm">{field.fieldKey}</TableCell>
-                                       <TableCell>
-                                         <Badge variant="outline">{field.dataType}</Badge>
-                                       </TableCell>
-                                       <TableCell>
-                                         {field.folderName ? (
-                                           <div className="flex items-center gap-1 text-sm">
-                                             <Folder className="h-3 w-3" />
-                                             <span>{field.folderName}</span>
-                                             {field.parentId && (
-                                               <Badge variant="secondary" className="text-xs ml-2">
-                                                 {field.parentId}
-                                               </Badge>
-                                             )}
-                                           </div>
-                                         ) : (
-                                           <span className="text-muted-foreground text-sm">No folder</span>
-                                         )}
-                                       </TableCell>
-                                       <TableCell>
-                                         <span className="text-muted-foreground">
-                                           {field.description || 'No description'}
-                                         </span>
-                                       </TableCell>
-                                     </TableRow>
-                                   ))}
-                                 </TableBody>
-                              </Table>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </div>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewFields(object.key)}
+                    disabled={loadingFields && selectedObject === object.key}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Fields
+                  </Button>
+                </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Fields Drawer */}
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent className="max-h-[80vh]">
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              {selectedObject && objects.find(obj => obj.key === selectedObject)?.labels.singular} Fields
+            </DrawerTitle>
+          </DrawerHeader>
+          <div className="px-4 pb-4 overflow-auto">
+            {loadingFields ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : fields.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="font-medium">No custom fields found</p>
+                <p className="text-sm">This object doesn't have any custom fields</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Field Name</TableHead>
+                    <TableHead>Key</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Folder</TableHead>
+                    <TableHead>Description</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {fields.map((field) => (
+                    <TableRow key={field.id}>
+                      <TableCell className="font-medium">{field.name}</TableCell>
+                      <TableCell className="font-mono text-sm">{field.fieldKey}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{field.dataType}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {field.folderName ? (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Folder className="h-3 w-3" />
+                            <span>{field.folderName}</span>
+                            {field.parentId && (
+                              <Badge variant="secondary" className="text-xs ml-2">
+                                {field.parentId}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">No folder</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">
+                          {field.description || 'No description'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
