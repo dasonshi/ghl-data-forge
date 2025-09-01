@@ -185,170 +185,24 @@ export function ImportObjectsTab() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Accordion type="multiple" className="w-full">
-              <AccordionItem value="quick-start">
-                <AccordionTrigger className="text-left">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Quick Start Guide
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-2">
-                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">1</div>
-                      <p>Download the objects CSV template</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</div>
-                      <p>Fill in the required fields for each custom object</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</div>
-                      <p>Upload the completed CSV file below</p>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">4</div>
-                      <p>Preview and import your custom objects</p>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="required-fields">
-                <AccordionTrigger className="text-left">
-                  <div className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    Required Fields
-                    <Badge variant="destructive" className="text-xs">Required</Badge>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 text-sm">
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">key</code>
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                      </div>
-                      <p>Unique identifier for the custom object.</p>
-                      <p className="text-muted-foreground">Example: "tours", "leads", "projects"</p>
-                    </div>
-
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">singular</code>
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                      </div>
-                      <p>Singular label for the object shown to users.</p>
-                      <p className="text-muted-foreground">Example: "Tour", "Lead", "Project"</p>
-                    </div>
-
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">plural</code>
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                      </div>
-                      <p>Plural label for the object shown to users.</p>
-                      <p className="text-muted-foreground">Example: "Tours", "Leads", "Projects"</p>
-                    </div>
-
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">description</code>
-                        <Badge variant="destructive" className="text-xs">Required</Badge>
-                      </div>
-                      <p>Brief description explaining the purpose of this custom object.</p>
-                      <p className="text-muted-foreground">Example: "Tour object that captures reservation information"</p>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="optional-fields">
-                <AccordionTrigger className="text-left">
-                  <div className="flex items-center gap-2">
-                    <Type className="h-4 w-4" />
-                    Optional Fields
-                    <Badge variant="secondary" className="text-xs">Optional</Badge>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 text-sm">
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">icon</code>
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                      </div>
-                      <p>Icon class or identifier for visual representation.</p>
-                      <p className="text-muted-foreground">Example: "ic:outline-mode-of-travel"</p>
-                    </div>
-
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">requiredProperties</code>
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                      </div>
-                      <p>Array of required property keys for this object.</p>
-                      <div className="bg-muted/50 p-2 rounded text-xs">
-                        <p><strong>Format:</strong> ["custom_objects.tours.tour"]</p>
-                      </div>
-                    </div>
-
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">searchableProperties</code>
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                      </div>
-                      <p>Array of property keys that can be searched.</p>
-                      <div className="bg-muted/50 p-2 rounded text-xs">
-                        <p><strong>Format:</strong> ["custom_objects.tours.tour"]</p>
-                      </div>
-                    </div>
-
-                    <div className="border rounded-lg p-3 space-y-2">
-                      <div className="font-semibold flex items-center gap-2">
-                        <code className="bg-muted px-1 rounded">primaryDisplayProperty</code>
-                        <Badge variant="secondary" className="text-xs">Optional</Badge>
-                      </div>
-                      <p>The main property to display when showing this object.</p>
-                      <p className="text-muted-foreground">Example: "custom_objects.tours.tour"</p>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="best-practices">
-                <AccordionTrigger className="text-left">
-                  <div className="flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    Best Practices
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 text-sm">
-                    <div className="space-y-2">
-                      <div className="font-semibold">Naming Conventions</div>
-                      <div className="space-y-1 text-xs">
-                        <p>• Use lowercase for keys: "tours", "leads", "projects"</p>
-                        <p>• Use proper case for labels: "Tour", "Lead", "Project"</p>
-                        <p>• Keep descriptions concise but descriptive</p>
-                        <p>• Avoid special characters in keys</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="font-semibold">Object Planning</div>
-                      <div className="space-y-1 text-xs">
-                        <p>• Plan your object structure before creating</p>
-                        <p>• Consider what fields you'll need later</p>
-                        <p>• Think about relationships between objects</p>
-                        <p>• Use clear, business-friendly names</p>
-                      </div>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-2">
+                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">1</div>
+                <p>Download the objects CSV template</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</div>
+                <p>Fill in the required fields for each custom object</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</div>
+                <p>Upload the completed CSV file below</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">4</div>
+                <p>Preview and import your custom objects</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
