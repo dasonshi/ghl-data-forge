@@ -5,6 +5,7 @@ import { FileUploadZone } from "@/components/FileUploadZone";
 import { StepIndicator } from "@/components/StepIndicator";
 import { SuccessStats } from "@/components/SuccessStats";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Upload, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -195,18 +196,31 @@ export const ImportCustomValuesTab = () => {
               No custom values found
             </div>
           ) : (
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {customValues.map((cv) => (
-                <div key={cv.id} className="flex items-center justify-between p-2 border rounded">
-                  <div className="flex-1">
-                    <span className="font-medium">{cv.name}</span>
-                    <span className="text-muted-foreground ml-2">: {cv.value}</span>
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {cv.id}
-                  </Badge>
-                </div>
-              ))}
+            <div className="rounded-md border max-h-96 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Key Name</TableHead>
+                    <TableHead>Current Value</TableHead>
+                    <TableHead className="w-[100px]">ID</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customValues.map((cv) => (
+                    <TableRow key={cv.id}>
+                      <TableCell className="font-medium">{cv.name}</TableCell>
+                      <TableCell className="max-w-xs truncate" title={cv.value}>
+                        {cv.value}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {cv.id}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
