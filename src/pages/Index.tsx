@@ -35,7 +35,7 @@ const Index = () => {
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="browse">Browse Data</TabsTrigger>
               <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
-              <TabsTrigger value="add-fields">Add Fields</TabsTrigger>
+              <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
               <TabsTrigger value="import-records">Import Records</TabsTrigger>
             </TabsList>
             

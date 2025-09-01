@@ -100,7 +100,12 @@ export function AddFieldsTab() {
 
   const handleObjectSelect = (objectKey: string) => {
     setSelectedObject(objectKey);
-    setCurrentStep("upload");
+  };
+
+  const handleContinueToUpload = () => {
+    if (selectedObject) {
+      setCurrentStep("upload");
+    }
   };
 
   const handleFieldsFile = (file: File) => {
@@ -148,7 +153,7 @@ export function AddFieldsTab() {
         setCurrentStep("success");
         toast({
           title: "Fields Added",
-          description: "Custom fields have been added successfully.",
+          description: "Custom fields have been imported successfully.",
         });
       } else {
         throw new Error('Import failed');
@@ -156,7 +161,7 @@ export function AddFieldsTab() {
     } catch (error) {
       toast({
         title: "Import Failed",
-        description: "Failed to add custom fields. Please try again.",
+        description: "Failed to import custom fields. Please try again.",
         variant: "destructive",
       });
       setCurrentStep("preview");
@@ -184,7 +189,7 @@ export function AddFieldsTab() {
       <Alert>
         <Database className="h-4 w-4" />
         <AlertDescription>
-          Select an existing custom object to add new fields to it.
+          Select an existing custom object to import fields into it.
         </AlertDescription>
       </Alert>
 
@@ -192,7 +197,7 @@ export function AddFieldsTab() {
         <CardHeader>
           <CardTitle>Select Custom Object</CardTitle>
           <CardDescription>
-            Choose the custom object you want to add fields to
+            Choose the custom object you want to import fields into
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -211,8 +216,17 @@ export function AddFieldsTab() {
 
           {(!Array.isArray(objects) || objects.length === 0) && (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No custom objects found. Create custom objects first before adding fields.
+              No custom objects found. Create custom objects first before importing fields.
             </p>
+          )}
+
+          {selectedObject && (
+            <Button 
+              onClick={handleContinueToUpload}
+              className="w-full"
+            >
+              Continue to Upload
+            </Button>
           )}
         </CardContent>
       </Card>
@@ -224,7 +238,7 @@ export function AddFieldsTab() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">
-            Adding Fields to: {selectedObjectData?.labels.singular}
+            Importing Fields to: {selectedObjectData?.labels.singular}
           </h3>
           <p className="text-sm text-muted-foreground">Object Key: {selectedObject}</p>
         </div>
@@ -297,7 +311,7 @@ export function AddFieldsTab() {
             Preview Fields for: {selectedObjectData?.labels.singular}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {fieldsData.length} field{fieldsData.length !== 1 ? 's' : ''} will be added
+            {fieldsData.length} field{fieldsData.length !== 1 ? 's' : ''} will be imported
           </p>
         </div>
       </div>
@@ -305,7 +319,7 @@ export function AddFieldsTab() {
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Review your field definitions carefully. These will be added to the selected custom object.
+          Review your field definitions carefully. These will be imported into the selected custom object.
         </AlertDescription>
       </Alert>
 
@@ -316,7 +330,7 @@ export function AddFieldsTab() {
           Back to Upload
         </Button>
         <Button variant="gradient" onClick={handleImport}>
-          Add Fields
+          Import Fields
         </Button>
       </div>
     </div>
@@ -326,9 +340,9 @@ export function AddFieldsTab() {
     <div className="space-y-6 text-center">
       <div className="space-y-4">
         <Plus className="h-16 w-16 mx-auto text-primary animate-pulse" />
-        <h3 className="text-xl font-semibold">Adding Fields...</h3>
+        <h3 className="text-xl font-semibold">Importing Fields...</h3>
         <p className="text-muted-foreground">
-          Please wait while we add the custom fields to your object
+          Please wait while we import the custom fields into your object
         </p>
       </div>
       
@@ -343,9 +357,9 @@ export function AddFieldsTab() {
     <div className="space-y-6 text-center">
       <div className="space-y-4">
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
-        <h3 className="text-2xl font-bold">Fields Added Successfully!</h3>
+        <h3 className="text-2xl font-bold">Fields Imported Successfully!</h3>
         <p className="text-muted-foreground">
-          {fieldsData.length} custom field{fieldsData.length !== 1 ? 's' : ''} added to {selectedObjectData?.labels.singular}
+          {fieldsData.length} custom field{fieldsData.length !== 1 ? 's' : ''} imported into {selectedObjectData?.labels.singular}
         </p>
       </div>
 
@@ -359,14 +373,14 @@ export function AddFieldsTab() {
             <span className="font-medium">{selectedObjectData?.labels.singular}</span>
           </div>
           <div className="flex justify-between">
-            <span>Fields Added:</span>
+            <span>Fields Imported:</span>
             <span className="font-medium">{fieldsData.length}</span>
           </div>
         </CardContent>
       </Card>
 
       <Button variant="gradient" onClick={handleStartOver}>
-        Add More Fields
+        Import More Fields
       </Button>
     </div>
   );
@@ -374,9 +388,9 @@ export function AddFieldsTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Add Custom Fields</h2>
+        <h2 className="text-2xl font-bold">Import Custom Fields</h2>
         <p className="text-muted-foreground">
-          Add new custom fields to existing custom objects
+          Import new custom fields into existing custom objects
         </p>
       </div>
 
