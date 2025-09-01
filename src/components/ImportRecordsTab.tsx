@@ -25,6 +25,8 @@ interface CustomField {
   name: string;
   type: string;
   required?: boolean;
+  parentId?: string;
+  folderName?: string;
 }
 
 type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
@@ -41,7 +43,7 @@ export function ImportRecordsTab() {
   const [currentStep, setCurrentStep] = useState<ImportStep>("select");
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
-  const [availableFields, setAvailableFields] = useState<string[]>([]);
+  const [availableFields, setAvailableFields] = useState<CustomField[]>([]);
   const [recordsFile, setRecordsFile] = useState<File | null>(null);
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
@@ -74,11 +76,25 @@ export function ImportRecordsTab() {
       if (response.ok) {
         const data = await response.json();
         const fields = data.fields || [];
-        setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
+        setAvailableFields(fields.map((field: any) => ({
+          id: field.id,
+          key: field.fieldKey || field.key,
+          name: field.name || field.fieldKey || field.key,
+          type: field.type || 'text',
+          required: field.required,
+          parentId: field.parentId,
+          folderName: field.folderName
+        })));
       }
     } catch (error) {
       // Use mock fields if API fails
-      setAvailableFields(["name", "email", "phone", "company", "notes"]);
+      setAvailableFields([
+        { id: '1', key: 'name', name: 'Name', type: 'text' },
+        { id: '2', key: 'email', name: 'Email', type: 'email' },
+        { id: '3', key: 'phone', name: 'Phone', type: 'text' },
+        { id: '4', key: 'company', name: 'Company', type: 'text' },
+        { id: '5', key: 'notes', name: 'Notes', type: 'text' }
+      ]);
     }
   };
 
@@ -322,8 +338,16 @@ export function ImportRecordsTab() {
             <div className="space-y-2">
               {availableFields.length > 0 ? (
                 availableFields.map((field, index) => (
-                  <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded">
-                    {field}
+                  <div key={index} className="text-sm bg-muted/50 px-3 py-2 rounded space-y-1">
+                    <div className="font-medium">{field.name}</div>
+                    {field.folderName && (
+                      <div className="text-xs text-muted-foreground">
+                        📁 {field.folderName}
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      Key: {field.key} • Type: {field.type}
+                    </div>
                   </div>
                 ))
               ) : (
