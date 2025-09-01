@@ -5,6 +5,7 @@ import { BrowseDataTab } from "@/components/BrowseDataTab";
 import { ImportObjectsTab } from "@/components/ImportObjectsTab";
 import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
+import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
@@ -32,11 +33,12 @@ const Index = () => {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="browse">Browse Data</TabsTrigger>
               <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
               <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
               <TabsTrigger value="import-records">Import Records</TabsTrigger>
+              <TabsTrigger value="import-custom-values">Import Custom Values</TabsTrigger>
             </TabsList>
             
             <div className="mt-8">
@@ -54,6 +56,10 @@ const Index = () => {
               
               <TabsContent value="import-records" className="mt-0">
                 <ImportRecordsTab />
+              </TabsContent>
+              
+              <TabsContent value="import-custom-values" className="mt-0">
+                <ImportCustomValuesTab />
               </TabsContent>
             </div>
           </Tabs>
