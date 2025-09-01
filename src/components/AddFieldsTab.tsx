@@ -6,7 +6,9 @@ import { FileUploadZone } from "@/components/FileUploadZone";
 import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Download, Plus, CheckCircle2, AlertTriangle, Database } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Download, Plus, CheckCircle2, AlertTriangle, Database, Info, FileText, Settings, Type } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomObject {
@@ -272,21 +274,221 @@ export function AddFieldsTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Instructions</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5" />
+              Field Guide
+            </CardTitle>
+            <CardDescription>
+              Complete reference for CSV template fields
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-start gap-2">
-              <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">1</div>
-              <p>Download the fields CSV template</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</div>
-              <p>Fill in your custom field definitions</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</div>
-              <p>Upload the completed CSV file</p>
-            </div>
+          <CardContent>
+            <Accordion type="multiple" className="w-full">
+              <AccordionItem value="quick-start">
+                <AccordionTrigger className="text-left">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Quick Start Guide
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">1</div>
+                      <p>Download the fields CSV template</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</div>
+                      <p>Fill in your custom field definitions using the guide below</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</div>
+                      <p>Upload the completed CSV file</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="required-fields">
+                <AccordionTrigger className="text-left">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Required Fields
+                    <Badge variant="destructive" className="text-xs">Required</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 text-sm">
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">name</code>
+                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                      </div>
+                      <p>Display name of the field shown to users.</p>
+                      <p className="text-muted-foreground">Example: "Customer Industry", "Project Budget"</p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">dataType</code>
+                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                      </div>
+                      <p>Type of field that determines input behavior and validation.</p>
+                      <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
+                        <p><strong>Options:</strong> TEXT, LARGE_TEXT, NUMERICAL, PHONE, MONETARY, CHECKBOX, SINGLE_OPTIONS, MULTIPLE_OPTIONS, DATE, TEXTBOX_LIST, FILE_UPLOAD, RADIO, EMAIL</p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">fieldKey</code>
+                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                      </div>
+                      <p>Unique field identifier with specific format.</p>
+                      <div className="bg-muted/50 p-2 rounded text-xs">
+                        <p><strong>Format:</strong> custom_object.&#123;objectKey&#125;.&#123;fieldKey&#125;</p>
+                        <p><strong>Example:</strong> custom_object.pet.breed_type</p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">showInForms</code>
+                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                      </div>
+                      <p>Whether the field appears in forms.</p>
+                      <p className="text-muted-foreground">Values: true or false</p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">parentId</code>
+                        <Badge variant="destructive" className="text-xs">Required</Badge>
+                      </div>
+                      <p>ID of the parent folder for organization.</p>
+                      <p className="text-muted-foreground">Contact support for available parent IDs</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="optional-fields">
+                <AccordionTrigger className="text-left">
+                  <div className="flex items-center gap-2">
+                    <Type className="h-4 w-4" />
+                    Optional Fields
+                    <Badge variant="secondary" className="text-xs">Optional</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 text-sm">
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">description</code>
+                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                      </div>
+                      <p>Description text that explains the field's purpose.</p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">placeholder</code>
+                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                      </div>
+                      <p>Placeholder text shown in empty input fields.</p>
+                      <p className="text-muted-foreground">Example: "Enter customer industry..."</p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">options</code>
+                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                      </div>
+                      <p>For SINGLE_OPTIONS, MULTIPLE_OPTIONS, RADIO, CHECKBOX fields. JSON array format.</p>
+                      <div className="bg-muted/50 p-2 rounded text-xs">
+                        <p><strong>Format:</strong> [&#123;"key":"opt1","label":"Option 1"&#125;,&#123;"key":"opt2","label":"Option 2"&#125;]</p>
+                        <p><strong>For RADIO:</strong> Include optional "url" field</p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">acceptedFormats</code>
+                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                      </div>
+                      <p>File formats allowed for FILE_UPLOAD fields.</p>
+                      <div className="bg-muted/50 p-2 rounded text-xs">
+                        <p><strong>Options:</strong> .pdf, .docx, .doc, .jpg, .jpeg, .png, .gif, .csv, .xlsx, .xls, all</p>
+                      </div>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">maxFileLimit</code>
+                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                      </div>
+                      <p>Maximum number of files for FILE_UPLOAD fields.</p>
+                      <p className="text-muted-foreground">Example: 2 (allows up to 2 files)</p>
+                    </div>
+
+                    <div className="border rounded-lg p-3 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <code className="bg-muted px-1 rounded">allowCustomOption</code>
+                        <Badge variant="secondary" className="text-xs">Optional</Badge>
+                      </div>
+                      <p>For RADIO fields: allows users to enter custom values not in predefined options.</p>
+                      <p className="text-muted-foreground">Values: true or false</p>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="data-types">
+                <AccordionTrigger className="text-left">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    Data Type Reference
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div className="space-y-2">
+                      <div className="font-semibold">Text Fields</div>
+                      <div className="space-y-1 text-xs">
+                        <p><code className="bg-muted px-1 rounded">TEXT</code> - Single line text</p>
+                        <p><code className="bg-muted px-1 rounded">LARGE_TEXT</code> - Multi-line text</p>
+                        <p><code className="bg-muted px-1 rounded">EMAIL</code> - Email validation</p>
+                        <p><code className="bg-muted px-1 rounded">PHONE</code> - Phone number</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold">Number Fields</div>
+                      <div className="space-y-1 text-xs">
+                        <p><code className="bg-muted px-1 rounded">NUMERICAL</code> - Number input</p>
+                        <p><code className="bg-muted px-1 rounded">MONETARY</code> - Currency amount</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold">Selection Fields</div>
+                      <div className="space-y-1 text-xs">
+                        <p><code className="bg-muted px-1 rounded">SINGLE_OPTIONS</code> - Dropdown select</p>
+                        <p><code className="bg-muted px-1 rounded">MULTIPLE_OPTIONS</code> - Multi-select</p>
+                        <p><code className="bg-muted px-1 rounded">RADIO</code> - Radio buttons</p>
+                        <p><code className="bg-muted px-1 rounded">CHECKBOX</code> - Checkboxes</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="font-semibold">Other Fields</div>
+                      <div className="space-y-1 text-xs">
+                        <p><code className="bg-muted px-1 rounded">DATE</code> - Date picker</p>
+                        <p><code className="bg-muted px-1 rounded">FILE_UPLOAD</code> - File uploads</p>
+                        <p><code className="bg-muted px-1 rounded">TEXTBOX_LIST</code> - List of text inputs</p>
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
       </div>
