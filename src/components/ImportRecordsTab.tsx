@@ -44,7 +44,6 @@ export function ImportRecordsTab() {
   const [availableFields, setAvailableFields] = useState<string[]>([]);
   const [recordsFile, setRecordsFile] = useState<File | null>(null);
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
-  const [mapping, setMapping] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
@@ -133,56 +132,6 @@ export function ImportRecordsTab() {
     }
   };
 
-  const autoMatchFields = (csvColumns: string[], availableFields: string[]) => {
-    const autoMapping: Record<string, string> = {};
-    
-    csvColumns.forEach(column => {
-      const columnLower = column.toLowerCase().trim();
-      
-      // Find exact matches first
-      const exactMatch = availableFields.find(field => 
-        field.toLowerCase() === columnLower
-      );
-      
-      if (exactMatch) {
-        autoMapping[column] = exactMatch;
-        return;
-      }
-      
-      // Find partial matches
-      const partialMatch = availableFields.find(field => {
-        const fieldLower = field.toLowerCase();
-        return fieldLower.includes(columnLower) || columnLower.includes(fieldLower);
-      });
-      
-      if (partialMatch) {
-        autoMapping[column] = partialMatch;
-        return;
-      }
-      
-      // Common field mappings
-      const commonMappings: Record<string, string[]> = {
-        'email': ['email', 'email_address', 'e_mail'],
-        'phone': ['phone', 'telephone', 'mobile', 'cell'],
-        'name': ['name', 'full_name', 'fullname'],
-        'company': ['company', 'organization', 'business'],
-      };
-      
-      for (const [targetField, aliases] of Object.entries(commonMappings)) {
-        if (aliases.includes(columnLower)) {
-          const matchingField = availableFields.find(field => 
-            field.toLowerCase().includes(targetField)
-          );
-          if (matchingField) {
-            autoMapping[column] = matchingField;
-            break;
-          }
-        }
-      }
-    });
-    
-    return autoMapping;
-  };
 
   const handleRecordsFile = (file: File) => {
     setRecordsFile(file);
@@ -202,14 +151,6 @@ export function ImportRecordsTab() {
         
         const data = results.data as Record<string, string>[];
         setRecordsData(data);
-        
-        // Auto-match fields
-        if (data.length > 0) {
-          const csvColumns = Object.keys(data[0]);
-          const autoMapping = autoMatchFields(csvColumns, availableFields);
-          setMapping(autoMapping);
-        }
-        
         setCurrentStep("preview");
       },
       error: (error) => {
@@ -222,9 +163,6 @@ export function ImportRecordsTab() {
     });
   };
 
-  const handleMappingChange = (column: string, field: string) => {
-    setMapping(prev => ({ ...prev, [column]: field }));
-  };
 
   const handleImport = async () => {
     if (!recordsFile || !selectedObject) return;
@@ -235,15 +173,13 @@ export function ImportRecordsTab() {
     try {
       const formData = new FormData();
       formData.append('records', recordsFile);
-      formData.append('objectKey', selectedObject);
-      formData.append('mapping', JSON.stringify(mapping));
 
       // Simulate progress
       const progressInterval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch('https://importer.savvysales.ai/import/mock-location-id', {
+      const response = await fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/records/import`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -279,7 +215,6 @@ export function ImportRecordsTab() {
     setAvailableFields([]);
     setRecordsFile(null);
     setRecordsData([]);
-    setMapping({});
     setProgress(0);
     setResult(null);
   };
@@ -427,15 +362,15 @@ export function ImportRecordsTab() {
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Map your CSV columns to the custom object fields. Unmapped columns will be ignored.
+          Review your data before importing. All CSV columns will be imported as-is.
         </AlertDescription>
       </Alert>
 
       <DataPreviewTable
         data={recordsData}
-        mapping={mapping}
-        onMappingChange={handleMappingChange}
-        availableFields={availableFields}
+        mapping={{}}
+        onMappingChange={() => {}}
+        availableFields={[]}
       />
 
       <div className="flex justify-between">
@@ -490,8 +425,8 @@ export function ImportRecordsTab() {
             <span className="font-medium">{result?.stats.recordsProcessed || recordsData.length}</span>
           </div>
           <div className="flex justify-between">
-            <span>Fields Mapped:</span>
-            <span className="font-medium">{Object.keys(mapping).filter(k => mapping[k] && mapping[k] !== "__UNMAPPED__").length}</span>
+            <span>CSV Columns:</span>
+            <span className="font-medium">{recordsData.length > 0 ? Object.keys(recordsData[0]).length : 0}</span>
           </div>
         </CardContent>
       </Card>

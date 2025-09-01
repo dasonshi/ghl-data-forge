@@ -115,7 +115,7 @@ export function ImportObjectsTab() {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch('https://importer.savvysales.ai/import/mock-location-id', {
+      const response = await fetch('https://importer.savvysales.ai/api/objects/import', {
         method: 'POST',
         body: formData,
         credentials: 'include',

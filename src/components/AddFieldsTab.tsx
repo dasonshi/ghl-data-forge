@@ -135,7 +135,7 @@ export function AddFieldsTab() {
         setProgress(prev => Math.min(prev + 15, 90));
       }, 300);
 
-      const response = await fetch(`https://importer.savvysales.ai/import/${authData.locationId}`, {
+      const response = await fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/fields/import`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
