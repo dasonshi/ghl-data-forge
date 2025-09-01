@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Download, Database, CheckCircle2, AlertTriangle, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Papa from "papaparse";
 
 interface CustomObject {
   id: string;
@@ -132,16 +133,93 @@ export function ImportRecordsTab() {
     }
   };
 
+  const autoMatchFields = (csvColumns: string[], availableFields: string[]) => {
+    const autoMapping: Record<string, string> = {};
+    
+    csvColumns.forEach(column => {
+      const columnLower = column.toLowerCase().trim();
+      
+      // Find exact matches first
+      const exactMatch = availableFields.find(field => 
+        field.toLowerCase() === columnLower
+      );
+      
+      if (exactMatch) {
+        autoMapping[column] = exactMatch;
+        return;
+      }
+      
+      // Find partial matches
+      const partialMatch = availableFields.find(field => {
+        const fieldLower = field.toLowerCase();
+        return fieldLower.includes(columnLower) || columnLower.includes(fieldLower);
+      });
+      
+      if (partialMatch) {
+        autoMapping[column] = partialMatch;
+        return;
+      }
+      
+      // Common field mappings
+      const commonMappings: Record<string, string[]> = {
+        'email': ['email', 'email_address', 'e_mail'],
+        'phone': ['phone', 'telephone', 'mobile', 'cell'],
+        'name': ['name', 'full_name', 'fullname'],
+        'company': ['company', 'organization', 'business'],
+      };
+      
+      for (const [targetField, aliases] of Object.entries(commonMappings)) {
+        if (aliases.includes(columnLower)) {
+          const matchingField = availableFields.find(field => 
+            field.toLowerCase().includes(targetField)
+          );
+          if (matchingField) {
+            autoMapping[column] = matchingField;
+            break;
+          }
+        }
+      }
+    });
+    
+    return autoMapping;
+  };
+
   const handleRecordsFile = (file: File) => {
     setRecordsFile(file);
-    // Mock CSV parsing - replace with actual parsing
-    const mockData = [
-      { name: "John Doe", email: "john@example.com", phone: "555-0123", company: "Acme Corp", notes: "Interested in premium package" },
-      { name: "Jane Smith", email: "jane@example.com", phone: "555-0124", company: "Tech Inc", notes: "Follow up next week" },
-      { name: "Bob Johnson", email: "bob@example.com", phone: "555-0125", company: "StartupCo", notes: "Budget conscious" },
-    ];
-    setRecordsData(mockData);
-    setCurrentStep("preview");
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0) {
+          toast({
+            title: "CSV Parse Error",
+            description: "There was an error parsing your CSV file. Please check the format.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const data = results.data as Record<string, string>[];
+        setRecordsData(data);
+        
+        // Auto-match fields
+        if (data.length > 0) {
+          const csvColumns = Object.keys(data[0]);
+          const autoMapping = autoMatchFields(csvColumns, availableFields);
+          setMapping(autoMapping);
+        }
+        
+        setCurrentStep("preview");
+      },
+      error: (error) => {
+        toast({
+          title: "File Error",
+          description: "Failed to read CSV file. Please try again.",
+          variant: "destructive",
+        });
+      }
+    });
   };
 
   const handleMappingChange = (column: string, field: string) => {
