@@ -90,7 +90,7 @@ export function AddFieldsTab() {
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch('https://importer.savvysales.ai/api/objects/fields/template', {
+      const response = await fetch('https://importer.savvysales.ai/templates/fields', {
         credentials: 'include',
       });
       
