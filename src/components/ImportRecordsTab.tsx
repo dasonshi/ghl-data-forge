@@ -366,12 +366,7 @@ export function ImportRecordsTab() {
         </AlertDescription>
       </Alert>
 
-      <DataPreviewTable
-        data={recordsData}
-        mapping={{}}
-        onMappingChange={() => {}}
-        availableFields={[]}
-      />
+      <DataPreviewTable data={recordsData} />
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => setCurrentStep("upload")}>

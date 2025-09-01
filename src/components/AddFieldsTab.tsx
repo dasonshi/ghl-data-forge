@@ -309,12 +309,7 @@ export function AddFieldsTab() {
         </AlertDescription>
       </Alert>
 
-      <DataPreviewTable
-        data={fieldsData}
-        mapping={mapping}
-        onMappingChange={handleMappingChange}
-        availableFields={["key", "name", "type", "required", "description"]}
-      />
+      <DataPreviewTable data={fieldsData} />
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => setCurrentStep("upload")}>

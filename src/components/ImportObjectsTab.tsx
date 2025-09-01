@@ -258,14 +258,7 @@ export function ImportObjectsTab() {
         </AlertDescription>
       </Alert>
 
-      {objectsData.length > 0 && (
-        <DataPreviewTable
-          data={objectsData}
-          mapping={mapping}
-          onMappingChange={handleMappingChange}
-          availableFields={["key", "singular", "plural", "description"]}
-        />
-      )}
+      {objectsData.length > 0 && <DataPreviewTable data={objectsData} />}
 
       {fieldsData.length > 0 && (
         <Card>
@@ -276,12 +269,7 @@ export function ImportObjectsTab() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DataPreviewTable
-              data={fieldsData}
-              mapping={{}}
-              onMappingChange={() => {}}
-              availableFields={["objectKey", "key", "name", "type", "required"]}
-            />
+            <DataPreviewTable data={fieldsData} />
           </CardContent>
         </Card>
       )}
