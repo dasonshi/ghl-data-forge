@@ -85,16 +85,16 @@ export const ImportCustomValuesTab = () => {
     let csvContent = '';
     
     if (mode === 'new') {
-      csvContent = 'name,value,parentid\nSample Field,Sample Value,sample_parent_id\n';
+      csvContent = 'name,value\nSample Field,Sample Value\n';
     } else {
       // Include existing custom values for update template
-      csvContent = 'id,name,value,parentid\n';
+      csvContent = 'id,name,value\n';
       if (customValues.length > 0) {
         customValues.forEach(cv => {
-          csvContent += `${cv.id},"${cv.name}","${cv.value}",${cv.fieldKey || ''}\n`;
+          csvContent += `${cv.id},"${cv.name}","${cv.value}"\n`;
         });
       } else {
-        csvContent += 'sample_id,Sample Field,Sample Value,sample_parent_id\n';
+        csvContent += 'sample_id,Sample Field,Sample Value\n';
       }
     }
 
@@ -333,8 +333,8 @@ export const ImportCustomValuesTab = () => {
                 </h4>
                 <p className="text-sm text-muted-foreground mb-4">
                   {mode === 'new' 
-                    ? 'Template includes: name, value, parentid columns'
-                    : 'Template includes existing custom values with: id, name, value, parentid columns'
+                    ? 'Template includes: name, value columns'
+                    : 'Template includes existing custom values with: id, name, value columns'
                   }
                 </p>
                 <Button onClick={generateTemplate} className="w-full">
@@ -371,7 +371,6 @@ export const ImportCustomValuesTab = () => {
                           <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Value</TableHead>
-                            <TableHead>Parent ID</TableHead>
                             {mode === 'update' && <TableHead>ID</TableHead>}
                           </TableRow>
                         </TableHeader>
@@ -382,7 +381,6 @@ export const ImportCustomValuesTab = () => {
                               <TableCell className="max-w-xs truncate" title={row.value}>
                                 {row.value}
                               </TableCell>
-                              <TableCell>{row.parentid || '-'}</TableCell>
                               {mode === 'update' && <TableCell>{row.id}</TableCell>}
                             </TableRow>
                           ))}
