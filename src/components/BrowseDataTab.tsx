@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Database, Eye, Layers } from "lucide-react";
+import { ChevronDown, ChevronRight, Database, Eye, Layers, Folder } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomObject {
@@ -23,6 +23,8 @@ interface CustomField {
   name: string;
   dataType: string;
   description?: string;
+  parentId?: string;
+  folderName?: string;
 }
 
 export function BrowseDataTab() {
@@ -64,7 +66,20 @@ export function BrowseDataTab() {
       });
       if (response.ok) {
         const data = await response.json();
-        setFields(data.fields || data || []);
+        const fieldsData = data.fields || [];
+        
+        // Process fields to include folder information
+        const processedFields = fieldsData.map((field: any) => ({
+          id: field.id,
+          fieldKey: field.fieldKey || field.key,
+          name: field.name,
+          dataType: field.dataType || field.type,
+          description: field.description,
+          parentId: field.parentId,
+          folderName: field.folder?.field?.name || null
+        }));
+        
+        setFields(processedFields);
       } else {
         throw new Error('Failed to fetch fields');
       }
@@ -184,6 +199,7 @@ export function BrowseDataTab() {
                                     <TableHead>Field Name</TableHead>
                                     <TableHead>Key</TableHead>
                                     <TableHead>Type</TableHead>
+                                    <TableHead>Folder</TableHead>
                                     <TableHead>Description</TableHead>
                                   </TableRow>
                                 </TableHeader>
@@ -194,6 +210,21 @@ export function BrowseDataTab() {
                                        <TableCell className="font-mono text-sm">{field.fieldKey}</TableCell>
                                        <TableCell>
                                          <Badge variant="outline">{field.dataType}</Badge>
+                                       </TableCell>
+                                       <TableCell>
+                                         {field.folderName ? (
+                                           <div className="flex items-center gap-1 text-sm">
+                                             <Folder className="h-3 w-3" />
+                                             <span>{field.folderName}</span>
+                                             {field.parentId && (
+                                               <Badge variant="secondary" className="text-xs ml-2">
+                                                 {field.parentId}
+                                               </Badge>
+                                             )}
+                                           </div>
+                                         ) : (
+                                           <span className="text-muted-foreground text-sm">No folder</span>
+                                         )}
                                        </TableCell>
                                        <TableCell>
                                          <span className="text-muted-foreground">
