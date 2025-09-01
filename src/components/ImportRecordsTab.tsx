@@ -93,11 +93,19 @@ export function ImportRecordsTab() {
     }
 
     try {
-      const response = await fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/template`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const csvText = await response.text();
+      // Fetch template and fields data in parallel
+      const [templateResponse, fieldsResponse] = await Promise.all([
+        fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/template`, {
+          credentials: 'include',
+        }),
+        fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/fields`, {
+          credentials: 'include',
+        })
+      ]);
+
+      if (templateResponse.ok && fieldsResponse.ok) {
+        const csvText = await templateResponse.text();
+        const fieldsData = await fieldsResponse.json();
         
         // Parse CSV and filter out external_id and object_key columns
         const lines = csvText.split('\n');
@@ -107,8 +115,51 @@ export function ImportRecordsTab() {
             header.trim() !== 'external_id' && header.trim() !== 'object_key'
           );
           
-          // Reconstruct CSV with filtered headers
-          const filteredCsv = [filteredHeaders.join(','), ...lines.slice(1)].join('\n');
+          // Generate sample data based on field types
+          const generateSampleValue = (fieldName: string) => {
+            const field = fieldsData.find((f: any) => f.key === fieldName);
+            if (!field) return 'sample_value';
+            
+            switch (field.dataType) {
+              case 'TEXT':
+                return 'Sample Text';
+              case 'EMAIL':
+                return 'example@company.com';
+              case 'PHONE':
+                return '+1-555-123-4567';
+              case 'URL':
+                return 'https://example.com';
+              case 'NUMBER':
+                return '100';
+              case 'CURRENCY':
+                return '99.99';
+              case 'PERCENT':
+                return '75';
+              case 'DATE':
+                return '2024-01-15';
+              case 'DATETIME':
+                return '2024-01-15 10:30:00';
+              case 'BOOLEAN':
+                return 'true';
+              case 'PICKLIST':
+                return field.picklistValues && field.picklistValues.length > 0 
+                  ? field.picklistValues[0].value 
+                  : 'Option 1';
+              case 'TEXTAREA':
+                return 'Sample long text content...';
+              default:
+                return 'sample_value';
+            }
+          };
+          
+          const sampleRow = filteredHeaders.map(header => generateSampleValue(header.trim()));
+          
+          // Reconstruct CSV with filtered headers and sample row
+          const csvLines = [
+            filteredHeaders.join(','),
+            sampleRow.join(',')
+          ];
+          const filteredCsv = csvLines.join('\n');
           
           const blob = new Blob([filteredCsv], { type: 'text/csv' });
           const url = window.URL.createObjectURL(blob);
@@ -122,7 +173,7 @@ export function ImportRecordsTab() {
           
           toast({
             title: "Template Downloaded",
-            description: `CSV template for ${selectedObjectData?.labels.singular} downloaded successfully.`,
+            description: `CSV template for ${selectedObjectData?.labels.singular} downloaded with sample data.`,
           });
         }
       }
