@@ -56,10 +56,10 @@ export const ImportCustomValuesTab = () => {
         throw new Error('Failed to fetch custom values');
       }
       const data = await response.json();
-      setCustomValues(data);
+      setCustomValues(data.customValues || []);
       toast({
         title: "Success",
-        description: `Loaded ${data.length} existing custom values`,
+        description: `Loaded ${data.customValues?.length || 0} existing custom values`,
       });
     } catch (error) {
       console.error('Error fetching custom values:', error);
