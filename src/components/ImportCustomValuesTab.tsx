@@ -41,8 +41,7 @@ export const ImportCustomValuesTab = () => {
 
   const steps = [
     "Select Mode",
-    "Download Template", 
-    "Upload CSV",
+    "Download & Upload", 
     "Review Results"
   ];
 
@@ -108,7 +107,7 @@ export const ImportCustomValuesTab = () => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
     
-    setCurrentStep(3);
+    // Don't auto-advance step - user can download and upload on same step
   };
 
   // Handle file upload
@@ -142,7 +141,7 @@ export const ImportCustomValuesTab = () => {
         });
       }
       
-      setCurrentStep(4);
+      setCurrentStep(3);
     } catch (error) {
       console.error('Error importing custom values:', error);
       toast({
@@ -267,70 +266,69 @@ export const ImportCustomValuesTab = () => {
       )}
 
       {currentStep === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Download CSV Template</CardTitle>
-            <CardDescription>
-              Download the {mode === 'new' ? 'new import' : 'update'} template and fill it with your data
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 border rounded-lg bg-muted/50">
-              <h4 className="font-semibold mb-2">
-                {mode === 'new' ? 'New Custom Values Template' : 'Update Custom Values Template'}
-              </h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                {mode === 'new' 
-                  ? 'Template includes: name, value columns'
-                  : 'Template includes existing custom values with: id, name, value columns'
-                }
-              </p>
-              <Button onClick={generateTemplate} className="w-full">
-                <Download className="h-4 w-4 mr-2" />
-                Download {mode === 'new' ? 'New Import' : 'Update'} Template
-              </Button>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                Back
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {currentStep === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload Custom Values CSV</CardTitle>
-            <CardDescription>
-              Upload your completed CSV file to {mode === 'new' ? 'import new' : 'update existing'} custom values
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {importing ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Importing custom values...</p>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Download Template Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Download CSV Template</CardTitle>
+              <CardDescription>
+                Download the {mode === 'new' ? 'new import' : 'update'} template and fill it with your data
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 border rounded-lg bg-muted/50">
+                <h4 className="font-semibold mb-2">
+                  {mode === 'new' ? 'New Custom Values Template' : 'Update Custom Values Template'}
+                </h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {mode === 'new' 
+                    ? 'Template includes: name, value columns'
+                    : 'Template includes existing custom values with: id, name, value columns'
+                  }
+                </p>
+                <Button onClick={generateTemplate} className="w-full">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download {mode === 'new' ? 'New Import' : 'Update'} Template
+                </Button>
               </div>
-            ) : (
-              <FileUploadZone 
-                onFileSelect={handleFileUpload} 
-                acceptedTypes=".csv"
-              />
-            )}
-            
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                Back
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Upload CSV Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload Custom Values CSV</CardTitle>
+              <CardDescription>
+                Upload your completed CSV file to {mode === 'new' ? 'import new' : 'update existing'} custom values
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {importing ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Importing custom values...</p>
+                </div>
+              ) : (
+                <FileUploadZone 
+                  onFileSelect={handleFileUpload} 
+                  acceptedTypes=".csv"
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {currentStep === 4 && importResult && (
+      {/* Back button */}
+      {currentStep === 2 && (
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setCurrentStep(1)}>
+            Back
+          </Button>
+        </div>
+      )}
+
+      {currentStep === 3 && importResult && (
         <Card>
           <CardHeader>
             <CardTitle>Import Results</CardTitle>
