@@ -6,8 +6,9 @@ import { StepIndicator } from "@/components/StepIndicator";
 import { SuccessStats } from "@/components/SuccessStats";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Upload, RefreshCw } from "lucide-react";
+import { Download, Upload, RefreshCw, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Papa from "papaparse";
 
 interface CustomValue {
   id: string;
@@ -36,6 +37,8 @@ export const ImportCustomValuesTab = () => {
   const [customValues, setCustomValues] = useState<CustomValue[]>([]);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [uploadedData, setUploadedData] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
 
@@ -82,16 +85,16 @@ export const ImportCustomValuesTab = () => {
     let csvContent = '';
     
     if (mode === 'new') {
-      csvContent = 'name,value\nSample Field,Sample Value\n';
+      csvContent = 'name,value,parentid\nSample Field,Sample Value,sample_parent_id\n';
     } else {
       // Include existing custom values for update template
-      csvContent = 'id,name,value\n';
+      csvContent = 'id,name,value,parentid\n';
       if (customValues.length > 0) {
         customValues.forEach(cv => {
-          csvContent += `${cv.id},"${cv.name}","${cv.value}"\n`;
+          csvContent += `${cv.id},"${cv.name}","${cv.value}",${cv.fieldKey || ''}\n`;
         });
       } else {
-        csvContent += 'sample_id,Sample Field,Sample Value\n';
+        csvContent += 'sample_id,Sample Field,Sample Value,sample_parent_id\n';
       }
     }
 
@@ -110,11 +113,51 @@ export const ImportCustomValuesTab = () => {
     // Don't auto-advance step - user can download and upload on same step
   };
 
-  // Handle file upload
+  // Handle file upload and parse CSV
   const handleFileUpload = async (file: File) => {
+    try {
+      const text = await file.text();
+      const result = Papa.parse(text, { 
+        header: true, 
+        skipEmptyLines: true 
+      });
+      
+      if (result.errors.length > 0) {
+        toast({
+          title: "CSV Parse Error",
+          description: "There were errors parsing your CSV file",
+          variant: "destructive",
+        });
+        console.error('CSV parse errors:', result.errors);
+        return;
+      }
+
+      setUploadedData(result.data);
+      setShowPreview(true);
+      
+      toast({
+        title: "File Uploaded",
+        description: `Parsed ${result.data.length} rows. Please review and confirm import.`,
+      });
+    } catch (error) {
+      console.error('Error reading file:', error);
+      toast({
+        title: "File Error",
+        description: "Failed to read the uploaded file",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Confirm and execute import
+  const confirmImport = async () => {
     setImporting(true);
     const formData = new FormData();
-    formData.append('customValues', file);
+    
+    // Convert uploaded data back to CSV for server
+    const csvContent = Papa.unparse(uploadedData);
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    formData.append('customValues', blob, 'import.csv');
 
     try {
       const response = await fetch('https://importer.savvysales.ai/api/custom-values/import', {
@@ -142,6 +185,7 @@ export const ImportCustomValuesTab = () => {
       }
       
       setCurrentStep(3);
+      setShowPreview(false);
     } catch (error) {
       console.error('Error importing custom values:', error);
       toast({
@@ -154,9 +198,16 @@ export const ImportCustomValuesTab = () => {
     }
   };
 
+  const cancelPreview = () => {
+    setShowPreview(false);
+    setUploadedData([]);
+  };
+
   const resetProcess = () => {
     setCurrentStep(1);
     setImportResult(null);
+    setUploadedData([]);
+    setShowPreview(false);
     setMode('new');
   };
 
@@ -282,8 +333,8 @@ export const ImportCustomValuesTab = () => {
                 </h4>
                 <p className="text-sm text-muted-foreground mb-4">
                   {mode === 'new' 
-                    ? 'Template includes: name, value columns'
-                    : 'Template includes existing custom values with: id, name, value columns'
+                    ? 'Template includes: name, value, parentid columns'
+                    : 'Template includes existing custom values with: id, name, value, parentid columns'
                   }
                 </p>
                 <Button onClick={generateTemplate} className="w-full">
@@ -303,7 +354,53 @@ export const ImportCustomValuesTab = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {importing ? (
+              {showPreview ? (
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-lg bg-blue-50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Eye className="h-4 w-4 text-blue-600" />
+                      <h4 className="font-semibold text-blue-900">Preview Upload Data</h4>
+                    </div>
+                    <p className="text-sm text-blue-700 mb-4">
+                      {uploadedData.length} rows ready to import. Please review and confirm.
+                    </p>
+                    
+                    <div className="rounded-md border max-h-60 overflow-y-auto bg-white">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Value</TableHead>
+                            <TableHead>Parent ID</TableHead>
+                            {mode === 'update' && <TableHead>ID</TableHead>}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {uploadedData.map((row: any, index) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{row.name}</TableCell>
+                              <TableCell className="max-w-xs truncate" title={row.value}>
+                                {row.value}
+                              </TableCell>
+                              <TableCell>{row.parentid || '-'}</TableCell>
+                              {mode === 'update' && <TableCell>{row.id}</TableCell>}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    
+                    <div className="flex gap-2 mt-4">
+                      <Button onClick={confirmImport} disabled={importing} className="flex-1">
+                        {importing ? "Importing..." : "Confirm Import"}
+                      </Button>
+                      <Button onClick={cancelPreview} variant="outline" disabled={importing}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : importing ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                   <p className="text-muted-foreground">Importing custom values...</p>
@@ -337,14 +434,47 @@ export const ImportCustomValuesTab = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <SuccessStats 
-              stats={{
-                totalRecords: importResult.summary.total,
-                successfulImports: importResult.summary.created + importResult.summary.updated,
-                failedImports: importResult.summary.failed,
-                duration: "N/A"
-              }}
-            />
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <h4 className="font-semibold mb-2">Server Response</h4>
+              <div className="text-sm space-y-2">
+                <div><span className="font-medium">Status:</span> {importResult.success ? 'Success' : 'Failed'}</div>
+                <div><span className="font-medium">Message:</span> {importResult.message}</div>
+                
+                {importResult.summary && (
+                  <div className="mt-3">
+                    <div className="font-medium mb-1">Summary:</div>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                      <li>Total processed: {importResult.summary.total}</li>
+                      <li>Created: {importResult.summary.created}</li>
+                      <li>Updated: {importResult.summary.updated}</li>
+                      <li>Failed: {importResult.summary.failed}</li>
+                    </ul>
+                  </div>
+                )}
+                
+                {importResult.created?.length > 0 && (
+                  <div className="mt-3">
+                    <div className="font-medium mb-1">Created Items:</div>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                      {importResult.created.map((item, idx) => (
+                        <li key={idx}>{item.name}: {item.value}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {importResult.updated?.length > 0 && (
+                  <div className="mt-3">
+                    <div className="font-medium mb-1">Updated Items:</div>
+                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
+                      {importResult.updated.map((item, idx) => (
+                        <li key={idx}>{item.name}: {item.value}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
             
             {importResult.errors.length > 0 && (
               <div className="space-y-2">
