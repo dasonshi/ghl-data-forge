@@ -93,6 +93,7 @@ export function AddFieldsTab() {
       const response = await fetch('https://importer.savvysales.ai/api/objects/fields/template', {
         credentials: 'include',
       });
+      
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -108,11 +109,19 @@ export function AddFieldsTab() {
           title: "Template Downloaded",
           description: "Fields CSV template downloaded successfully.",
         });
+      } else {
+        // Handle API error responses
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        toast({
+          title: "Download Failed",
+          description: `Server error: ${errorData.error || 'Failed to generate template'}. Please contact support.`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       toast({
         title: "Download Failed",
-        description: "Failed to download template. Please try again.",
+        description: "Network error occurred. Please check your connection and try again.",
         variant: "destructive",
       });
     }
