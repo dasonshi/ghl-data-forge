@@ -115,9 +115,7 @@ export function ImportRecordsTab() {
           
           // Generate sample data based on field types
           const generateSampleValue = (fieldName: string) => {
-            console.log('Looking for field:', fieldName, 'Available fields:', fieldsData.map(f => f.fieldKey));
             const field = fieldsData.find((f: any) => f.fieldKey.endsWith(`.${fieldName.trim()}`));
-            console.log('Found field:', field);
             if (!field) return 'sample_value';
             
             switch (field.dataType) {
