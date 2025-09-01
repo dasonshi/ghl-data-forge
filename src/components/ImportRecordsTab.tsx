@@ -97,20 +97,34 @@ export function ImportRecordsTab() {
         credentials: 'include',
       });
       if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${selectedObject}-template.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        const csvText = await response.text();
         
-        toast({
-          title: "Template Downloaded",
-          description: `CSV template for ${selectedObjectData?.labels.singular} downloaded successfully.`,
-        });
+        // Parse CSV and filter out external_id and object_key columns
+        const lines = csvText.split('\n');
+        if (lines.length > 0) {
+          const headers = lines[0].split(',');
+          const filteredHeaders = headers.filter(header => 
+            header.trim() !== 'external_id' && header.trim() !== 'object_key'
+          );
+          
+          // Reconstruct CSV with filtered headers
+          const filteredCsv = [filteredHeaders.join(','), ...lines.slice(1)].join('\n');
+          
+          const blob = new Blob([filteredCsv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${selectedObject}-template.csv`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          
+          toast({
+            title: "Template Downloaded",
+            description: `CSV template for ${selectedObjectData?.labels.singular} downloaded successfully.`,
+          });
+        }
       }
     } catch (error) {
       toast({
@@ -171,8 +185,24 @@ export function ImportRecordsTab() {
     setProgress(0);
 
     try {
+      // Add object_key to each record in the CSV data
+      const modifiedData = recordsData.map(record => ({
+        ...record,
+        object_key: selectedObject.split('.').pop() // Extract just the object name from the full key
+      }));
+
+      // Convert modified data back to CSV
+      const csvHeaders = Object.keys(modifiedData[0]);
+      const csvRows = modifiedData.map(row => 
+        csvHeaders.map(header => row[header] || '').join(',')
+      );
+      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+
+      // Create new file with modified data
+      const modifiedFile = new Blob([csvContent], { type: 'text/csv' });
+      
       const formData = new FormData();
-      formData.append('records', recordsFile);
+      formData.append('records', modifiedFile, recordsFile.name);
 
       // Simulate progress
       const progressInterval = setInterval(() => {
