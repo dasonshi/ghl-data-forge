@@ -402,7 +402,7 @@ export function ImportRecordsTab() {
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
         <h3 className="text-2xl font-bold">Records Imported Successfully!</h3>
         <p className="text-muted-foreground">
-          {result?.stats.recordsProcessed || recordsData.length} record{(result?.stats.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} imported to {selectedObjectData?.labels.singular}
+          {result?.stats?.recordsProcessed || recordsData.length} record{(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} imported to {selectedObjectData?.labels.singular}
         </p>
       </div>
 
@@ -417,7 +417,7 @@ export function ImportRecordsTab() {
           </div>
           <div className="flex justify-between">
             <span>Records Imported:</span>
-            <span className="font-medium">{result?.stats.recordsProcessed || recordsData.length}</span>
+            <span className="font-medium">{result?.stats?.recordsProcessed || recordsData.length}</span>
           </div>
           <div className="flex justify-between">
             <span>CSV Columns:</span>
