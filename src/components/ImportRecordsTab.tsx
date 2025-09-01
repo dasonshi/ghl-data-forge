@@ -122,29 +122,29 @@ export function ImportRecordsTab() {
               case 'TEXT':
                 return 'Sample Text';
               case 'EMAIL':
-                return 'example@company.com';
+                return 'user@example.com';
               case 'PHONE':
                 return '+1-555-123-4567';
               case 'URL':
-                return 'https://example.com';
+                return 'https://www.example.com';
               case 'NUMBER':
                 return '100';
               case 'CURRENCY':
                 return '99.99';
               case 'PERCENT':
-                return '75';
+                return '75.5';
               case 'DATE':
                 return '2024-01-15';
               case 'DATETIME':
-                return '2024-01-15 10:30:00';
+                return '2024-01-15T10:30:00Z';
               case 'BOOLEAN':
                 return 'true';
               case 'PICKLIST':
                 return field.picklistValues && field.picklistValues.length > 0 
                   ? field.picklistValues[0].value 
-                  : 'Option 1';
+                  : 'Option1';
               case 'TEXTAREA':
-                return 'Sample long text content...';
+                return 'This is a longer sample text that would typically be used in a textarea field for more detailed information.';
               default:
                 return 'sample_value';
             }
