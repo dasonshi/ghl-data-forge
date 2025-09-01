@@ -21,10 +21,10 @@ const Index = () => {
               Savvy Sales
             </h1>
             <h2 className="text-3xl font-bold text-foreground">
-              Custom Object Importer
+              Custom Data Importer
             </h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Professional CSV import tool for custom objects, fields, and records
+              Import custom objects, fields, records, and custom values from CSV.
             </p>
           </div>
 
