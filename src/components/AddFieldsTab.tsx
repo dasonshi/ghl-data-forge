@@ -57,7 +57,7 @@ export function AddFieldsTab() {
       });
       if (response.ok) {
         const data = await response.json();
-        setObjects(data);
+        setObjects(data.objects || data || []);
       }
     } catch (error) {
       toast({
@@ -177,7 +177,7 @@ export function AddFieldsTab() {
     fetchObjects();
   }, []);
 
-  const selectedObjectData = objects.find(obj => obj.key === selectedObject);
+  const selectedObjectData = Array.isArray(objects) ? objects.find(obj => obj.key === selectedObject) : undefined;
 
   const renderSelect = () => (
     <div className="space-y-6">
@@ -201,7 +201,7 @@ export function AddFieldsTab() {
               <SelectValue placeholder="Select a custom object" />
             </SelectTrigger>
             <SelectContent>
-              {objects.map((object) => (
+              {Array.isArray(objects) && objects.map((object) => (
                 <SelectItem key={object.id} value={object.key}>
                   {object.labels.singular} ({object.key})
                 </SelectItem>
@@ -209,7 +209,7 @@ export function AddFieldsTab() {
             </SelectContent>
           </Select>
 
-          {objects.length === 0 && (
+          {(!Array.isArray(objects) || objects.length === 0) && (
             <p className="text-sm text-muted-foreground text-center py-4">
               No custom objects found. Create custom objects first before adding fields.
             </p>
