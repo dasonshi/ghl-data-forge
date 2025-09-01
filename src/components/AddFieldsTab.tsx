@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, CheckCircle2, AlertTriangle, Database, Info, FileText, Settings, Type } from "lucide-react";
+import { Download, Plus, CheckCircle2, AlertTriangle, Database, Info, FileText, Settings, Type, Folder, Hash } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomObject {
@@ -28,10 +28,28 @@ interface AuthData {
 
 type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
 
+interface CustomField {
+  id: string;
+  key: string;
+  name: string;
+  type: string;
+  required?: boolean;
+  parentId?: string;
+  folderName?: string;
+}
+
+interface FolderInfo {
+  id: string;
+  name: string;
+  fields: CustomField[];
+}
+
 export function AddFieldsTab() {
   const [currentStep, setCurrentStep] = useState<ImportStep>("select");
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
+  const [availableFields, setAvailableFields] = useState<CustomField[]>([]);
+  const [folders, setFolders] = useState<FolderInfo[]>([]);
   const [fieldsFile, setFieldsFile] = useState<File | null>(null);
   const [fieldsData, setFieldsData] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -100,8 +118,69 @@ export function AddFieldsTab() {
     }
   };
 
+  const fetchFields = async (objectKey: string) => {
+    try {
+      const response = await fetch(`https://importer.savvysales.ai/api/objects/${objectKey}/fields`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const fields = data.fields || [];
+        const folderData = data.folders || [];
+
+        // Process fields and organize by folder
+        const processedFields: CustomField[] = fields.map((field: any) => ({
+          id: field.id,
+          key: field.fieldKey || field.key,
+          name: field.name,
+          type: field.dataType || field.type,
+          required: field.required,
+          parentId: field.parentId,
+          folderName: field.folder?.field?.name || 'No Folder'
+        }));
+
+        // Organize fields by folder
+        const folderMap = new Map<string, FolderInfo>();
+        
+        // Add folders first
+        folderData.forEach((folder: any) => {
+          folderMap.set(folder.id, {
+            id: folder.id,
+            name: folder.field?.name || folder.name,
+            fields: []
+          });
+        });
+
+        // Add fields to their respective folders
+        processedFields.forEach(field => {
+          if (field.parentId && folderMap.has(field.parentId)) {
+            folderMap.get(field.parentId)!.fields.push(field);
+          } else {
+            // Fields without folder
+            if (!folderMap.has('no-folder')) {
+              folderMap.set('no-folder', {
+                id: 'no-folder',
+                name: 'Ungrouped Fields',
+                fields: []
+              });
+            }
+            folderMap.get('no-folder')!.fields.push(field);
+          }
+        });
+
+        setAvailableFields(processedFields);
+        setFolders(Array.from(folderMap.values()));
+      }
+    } catch (error) {
+      console.error('Failed to fetch fields:', error);
+      setAvailableFields([]);
+      setFolders([]);
+    }
+  };
+
   const handleObjectSelect = (objectKey: string) => {
     setSelectedObject(objectKey);
+    fetchFields(objectKey);
   };
 
   const handleContinueToUpload = () => {
@@ -249,7 +328,7 @@ export function AddFieldsTab() {
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -269,6 +348,60 @@ export function AddFieldsTab() {
               <Database className="h-4 w-4 mr-2" />
               Download Fields Template
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Folder className="h-5 w-5" />
+              Existing Field Organization
+            </CardTitle>
+            <CardDescription>
+              Current fields organized by folders with parentId references
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="max-h-96 overflow-y-auto">
+            {folders.length > 0 ? (
+              <Accordion type="multiple" className="w-full">
+                {folders.map((folder) => (
+                  <AccordionItem key={folder.id} value={folder.id}>
+                    <AccordionTrigger className="text-left">
+                      <div className="flex items-center gap-2">
+                        <Folder className="h-4 w-4" />
+                        <span>{folder.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {folder.fields.length} fields
+                        </Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                          <Hash className="h-3 w-3" />
+                          Parent ID: <code className="bg-muted px-1 rounded">{folder.id}</code>
+                        </div>
+                        {folder.fields.map((field) => (
+                          <div key={field.id} className="text-sm bg-muted/30 px-3 py-2 rounded border-l-2 border-primary/20">
+                            <div className="font-medium">{field.name}</div>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <div>Key: <code className="bg-muted px-1 rounded">{field.key}</code></div>
+                              <div>Type: <Badge variant="outline" className="text-xs">{field.type}</Badge></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Folder className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No existing fields found</p>
+                <p className="text-xs">Select an object to view its field organization</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -299,10 +432,14 @@ export function AddFieldsTab() {
                     </div>
                     <div className="flex items-start gap-2">
                       <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</div>
-                      <p>Fill in your custom field definitions using the guide below</p>
+                      <p>Use the folder organization to get parentId values</p>
                     </div>
                     <div className="flex items-start gap-2">
                       <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</div>
+                      <p>Fill in your custom field definitions using the guide below</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">4</div>
                       <p>Upload the completed CSV file</p>
                     </div>
                   </div>
@@ -366,7 +503,7 @@ export function AddFieldsTab() {
                         <Badge variant="destructive" className="text-xs">Required</Badge>
                       </div>
                       <p>ID of the parent folder for organization.</p>
-                      <p className="text-muted-foreground">Contact support for available parent IDs</p>
+                      <p className="text-muted-foreground">Use the parentId from the folder organization above</p>
                     </div>
                   </div>
                 </AccordionContent>
