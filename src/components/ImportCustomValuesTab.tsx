@@ -45,20 +45,32 @@ export const ImportCustomValuesTab = () => {
     "Review Results"
   ];
 
-  // Fetch existing custom values
+  // Fetch existing custom values (mocked for now)
   const fetchCustomValues = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/custom-values');
-      if (!response.ok) {
-        throw new Error('Failed to fetch custom values');
-      }
-      const data = await response.json();
-      setCustomValues(data);
+      // Mock data for testing - replace with real API call when backend is ready
+      const mockData = [
+        { id: "cv_001", name: "Lead Source", value: "Website" },
+        { id: "cv_002", name: "Lead Source", value: "Facebook" },
+        { id: "cv_003", name: "Industry", value: "Real Estate" },
+        { id: "cv_004", name: "Industry", value: "Healthcare" },
+        { id: "cv_005", name: "Priority", value: "High" },
+        { id: "cv_006", name: "Priority", value: "Medium" },
+      ];
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setCustomValues(mockData);
+      toast({
+        title: "Success",
+        description: `Loaded ${mockData.length} existing custom values`,
+      });
     } catch (error) {
       console.error('Error fetching custom values:', error);
       toast({
-        title: "Error",
+        title: "Error", 
         description: "Failed to fetch existing custom values",
         variant: "destructive",
       });
