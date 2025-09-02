@@ -52,7 +52,7 @@ export function ImportRecordsTab() {
 
   const fetchObjects = async () => {
     try {
-      const response = await fetch('https://importer.savvysales.ai/api/objects', {
+      const response = await fetch('https://importer.api.savvysales.ai/api/objects', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -70,7 +70,7 @@ export function ImportRecordsTab() {
 
   const fetchFields = async (objectKey: string) => {
     try {
-      const response = await fetch(`https://importer.savvysales.ai/api/objects/${objectKey}/fields`, {
+      const response = await fetch(`https://importer.api.savvysales.ai/api/objects/${objectKey}/fields`, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -98,7 +98,7 @@ export function ImportRecordsTab() {
 
     try {
       // Only fetch template since we already have fields data
-      const templateResponse = await fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/template`, {
+      const templateResponse = await fetch(`https://importer.api.savvysales.ai/api/objects/${selectedObject}/template`, {
         credentials: 'include',
       });
 
@@ -258,7 +258,7 @@ export function ImportRecordsTab() {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch(`https://importer.savvysales.ai/api/objects/${selectedObject}/records/import`, {
+      const response = await fetch(`https://importer.api.savvysales.ai/api/objects/${selectedObject}/records/import`, {
         method: 'POST',
         body: formData,
         credentials: 'include',

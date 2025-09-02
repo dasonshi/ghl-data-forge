@@ -19,7 +19,7 @@ export function AuthStatus() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('https://importer.savvysales.ai/api/auth/status', {
+      const response = await fetch('https://importer.api.savvysales.ai/api/auth/status', {
         credentials: 'include',
       });
       
@@ -40,14 +40,14 @@ export function AuthStatus() {
 
   const handleLogin = () => {
     const popup = window.open(
-      'https://importer.savvysales.ai/oauth/install', 
+      'https://importer.api.savvysales.ai/oauth/install', 
       'oauth', 
       'width=600,height=600'
     );
 
     // Listen for success message from popup
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://importer.savvysales.ai') return;
+      if (event.origin !== 'https://importer.api.savvysales.ai') return;
       
       if (event.data.type === 'oauth_success') {
         console.log('OAuth successful for location:', event.data.locationId);
@@ -80,7 +80,7 @@ export function AuthStatus() {
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
-      const response = await fetch('https://importer.savvysales.ai/api/auth/disconnect', { 
+      const response = await fetch('https://importer.api.savvysales.ai/api/auth/disconnect', { 
         method: 'POST',
         credentials: 'include',
       });

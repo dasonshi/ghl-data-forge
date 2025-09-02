@@ -31,7 +31,7 @@ export function ImportObjectsTab() {
 
   const downloadObjectsTemplate = async () => {
     try {
-      const response = await fetch('https://importer.savvysales.ai/templates/objects', {
+      const response = await fetch('https://importer.api.savvysales.ai/templates/objects', {
         credentials: 'include',
       });
       if (response.ok) {
@@ -104,7 +104,7 @@ export function ImportObjectsTab() {
         setProgress(prev => Math.min(prev + 15, 90));
       }, 300);
 
-      const response = await fetch('https://importer.savvysales.ai/api/objects/import', {
+      const response = await fetch('https://importer.api.savvysales.ai/api/objects/import', {
         method: 'POST',
         body: formData,
         credentials: 'include',
