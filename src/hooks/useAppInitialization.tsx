@@ -56,31 +56,46 @@ export function useAppInitialization(): AppContext {
   const [locationMismatch, setLocationMismatch] = useState(false);
 
   useEffect(() => {
-    const getEncryptedUserData = async () => {
-      // Method A: custom JS injected in HL
-      if (window.exposeSessionDetails) {
-        return await window.exposeSessionDetails(APP_ID);
+    const isProd = import.meta.env.MODE === 'production';
+
+    function isInsideHL() {
+      return typeof window.exposeSessionDetails === 'function' || window !== window.top;
+    }
+
+    async function getEncryptedUserData() {
+      if (isInsideHL()) {
+        return window.exposeSessionDetails
+          ? await window.exposeSessionDetails(APP_ID)
+          : await new Promise((resolve) => {
+              const timeout = setTimeout(() => {
+                console.log('User context timeout - continuing without user data');
+                resolve(null);
+              }, 5000);
+
+              const handler = ({ data }) => {
+                if (data?.message === 'REQUEST_USER_DATA_RESPONSE') {
+                  clearTimeout(timeout);
+                  window.removeEventListener('message', handler);
+                  resolve(data.payload);
+                }
+              };
+              
+              window.addEventListener('message', handler);
+              window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+            });
       }
 
-      // Method B: custom page iframe (postMessage)
-      return await new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-          console.log('User context timeout - continuing without user data');
-          resolve(null);
-        }, 5000);
+      // Dev-only mock path
+      if (!isProd && import.meta.env.VITE_DEV_LOCATION_ID) {
+        await fetch(`/dev/set-location/${import.meta.env.VITE_DEV_LOCATION_ID}`, { method: 'POST', credentials: 'include' });
+        const r = await fetch(`/dev/mock-encrypted?locationId=${encodeURIComponent(import.meta.env.VITE_DEV_LOCATION_ID)}`, { credentials: 'include' });
+        const j = await r.json();
+        return j.encryptedData;
+      }
 
-        const handler = ({ data }) => {
-          if (data?.message === 'REQUEST_USER_DATA_RESPONSE') {
-            clearTimeout(timeout);
-            window.removeEventListener('message', handler);
-            resolve(data.payload);
-          }
-        };
-        
-        window.addEventListener('message', handler);
-        window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
-      });
-    };
+      // Outside HL in prod: don't attempt calls
+      return null;
+    }
 
     const fetchAppContext = async () => {
       try {
