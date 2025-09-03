@@ -21,18 +21,9 @@ export interface Location {
   website?: string;
 }
 
-export interface AgencyBranding {
-  companyName: string;
-  companyLogo?: string;
-  companyDomain?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-}
-
 export interface AppContext {
   userContext: UserContext | null;
   location: Location | null;
-  branding: AgencyBranding | null;
   loading: boolean;
   error: string | null;
   locationMismatch: boolean;
@@ -50,7 +41,6 @@ declare global {
 export function useAppInitialization(): AppContext {
   const [userContext, setUserContext] = useState<UserContext | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
-  const [branding, setBranding] = useState<AgencyBranding | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [locationMismatch, setLocationMismatch] = useState(false);
@@ -135,14 +125,9 @@ export function useAppInitialization(): AppContext {
             setLocation(ctx.location);
           }
           
-          if (ctx.branding) {
-            console.log('Setting branding:', ctx.branding);
-            setBranding(ctx.branding);
-          }
-          
           setLocationMismatch(false);
           setError(null);
-          applyPersonalization(ctx.user, ctx.location, ctx.branding);
+          applyPersonalization(ctx.user, ctx.location);
         } else {
           const errorData = await response.json().catch(() => ({}));
           console.log('API Error:', errorData);
@@ -151,25 +136,14 @@ export function useAppInitialization(): AppContext {
             setLocationMismatch(true);
             setError('Location mismatch detected');
           } else {
-            // Fallback branding
-            const fallbackBranding = {
-              companyName: 'Savvy Sales'
-            };
-            setBranding(fallbackBranding);
             setError('API call failed - using fallback');
-            applyPersonalization(null, null, fallbackBranding);
+            applyPersonalization(null, null);
           }
         }
       } catch (err) {
         console.error('App initialization failed:', err);
         setError('Failed to load app context');
-        
-        // Fallback branding
-        const fallbackBranding = {
-          companyName: 'Savvy Sales'
-        };
-        setBranding(fallbackBranding);
-        applyPersonalization(null, null, fallbackBranding);
+        applyPersonalization(null, null);
       } finally {
         setLoading(false);
       }
@@ -178,22 +152,13 @@ export function useAppInitialization(): AppContext {
     fetchAppContext();
   }, []);
 
-  const applyPersonalization = (user: UserContext | null, location: Location | null, branding: AgencyBranding | null) => {
+  const applyPersonalization = (user: UserContext | null, location: Location | null) => {
     // Apply document title with location branding
-    const companyName = location?.companyName || branding?.companyName;
+    const companyName = location?.companyName;
     const title = companyName 
       ? `${companyName} - Data Importer`
       : 'Data Importer';
     document.title = title;
-
-    // Apply dynamic branding colors if available
-    if (branding?.primaryColor) {
-      document.documentElement.style.setProperty('--primary', branding.primaryColor);
-    }
-    
-    if (branding?.secondaryColor) {
-      document.documentElement.style.setProperty('--secondary', branding.secondaryColor);
-    }
 
     // Detect if running in iframe (embedded context)
     if (window.parent !== window) {
@@ -204,7 +169,6 @@ export function useAppInitialization(): AppContext {
   return {
     userContext,
     location,
-    branding,
     loading,
     error,
     locationMismatch

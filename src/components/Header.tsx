@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export function Header() {
-  const { branding, location, userContext, loading } = useAppInitialization();
+  const { location, userContext, loading } = useAppInitialization();
 
   if (loading) {
     return (
@@ -40,10 +40,10 @@ export function Header() {
           <div className="flex items-center space-x-3">
             {/* Logo or Initials */}
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              {branding?.companyLogo ? (
+              {location?.logoUrl ? (
                 <img 
-                  src={branding.companyLogo} 
-                  alt={`${branding.companyName || 'Company'} logo`}
+                  src={location.logoUrl} 
+                  alt={`${location?.companyName || 'Company'} logo`}
                   className="h-full w-full object-contain rounded-lg"
                   onError={(e) => {
                     // Fallback to initials if logo fails to load
@@ -51,19 +51,19 @@ export function Header() {
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.textContent = getInitials(branding?.companyName || 'SS');
+                      parent.textContent = getInitials(location?.companyName || 'SS');
                     }
                   }}
                 />
               ) : (
-                getInitials(branding?.companyName || 'SS')
+                getInitials(location?.companyName || 'SS')
               )}
             </div>
             
             {/* Company Name & Title */}
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                {branding?.companyName || 'Agency'} - Data Importer
+                {location?.companyName || 'Agency'} - Data Importer
               </h1>
               {location?.name && (
                 <p className="text-sm text-muted-foreground">

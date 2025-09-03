@@ -16,7 +16,7 @@ interface BrandingFormData {
 }
 
 export function AgencyBrandingSettings() {
-  const { userContext, branding } = useAppInitialization();
+  const { userContext, location } = useAppInitialization();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setSaving] = useState(false);
@@ -33,15 +33,15 @@ export function AgencyBrandingSettings() {
   }
 
   useEffect(() => {
-    if (branding) {
+    if (location) {
       setFormData({
-        name: branding.companyName || '',
-        logo: branding.companyLogo || '',
-        domain: branding.companyDomain || '',
-        color: branding.primaryColor || ''
+        name: location.companyName || '',
+        logo: location.logoUrl || '',
+        domain: location.website || '',
+        color: ''
       });
     }
-  }, [branding]);
+  }, [location]);
 
   const handleSave = async () => {
     setSaving(true);

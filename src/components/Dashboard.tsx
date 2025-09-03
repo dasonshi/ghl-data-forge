@@ -76,7 +76,7 @@ export function Dashboard({ onTabChange }: DashboardProps) {
   const [loadingFields, setLoadingFields] = useState(false);
   const [expandedObjects, setExpandedObjects] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-  const { userContext, branding } = useAppInitialization();
+  const { userContext, location } = useAppInitialization();
 
   const fetchCustomValues = async () => {
     setLoadingCustomValues(true);
@@ -205,8 +205,8 @@ export function Dashboard({ onTabChange }: DashboardProps) {
         <div className="mx-auto max-w-md">
           <h2 className="text-2xl font-bold text-foreground mb-4">
             {userContext 
-              ? `Hi ${userContext.name}, ready to import data for ${branding?.companyName || 'your agency'}?`
-              : `Welcome to ${branding?.companyName || 'Your Agency'}'s Data Dashboard`
+              ? `Hi ${userContext.name}, ready to import data for ${location?.companyName || 'your agency'}?`
+              : `Welcome to ${location?.companyName || 'Your Agency'}'s Data Dashboard`
             }
           </h2>
           <p className="text-muted-foreground mb-6">
