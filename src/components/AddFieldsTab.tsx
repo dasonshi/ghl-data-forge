@@ -63,6 +63,7 @@ export function AddFieldsTab() {
 
   const fetchObjects = async (locId?: string) => {
     try {
+      console.log('🔍 AddFieldsTab: fetchObjects with locationId:', locId ?? locationId ?? 'undefined');
       const res = await apiFetch('/api/objects', {}, locId ?? locationId ?? undefined);
       if (res.ok) {
         const data = await res.json();

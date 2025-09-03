@@ -100,6 +100,31 @@ export function useAppContext(): AppContext {
         setLocation(data.location);
         setError(null);
         
+        // Check if location changed and broadcast event
+        const currentLocationId = localStorage.getItem('currentLocationId');
+        const newLocationId = data.location?.id || data.locationId;
+        
+        if (currentLocationId && currentLocationId !== newLocationId) {
+          console.log('🔄 Location switch detected:', { from: currentLocationId, to: newLocationId });
+          
+          // Update stored location
+          if (newLocationId) {
+            localStorage.setItem('currentLocationId', newLocationId);
+          }
+          
+          // Broadcast location switch event
+          window.dispatchEvent(new CustomEvent('location-switch', {
+            detail: {
+              newLocationId,
+              previousUser: user,
+              previousLocation: location
+            }
+          }));
+        } else if (!currentLocationId && newLocationId) {
+          // First time setting location
+          localStorage.setItem('currentLocationId', newLocationId);
+        }
+        
         // Apply personalization
         applyPersonalization(data.user, data.location);
       } else {

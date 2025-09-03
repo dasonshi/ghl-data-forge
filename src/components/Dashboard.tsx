@@ -23,6 +23,7 @@ export function Dashboard() {
   const fetchStats = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Dashboard: fetchStats with locationId:', locationId);
       
       // Fetch objects
       const objectsResponse = await apiFetch('/api/objects', {}, locationId ?? undefined);

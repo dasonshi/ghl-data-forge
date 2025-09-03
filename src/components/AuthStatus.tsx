@@ -23,6 +23,8 @@ export function AuthStatus() {
   const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
 
+  console.log('🔍 AuthStatus: location from context:', location?.id, 'locationId from hook:', locationId);
+
   // Clear all data when location switches
   useLocationSwitch(async () => {
     console.log('🔄 AuthStatus: Clearing data for location switch');
