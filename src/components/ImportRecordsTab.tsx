@@ -122,9 +122,7 @@ const fetchObjects = async (locId?: string) => {
 
     try {
       // Only fetch template since we already have fields data
-const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, locationId ?? undefined);
-        credentials: 'include',
-      });
+      const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, locationId ?? undefined);
 
       if (templateResponse.ok) {
         const csvText = await templateResponse.text();
