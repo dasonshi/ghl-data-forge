@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLocationSwitch } from "@/hooks/useLocationSwitch";
+import { useAppContext } from "@/hooks/useAppContext";
 
 interface CustomObject {
   id: string;
@@ -52,7 +54,6 @@ interface DashboardStats {
   recentImports: number;
 }
 
-
 export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [customValues, setCustomValues] = useState<CustomValue[]>([]);
@@ -70,11 +71,19 @@ export function Dashboard() {
   const [loadingFields, setLoadingFields] = useState(false);
   const [expandedObjects, setExpandedObjects] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  
+  // Get current location context
+  const { location, user } = useAppContext();
+  const currentLocationId = location?.id || user?.activeLocation;
 
-  const fetchCustomValues = async () => {
+  const fetchCustomValues = async (locationId?: string) => {
     setLoadingCustomValues(true);
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/custom-values', {
+      const url = locationId 
+        ? `https://importer.api.savvysales.ai/api/custom-values?locationId=${locationId}`
+        : 'https://importer.api.savvysales.ai/api/custom-values';
+        
+      const response = await fetch(url, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -84,6 +93,7 @@ export function Dashboard() {
         throw new Error('Failed to fetch custom values');
       }
     } catch (error) {
+      console.error('Failed to fetch custom values:', error);
       toast({
         title: "Error",
         description: "Failed to load custom values. Please try again.",
@@ -94,10 +104,14 @@ export function Dashboard() {
     }
   };
 
-  const fetchObjects = async () => {
+  const fetchObjects = async (locationId?: string) => {
     setLoadingObjects(true);
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/objects', {
+      const url = locationId 
+        ? `https://importer.api.savvysales.ai/api/objects?locationId=${locationId}`
+        : 'https://importer.api.savvysales.ai/api/objects';
+        
+      const response = await fetch(url, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -107,6 +121,7 @@ export function Dashboard() {
         throw new Error('Failed to fetch objects');
       }
     } catch (error) {
+      console.error('Failed to fetch objects:', error);
       toast({
         title: "Error",
         description: "Failed to load custom objects. Please try again.",
@@ -117,10 +132,14 @@ export function Dashboard() {
     }
   };
 
-  const fetchFields = async (objectKey: string) => {
+  const fetchFields = async (objectKey: string, locationId?: string) => {
     setLoadingFields(true);
     try {
-      const response = await fetch(`https://importer.api.savvysales.ai/api/objects/${objectKey}/fields`, {
+      const url = locationId 
+        ? `https://importer.api.savvysales.ai/api/objects/${objectKey}/fields?locationId=${locationId}`
+        : `https://importer.api.savvysales.ai/api/objects/${objectKey}/fields`;
+        
+      const response = await fetch(url, {
         credentials: 'include',
       });
       if (response.ok) {
@@ -142,6 +161,7 @@ export function Dashboard() {
         throw new Error('Failed to fetch fields');
       }
     } catch (error) {
+      console.error('Failed to fetch fields:', error);
       toast({
         title: "Error",
         description: "Failed to load custom fields. Please try again.",
@@ -154,7 +174,7 @@ export function Dashboard() {
 
   const handleViewFields = (objectKey: string) => {
     setSelectedObject(objectKey);
-    fetchFields(objectKey);
+    fetchFields(objectKey, currentLocationId);
   };
 
   const handleToggleExpansion = (objectKey: string) => {
@@ -171,14 +191,56 @@ export function Dashboard() {
   };
 
   const refreshData = () => {
-    fetchObjects();
-    fetchCustomValues();
+    console.log('🔄 Refreshing dashboard data for location:', currentLocationId);
+    
+    // Clear existing data immediately to show fresh loading state
+    setObjects([]);
+    setCustomValues([]);
+    setFields([]);
+    setSelectedObject(null);
+    setExpandedObjects(new Set());
+    
+    // Fetch fresh data with current location
+    fetchObjects(currentLocationId);
+    fetchCustomValues(currentLocationId);
   };
 
+  const clearDashboardData = () => {
+    console.log('🧹 Clearing dashboard data');
+    setObjects([]);
+    setCustomValues([]);
+    setFields([]);
+    setSelectedObject(null);
+    setExpandedObjects(new Set());
+    setStats({
+      totalObjects: 0,
+      totalFields: 0,
+      totalCustomValues: 0,
+      recentImports: 0
+    });
+  };
+
+  // Listen for location switch events
+  useLocationSwitch(({ newLocationId }) => {
+    console.log('🔄 Dashboard received location switch:', newLocationId);
+    
+    // Clear data immediately
+    clearDashboardData();
+    
+    // Wait a moment for the app context to update, then refresh
+    setTimeout(() => {
+      refreshData();
+    }, 500);
+  });
+
+  // Initial data load and location changes
   useEffect(() => {
-    fetchObjects();
-    fetchCustomValues();
-  }, []);
+    if (currentLocationId) {
+      console.log('🔄 Loading dashboard data for location:', currentLocationId);
+      fetchObjects(currentLocationId);
+      fetchCustomValues(currentLocationId);
+    }
+  }, [currentLocationId]); // Re-run when location changes
 
   // Update stats when data changes
   useEffect(() => {
@@ -201,6 +263,7 @@ export function Dashboard() {
           </h2>
           <p className="text-muted-foreground">
             Overview of your data import system
+            {location?.name && <span className="ml-2 font-medium">• {location.name}</span>}
           </p>
         </div>
         <Button onClick={refreshData} disabled={loadingObjects || loadingCustomValues}>
@@ -267,7 +330,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
 
       {/* Custom Objects List */}
       <Card>
