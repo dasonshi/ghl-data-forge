@@ -5,7 +5,7 @@ import { Database, FileText, RefreshCw, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE } from "@/lib/api";
 import { useLocationId } from "@/hooks/useLocationId";
 
 interface CustomObject {
@@ -56,13 +56,30 @@ export function Dashboard() {
         const fieldsMap: Record<string, CustomField[]> = {};
         for (const obj of objects) {
           try {
-            const schemaResponse = await apiFetch(`/api/objects/${obj.key}/schema?fetchProperties=true`, {}, activeLocationId);
+            // Extract raw key (e.g., "test" from "custom_objects.test")
+            const rawKey = obj.key.includes('.') ? obj.key.split('.').pop() : obj.key;
+            
+            // Try without locationId first (use existing cookie)
+            let schemaResponse = await fetch(`${API_BASE}/api/objects/${rawKey}/schema?fetchProperties=true`, {
+              credentials: 'include',
+              cache: 'no-store'
+            });
+            
+            // If unauthorized or failed, retry with locationId override
+            if (!schemaResponse.ok && activeLocationId) {
+              schemaResponse = await fetch(`${API_BASE}/api/objects/${rawKey}/schema?fetchProperties=true&locationId=${activeLocationId}`, {
+                credentials: 'include',
+                cache: 'no-store'
+              });
+            }
+            
             if (schemaResponse.ok) {
               const schema = await schemaResponse.json();
               // Extract fields from schema
               const fields = schema.properties || schema.fields || [];
               fieldsMap[obj.key] = Array.isArray(fields) ? fields : Object.values(fields);
             } else {
+              console.warn(`Failed to fetch schema for object ${obj.key} (${rawKey}):`, schemaResponse.status);
               fieldsMap[obj.key] = [];
             }
           } catch (error) {
