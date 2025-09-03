@@ -38,7 +38,7 @@ export function Dashboard() {
       setLoading(true);
       console.log('🔍 Dashboard: fetchData with locationId:', locationId);
       
-      // Fetch objects
+      // Fetch objects with location ID
       const objectsResponse = await apiFetch('/api/objects', {}, locationId ?? undefined);
       
       if (objectsResponse.ok) {
@@ -46,19 +46,21 @@ export function Dashboard() {
         const objects = data.objects || data || [];
         setObjects(objects);
         
-        // Fetch fields for each object
+        // Fetch schema for each object (includes all fields)
         const fieldsMap: Record<string, CustomField[]> = {};
         for (const obj of objects) {
           try {
-            const fieldsResponse = await apiFetch(`/api/objects/${obj.key}/fields`, {}, locationId ?? undefined);
-            if (fieldsResponse.ok) {
-              const fieldsData = await fieldsResponse.json();
-              fieldsMap[obj.key] = fieldsData.fields || [];
+            const schemaResponse = await apiFetch(`/api/objects/${obj.key}/schema?fetchProperties=true`, {}, locationId ?? undefined);
+            if (schemaResponse.ok) {
+              const schema = await schemaResponse.json();
+              // Extract fields from schema
+              const fields = schema.properties || schema.fields || [];
+              fieldsMap[obj.key] = Array.isArray(fields) ? fields : Object.values(fields);
             } else {
               fieldsMap[obj.key] = [];
             }
           } catch (error) {
-            console.warn(`Failed to fetch fields for object ${obj.key}:`, error);
+            console.warn(`Failed to fetch schema for object ${obj.key}:`, error);
             fieldsMap[obj.key] = [];
           }
         }
