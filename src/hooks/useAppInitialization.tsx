@@ -13,22 +13,29 @@ export interface UserContext {
   activeLocation?: string;
 }
 
-export interface AgencyBranding {
+export interface Location {
+  id: string;
+  name: string;
   companyName: string;
   logoUrl?: string;
+  website?: string;
+}
+
+export interface AgencyBranding {
+  companyName: string;
   companyLogo?: string;
   companyDomain?: string;
-  locationId?: string;
-  locationName?: string;
   primaryColor?: string;
   secondaryColor?: string;
 }
 
 export interface AppContext {
   userContext: UserContext | null;
+  location: Location | null;
   branding: AgencyBranding | null;
   loading: boolean;
   error: string | null;
+  locationMismatch: boolean;
 }
 
 const APP_ID = '68ae6ca8bb70273ca2ca7e24-metf8pus';
@@ -42,9 +49,11 @@ declare global {
 
 export function useAppInitialization(): AppContext {
   const [userContext, setUserContext] = useState<UserContext | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [branding, setBranding] = useState<AgencyBranding | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locationMismatch, setLocationMismatch] = useState(false);
 
   useEffect(() => {
     const getEncryptedUserData = async () => {
@@ -87,16 +96,24 @@ export function useAppInitialization(): AppContext {
         if (response.ok) {
           const ctx = await response.json();
           setUserContext(ctx.user);
+          setLocation(ctx.location);
           setBranding(ctx.branding);
-          applyPersonalization(ctx.user, ctx.branding);
+          setLocationMismatch(false);
+          applyPersonalization(ctx.user, ctx.location, ctx.branding);
         } else {
-          // Fallback branding
-          const fallbackBranding = {
-            companyName: 'Savvy Sales',
-            locationId: 'Unknown'
-          };
-          setBranding(fallbackBranding);
-          applyPersonalization(null, fallbackBranding);
+          const errorData = await response.json().catch(() => ({}));
+          
+          if (errorData.error === 'location_mismatch') {
+            setLocationMismatch(true);
+            setError('Location mismatch detected');
+          } else {
+            // Fallback branding
+            const fallbackBranding = {
+              companyName: 'Savvy Sales'
+            };
+            setBranding(fallbackBranding);
+            applyPersonalization(null, null, fallbackBranding);
+          }
         }
       } catch (err) {
         console.error('App initialization failed:', err);
@@ -104,11 +121,10 @@ export function useAppInitialization(): AppContext {
         
         // Fallback branding
         const fallbackBranding = {
-          companyName: 'Savvy Sales',
-          locationId: 'Unknown'
+          companyName: 'Savvy Sales'
         };
         setBranding(fallbackBranding);
-        applyPersonalization(null, fallbackBranding);
+        applyPersonalization(null, null, fallbackBranding);
       } finally {
         setLoading(false);
       }
@@ -117,10 +133,11 @@ export function useAppInitialization(): AppContext {
     fetchAppContext();
   }, []);
 
-  const applyPersonalization = (user: UserContext | null, branding: AgencyBranding | null) => {
-    // Apply document title with agency branding
-    const title = branding?.companyName 
-      ? `${branding.companyName} - Data Importer`
+  const applyPersonalization = (user: UserContext | null, location: Location | null, branding: AgencyBranding | null) => {
+    // Apply document title with location branding
+    const companyName = location?.companyName || branding?.companyName;
+    const title = companyName 
+      ? `${companyName} - Data Importer`
       : 'Data Importer';
     document.title = title;
 
@@ -141,8 +158,10 @@ export function useAppInitialization(): AppContext {
 
   return {
     userContext,
+    location,
     branding,
     loading,
-    error
+    error,
+    locationMismatch
   };
 }

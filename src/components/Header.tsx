@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export function Header() {
-  const { branding, userContext, loading } = useAppInitialization();
+  const { branding, location, userContext, loading } = useAppInitialization();
 
   if (loading) {
     return (
@@ -38,10 +38,10 @@ export function Header() {
           <div className="flex items-center space-x-3">
             {/* Logo or Initials */}
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              {branding?.logoUrl ? (
+              {location?.logoUrl ? (
                 <img 
-                  src={branding.logoUrl} 
-                  alt={`${branding.companyName} logo`}
+                  src={location.logoUrl} 
+                  alt={`${location.companyName} logo`}
                   className="h-full w-full object-contain rounded-lg"
                   onError={(e) => {
                     // Fallback to initials if logo fails to load
@@ -49,23 +49,23 @@ export function Header() {
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.textContent = getInitials(branding.companyName);
+                      parent.textContent = getInitials(location?.companyName || branding?.companyName || 'SS');
                     }
                   }}
                 />
               ) : (
-                getInitials(branding?.companyName || 'SS')
+                getInitials(location?.companyName || branding?.companyName || 'SS')
               )}
             </div>
             
             {/* Company Name & Title */}
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                {branding?.companyName || 'Agency'} - Data Importer
+                {location?.companyName || branding?.companyName || 'Agency'} - Data Importer
               </h1>
-              {branding?.locationName && (
+              {location?.name && (
                 <p className="text-sm text-muted-foreground">
-                  {branding.locationName}
+                  {location.name}
                 </p>
               )}
             </div>
@@ -89,10 +89,12 @@ export function Header() {
                 <p className="text-sm font-medium">Welcome!</p>
               </div>
             )}
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Building2 className="h-4 w-4" />
-              <span>ID: {branding?.locationId || 'Unknown'}</span>
-            </div>
+            {location && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Building2 className="h-4 w-4" />
+                <span>ID: {location.id}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

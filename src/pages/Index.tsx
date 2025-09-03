@@ -7,10 +7,44 @@ import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { Header } from "@/components/Header";
+import { LocationMismatchAlert } from "@/components/LocationMismatchAlert";
+import { useAppInitialization } from "@/hooks/useAppInitialization";
 import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const { locationMismatch, location } = useAppInitialization();
+
+  // Show location mismatch alert
+  if (locationMismatch) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle">
+        <Header />
+        <LocationMismatchAlert />
+        <Toaster />
+      </div>
+    );
+  }
+
+  // Show limited UI when no location context
+  if (!location) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle">
+        <Header />
+        
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold mb-4">No Location Context</h2>
+            <p className="text-muted-foreground">
+              Please ensure you're accessing this app from within a HighLevel location where it's installed.
+            </p>
+          </div>
+        </div>
+        
+        <Toaster />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
