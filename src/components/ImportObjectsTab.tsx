@@ -5,9 +5,10 @@ import { FileUploadZone } from "@/components/FileUploadZone";
 import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { StepIndicator } from "@/components/StepIndicator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Download, Database, Info, FileText, Upload, CheckCircle2, AlertTriangle, Settings, Type } from "lucide-react";
+import { Download, Database, Info, FileText, Upload, CheckCircle2, AlertTriangle, Settings, Type, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 
@@ -241,7 +242,8 @@ export function ImportObjectsTab() {
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => setCurrentStep("upload")}>
-          Back to Upload
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
         <Button variant="gradient" onClick={handleImport}>
           Import Objects
@@ -299,6 +301,9 @@ export function ImportObjectsTab() {
     </div>
   );
 
+  const steps = ["Download & Upload", "Preview Data", "Import Progress", "Review Results"];
+  const stepMap = { upload: 0, preview: 1, importing: 2, success: 3 };
+
   return (
     <div className="space-y-6">
       <div>
@@ -307,6 +312,12 @@ export function ImportObjectsTab() {
           Import custom objects from CSV files with proper structure and validation
         </p>
       </div>
+
+      <StepIndicator 
+        steps={steps} 
+        currentStep={stepMap[currentStep]} 
+        className="mb-8"
+      />
 
       {currentStep === "upload" && renderUpload()}
       {currentStep === "preview" && renderPreview()}

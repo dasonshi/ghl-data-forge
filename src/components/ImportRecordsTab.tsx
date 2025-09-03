@@ -6,7 +6,8 @@ import { FileUploadZone } from "@/components/FileUploadZone";
 import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Download, Database, CheckCircle2, AlertTriangle, Upload } from "lucide-react";
+import { StepIndicator } from "@/components/StepIndicator";
+import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 
@@ -377,7 +378,8 @@ export function ImportRecordsTab() {
             </p>
           </div>
           <Button variant="outline" onClick={() => setCurrentStep("mode")}>
-            Change Mode
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
           </Button>
         </div>
 
@@ -438,7 +440,8 @@ export function ImportRecordsTab() {
           <p className="text-sm text-muted-foreground">Object Key: {selectedObject}</p>
         </div>
         <Button variant="outline" onClick={() => setCurrentStep("select")}>
-          Change Object
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
       </div>
 
@@ -529,7 +532,8 @@ export function ImportRecordsTab() {
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => setCurrentStep("upload")}>
-          Back to Upload
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
         <Button variant="gradient" onClick={handleImport}>
           {mode === 'new' ? 'Import New Records' : 'Update Records'}
@@ -591,6 +595,9 @@ export function ImportRecordsTab() {
     </div>
   );
 
+  const steps = ["Select Mode", "Choose Object", "Download & Upload", "Preview Data", "Import Progress", "Review Results"];
+  const stepMap = { mode: 0, select: 1, upload: 2, preview: 3, importing: 4, success: 5 };
+
   return (
     <div className="space-y-6">
       <div>
@@ -599,6 +606,12 @@ export function ImportRecordsTab() {
           {mode === 'new' ? 'Import new records into existing custom objects' : 'Update existing records in custom objects using their IDs'}
         </p>
       </div>
+
+      <StepIndicator 
+        steps={steps} 
+        currentStep={stepMap[currentStep]} 
+        className="mb-8"
+      />
 
       {currentStep === "mode" && renderMode()}
       {currentStep === "select" && renderSelect()}

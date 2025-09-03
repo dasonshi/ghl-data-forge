@@ -8,8 +8,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Download, Plus, CheckCircle2, AlertTriangle, Database, Info, FileText, Settings, Type, Folder, Hash } from "lucide-react";
+import { Download, Plus, CheckCircle2, AlertTriangle, Database, Info, FileText, Settings, Type, Folder, Hash, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { StepIndicator } from "@/components/StepIndicator";
+import Papa from "papaparse";
 
 interface CustomObject {
   id: string;
@@ -333,7 +335,8 @@ export function AddFieldsTab() {
           <p className="text-sm text-muted-foreground">Object Key: {selectedObject}</p>
         </div>
         <Button variant="outline" onClick={() => setCurrentStep("select")}>
-          Change Object
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
       </div>
 
@@ -675,7 +678,8 @@ export function AddFieldsTab() {
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => setCurrentStep("upload")}>
-          Back to Upload
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
         <Button variant="gradient" onClick={handleImport}>
           Import Fields
@@ -733,6 +737,9 @@ export function AddFieldsTab() {
     </div>
   );
 
+  const steps = ["Choose Object", "Download & Upload", "Preview Data", "Import Progress", "Review Results"];
+  const stepMap = { select: 0, upload: 1, preview: 2, importing: 3, success: 4 };
+
   return (
     <div className="space-y-6">
       <div>
@@ -741,6 +748,12 @@ export function AddFieldsTab() {
           Import new custom fields into existing custom objects
         </p>
       </div>
+
+      <StepIndicator 
+        steps={steps} 
+        currentStep={stepMap[currentStep]} 
+        className="mb-8"
+      />
 
       {currentStep === "select" && renderSelect()}
       {currentStep === "upload" && renderUpload()}
