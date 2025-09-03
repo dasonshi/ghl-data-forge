@@ -5,6 +5,8 @@ export interface AgencyBranding {
   logoUrl?: string;
   locationId?: string;
   locationName?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 }
 
 export function useAgencyBranding() {

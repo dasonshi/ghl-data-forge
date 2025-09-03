@@ -1,9 +1,10 @@
-import { Building2 } from "lucide-react";
-import { useAgencyBranding } from "@/hooks/useAgencyBranding";
+import { Building2, User } from "lucide-react";
+import { useAppInitialization } from "@/hooks/useAppInitialization";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export function Header() {
-  const { branding, loading } = useAgencyBranding();
+  const { branding, userContext, loading } = useAppInitialization();
 
   if (loading) {
     return (
@@ -70,10 +71,23 @@ export function Header() {
             </div>
           </div>
 
-          {/* Location Info */}
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Building2 className="h-4 w-4" />
-            <span>ID: {branding?.locationId || 'Unknown'}</span>
+          {/* User & Location Info */}
+          <div className="flex items-center space-x-4">
+            {userContext && (
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <div className="text-right">
+                  <p className="text-sm font-medium">{userContext.name}</p>
+                  <Badge variant="secondary" className="text-xs">
+                    {userContext.role}
+                  </Badge>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+              <span>ID: {branding?.locationId || 'Unknown'}</span>
+            </div>
           </div>
         </div>
       </div>
