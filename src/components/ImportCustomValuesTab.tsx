@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Upload, RefreshCw, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import Papa from "papaparse";
 
 interface CustomValue {
@@ -41,6 +42,19 @@ export const ImportCustomValuesTab = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
+
+  // Clear all data when location switches
+  useLocationSwitch(() => {
+    console.log('🔄 ImportCustomValuesTab: Clearing data for location switch');
+    setCurrentStep(1);
+    setMode('new');
+    setCustomValues([]);
+    setLoading(false);
+    setImporting(false);
+    setUploadedData([]);
+    setShowPreview(false);
+    setImportResult(null);
+  });
 
   const steps = [
     "Select Mode",

@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Download, Database, Info, FileText, Upload, CheckCircle2, AlertTriangle, Settings, Type, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import Papa from "papaparse";
 
 type ImportStep = "upload" | "preview" | "importing" | "success";
@@ -29,6 +30,16 @@ export function ImportObjectsTab() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
+
+  // Clear all data when location switches
+  useLocationSwitch(() => {
+    console.log('🔄 ImportObjectsTab: Clearing data for location switch');
+    setCurrentStep("upload");
+    setObjectsFile(null);
+    setObjectsData([]);
+    setProgress(0);
+    setResult(null);
+  });
 
   const downloadObjectsTemplate = async () => {
     try {

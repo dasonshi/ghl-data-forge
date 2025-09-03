@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
 import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import Papa from "papaparse";
 
 interface CustomObject {
@@ -51,6 +52,21 @@ export function ImportRecordsTab() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
+
+  // Clear all data when location switches
+  useLocationSwitch(() => {
+    console.log('🔄 ImportRecordsTab: Clearing data for location switch');
+    setCurrentStep("mode");
+    setMode('new');
+    setObjects([]);
+    setSelectedObject("");
+    setAvailableFields([]);
+    setFieldsData([]);
+    setRecordsFile(null);
+    setRecordsData([]);
+    setProgress(0);
+    setResult(null);
+  });
 
   const fetchObjects = async () => {
     try {

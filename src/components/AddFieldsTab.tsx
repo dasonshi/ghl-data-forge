@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Download, Plus, CheckCircle2, AlertTriangle, Database, Info, FileText, Settings, Type, Folder, Hash, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { StepIndicator } from "@/components/StepIndicator";
 import Papa from "papaparse";
 
@@ -58,6 +59,21 @@ export function AddFieldsTab() {
   const [progress, setProgress] = useState(0);
   const [authData, setAuthData] = useState<AuthData | null>(null);
   const { toast } = useToast();
+
+  // Clear all data when location switches
+  useLocationSwitch(() => {
+    console.log('🔄 AddFieldsTab: Clearing data for location switch');
+    setCurrentStep("select");
+    setObjects([]);
+    setSelectedObject("");
+    setAvailableFields([]);
+    setFolders([]);
+    setFieldsFile(null);
+    setFieldsData([]);
+    setMapping({});
+    setProgress(0);
+    setAuthData(null);
+  });
 
   const fetchAuthStatus = async () => {
     try {

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, User, MapPin, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { useAppContext } from "@/hooks/useAppContext";
 
 interface AuthData {
@@ -18,6 +19,16 @@ export function AuthStatus() {
   const [disconnecting, setDisconnecting] = useState(false);
   const { toast } = useToast();
   const { error: appError, location, refreshContext } = useAppContext();
+
+  // Clear auth data when location switches
+  useLocationSwitch(() => {
+    console.log('🔄 AuthStatus: Clearing auth data for location switch');
+    setAuthData(null);
+    setLoading(true);
+    setDisconnecting(false);
+    // Re-check auth status for new location
+    checkAuthStatus();
+  });
 
   const checkAuthStatus = async () => {
     try {

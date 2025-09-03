@@ -61,13 +61,26 @@ export function useAppContext(): AppContext {
         window.addEventListener('message', messageHandler);
       });
 
-      // Call app context endpoint
-      const response = await fetch('https://importer.api.savvysales.ai/api/app-context', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ encryptedData })
-      });
+      // Call app context endpoint - try with encrypted data first, fallback without
+      let response;
+      if (encryptedData) {
+        response = await fetch('https://importer.api.savvysales.ai/api/app-context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ encryptedData })
+        });
+      }
+      
+      // If no encrypted data or request failed, try auth-based endpoint
+      if (!encryptedData || !response || !response.ok) {
+        console.log('🔄 Trying auth-based context fetch...');
+        response = await fetch('https://importer.api.savvysales.ai/api/auth-context', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+      }
 
       if (response.ok) {
         const data = await response.json();
@@ -111,15 +124,50 @@ export function useAppContext(): AppContext {
       const newLocationId = event.data.locationId;
       console.log('🔄 Location changed to:', newLocationId);
       
+      // Clear all existing state immediately
+      setUser(null);
+      setLocation(null);
+      setError(null);
+      setLoading(true);
+      
+      // Clear any cached data in localStorage/sessionStorage
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('location') || key.includes('auth') || key.includes('import')) {
+            localStorage.removeItem(key);
+          }
+        });
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.includes('location') || key.includes('auth') || key.includes('import')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.warn('Could not clear storage:', e);
+      }
+      
+      // Broadcast location change to all components
+      window.dispatchEvent(new CustomEvent('location-switch', { 
+        detail: { newLocationId, previousUser: user, previousLocation: location } 
+      }));
+      
       toast({
         title: "Location Changed",
-        description: "Updating context for new location...",
+        description: "Clearing data and switching context...",
       });
 
+      // Small delay to ensure all components have cleared their state
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Refresh app context for new location
-      await refreshContext();
+      await fetchAppContext();
+      
+      toast({
+        title: "Location Updated",
+        description: "Successfully switched to new location.",
+      });
     }
-  }, [refreshContext, toast]);
+  }, [fetchAppContext, toast, user, location]);
 
   useEffect(() => {
     // Initial load
