@@ -70,7 +70,7 @@ export function useAppInitialization(): AppContext {
               const timeout = setTimeout(() => {
                 console.log('User context timeout - continuing without user data');
                 resolve(null);
-              }, 5000);
+              }, 10000); // Increased timeout to 10s
 
               const handler = ({ data }) => {
                 if (data?.message === 'REQUEST_USER_DATA_RESPONSE') {
@@ -100,37 +100,52 @@ export function useAppInitialization(): AppContext {
     const fetchAppContext = async () => {
       try {
         const encryptedData = await getEncryptedUserData();
+        console.log('Encrypted data received:', encryptedData ? 'Valid' : 'None', typeof encryptedData, encryptedData?.length);
         
-        // Front-end guard: only call API if we have valid encrypted data
-        if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.length < 10) {
-          console.log('No valid encrypted data - app likely not opened from HighLevel');
-          // Set a friendly fallback state instead of calling server
-          const fallbackBranding = {
-            companyName: 'Savvy Sales'
-          };
-          setBranding(fallbackBranding);
-          setError('Please open this app from inside HighLevel');
-          applyPersonalization(null, null, fallbackBranding);
-          setLoading(false);
-          return;
+        // Try to call API even without encrypted data for debugging
+        let apiPayload = {};
+        if (encryptedData && typeof encryptedData === 'string' && encryptedData.length > 10) {
+          apiPayload = { encryptedData };
+          console.log('Making API call with encrypted data');
+        } else {
+          console.log('Making API call without encrypted data (fallback mode)');
         }
         
         const response = await fetch('https://importer.api.savvysales.ai/api/app-context', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ encryptedData })
+          body: JSON.stringify(apiPayload)
         });
+
+        console.log('API Response status:', response.status);
 
         if (response.ok) {
           const ctx = await response.json();
-          setUserContext(ctx.user);
-          setLocation(ctx.location);
-          setBranding(ctx.branding);
+          console.log('API Context received:', ctx);
+          
+          // Ensure we set all state properly
+          if (ctx.user) {
+            console.log('Setting user context:', ctx.user);
+            setUserContext(ctx.user);
+          }
+          
+          if (ctx.location) {
+            console.log('Setting location:', ctx.location);
+            setLocation(ctx.location);
+          }
+          
+          if (ctx.branding) {
+            console.log('Setting branding:', ctx.branding);
+            setBranding(ctx.branding);
+          }
+          
           setLocationMismatch(false);
+          setError(null);
           applyPersonalization(ctx.user, ctx.location, ctx.branding);
         } else {
           const errorData = await response.json().catch(() => ({}));
+          console.log('API Error:', errorData);
           
           if (errorData.error === 'location_mismatch') {
             setLocationMismatch(true);
@@ -141,6 +156,7 @@ export function useAppInitialization(): AppContext {
               companyName: 'Savvy Sales'
             };
             setBranding(fallbackBranding);
+            setError('API call failed - using fallback');
             applyPersonalization(null, null, fallbackBranding);
           }
         }
