@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 export interface User {
@@ -35,8 +35,19 @@ export function useAppContext(): AppContext {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  // Use ref to track if we're currently fetching to prevent duplicate calls
+  const fetchingRef = useRef(false);
 
   const fetchAppContext = useCallback(async () => {
+    // Prevent concurrent fetches
+    if (fetchingRef.current) {
+      console.log('🚫 Fetch already in progress, skipping...');
+      return;
+    }
+    
+    fetchingRef.current = true;
+    
     try {
       console.log('🔄 Fetching app context...');
       
@@ -75,7 +86,7 @@ export function useAppContext(): AppContext {
       // If no encrypted data or request failed, try auth-based endpoint
       if (!encryptedData || !response || !response.ok) {
         console.log('🔄 Trying auth-based context fetch...');
-        response = await fetch('https://importer.api.savvysales.ai/api/auth-context', {
+        response = await fetch('https://importer.api.savvysales.ai/api/auth/status', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
@@ -94,7 +105,7 @@ export function useAppContext(): AppContext {
       } else {
         const errorData = await response.json();
         if (errorData.error === 'app_not_installed') {
-          console.log('🔐 App not installed for current location');
+          console.log('🔍 App not installed for current location');
           setError('app_not_installed');
         } else {
           throw new Error(errorData.message || 'Failed to load app context');
@@ -105,8 +116,9 @@ export function useAppContext(): AppContext {
       setError('Failed to load app context');
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  }, []);
+  }, []); // Remove all dependencies to prevent infinite loops
 
   const refreshContext = useCallback(async () => {
     setLoading(true);
@@ -119,10 +131,15 @@ export function useAppContext(): AppContext {
     document.title = `${title} - Data Importer`;
   };
 
+  // Handle location changes - removed problematic dependencies
   const handleLocationChange = useCallback(async (event: MessageEvent) => {
     if (event.data.type === 'LOCATION_CHANGED') {
       const newLocationId = event.data.locationId;
       console.log('🔄 Location changed to:', newLocationId);
+      
+      // Store previous values for the event
+      const previousUser = user;
+      const previousLocation = location;
       
       // Clear all existing state immediately
       setUser(null);
@@ -148,7 +165,7 @@ export function useAppContext(): AppContext {
       
       // Broadcast location change to all components
       window.dispatchEvent(new CustomEvent('location-switch', { 
-        detail: { newLocationId, previousUser: user, previousLocation: location } 
+        detail: { newLocationId, previousUser, previousLocation } 
       }));
       
       toast({
@@ -167,10 +184,10 @@ export function useAppContext(): AppContext {
         description: "Successfully switched to new location.",
       });
     }
-  }, [fetchAppContext, toast, user, location]);
+  }, []); // Remove dependencies that cause infinite loops
 
   useEffect(() => {
-    // Initial load
+    // Initial load only
     fetchAppContext();
 
     // Listen for location changes from HighLevel
@@ -179,7 +196,7 @@ export function useAppContext(): AppContext {
     return () => {
       window.removeEventListener('message', handleLocationChange);
     };
-  }, [fetchAppContext, handleLocationChange]);
+  }, []); // Empty dependencies - only run once on mount
 
   return {
     user,
