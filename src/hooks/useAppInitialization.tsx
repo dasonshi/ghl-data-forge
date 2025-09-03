@@ -86,6 +86,20 @@ export function useAppInitialization(): AppContext {
       try {
         const encryptedData = await getEncryptedUserData();
         
+        // Front-end guard: only call API if we have valid encrypted data
+        if (!encryptedData || typeof encryptedData !== 'string' || encryptedData.length < 10) {
+          console.log('No valid encrypted data - app likely not opened from HighLevel');
+          // Set a friendly fallback state instead of calling server
+          const fallbackBranding = {
+            companyName: 'Savvy Sales'
+          };
+          setBranding(fallbackBranding);
+          setError('Please open this app from inside HighLevel');
+          applyPersonalization(null, null, fallbackBranding);
+          setLoading(false);
+          return;
+        }
+        
         const response = await fetch('https://importer.api.savvysales.ai/api/app-context', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
