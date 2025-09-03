@@ -1,10 +1,10 @@
 import { Building2, User } from "lucide-react";
-import { useAppInitialization } from "@/hooks/useAppInitialization";
+import { useAppContext } from "@/hooks/useAppContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export function Header() {
-  const { branding, userContext, loading } = useAppInitialization();
+  const { user, location, loading } = useAppContext();
 
   if (loading) {
     return (
@@ -31,6 +31,8 @@ export function Header() {
       .slice(0, 2);
   };
 
+  const displayName = location?.companyName || location?.name || 'Data Importer';
+
   return (
     <header className="border-b bg-card shadow-sm">
       <div className="container mx-auto px-4 py-4 max-w-7xl">
@@ -38,10 +40,10 @@ export function Header() {
           <div className="flex items-center space-x-3">
             {/* Logo or Initials */}
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              {branding?.logoUrl ? (
+              {location?.logoUrl ? (
                 <img 
-                  src={branding.logoUrl} 
-                  alt={`${branding.companyName} logo`}
+                  src={location.logoUrl} 
+                  alt={`${displayName} logo`}
                   className="h-full w-full object-contain rounded-lg"
                   onError={(e) => {
                     // Fallback to initials if logo fails to load
@@ -49,23 +51,23 @@ export function Header() {
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.textContent = getInitials(branding.companyName);
+                      parent.textContent = getInitials(displayName);
                     }
                   }}
                 />
               ) : (
-                getInitials(branding?.companyName || 'SS')
+                getInitials(displayName)
               )}
             </div>
             
-            {/* Company Name */}
+            {/* Company/Location Name */}
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                {branding?.companyName || 'Savvy Sales'}
+                {displayName}
               </h1>
-              {branding?.locationName && (
+              {location?.name && location?.companyName && location.name !== location.companyName && (
                 <p className="text-sm text-muted-foreground">
-                  {branding.locationName}
+                  {location.name}
                 </p>
               )}
             </div>
@@ -73,20 +75,20 @@ export function Header() {
 
           {/* User & Location Info */}
           <div className="flex items-center space-x-4">
-            {userContext && (
+            {user && (
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div className="text-right">
-                  <p className="text-sm font-medium">{userContext.name}</p>
+                  <p className="text-sm font-medium">{user.userName}</p>
                   <Badge variant="secondary" className="text-xs">
-                    {userContext.role}
+                    {user.role}
                   </Badge>
                 </div>
               </div>
             )}
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Building2 className="h-4 w-4" />
-              <span>ID: {branding?.locationId || 'Unknown'}</span>
+              <span>ID: {location?.id || 'Unknown'}</span>
             </div>
           </div>
         </div>

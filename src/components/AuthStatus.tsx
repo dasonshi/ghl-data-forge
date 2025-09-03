@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, User, MapPin } from "lucide-react";
+import { CheckCircle2, AlertCircle, User, MapPin, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAppContext } from "@/hooks/useAppContext";
 
 interface AuthData {
   authenticated: boolean;
@@ -16,6 +17,7 @@ export function AuthStatus() {
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
   const { toast } = useToast();
+  const { error: appError, refreshContext } = useAppContext();
 
   const checkAuthStatus = async () => {
     try {
@@ -53,8 +55,9 @@ export function AuthStatus() {
         console.log('OAuth successful for location:', event.data.locationId);
         popup?.close();
         
-        // Refresh auth status
+        // Refresh both auth status and app context
         checkAuthStatus();
+        refreshContext();
         
         toast({
           title: "Authentication Successful",
@@ -110,6 +113,39 @@ export function AuthStatus() {
   useEffect(() => {
     checkAuthStatus();
   }, []);
+
+  // Show app not installed error if detected
+  if (appError === 'app_not_installed') {
+    return (
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-warning" />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">App Not Installed</span>
+                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                    Installation Required
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  This app is not installed for the current location
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button variant="gradient" size="sm" onClick={handleLogin}>
+                <User className="h-4 w-4 mr-2" />
+                Install App
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (

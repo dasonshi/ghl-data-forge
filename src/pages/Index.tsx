@@ -8,9 +8,26 @@ import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
+import { useAppContext } from "@/hooks/useAppContext";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const { loading, error } = useAppContext();
+
+  // Show loading state while initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="text-center space-y-4">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+            <p className="text-muted-foreground">Loading application...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
