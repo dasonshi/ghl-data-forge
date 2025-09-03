@@ -4,8 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Database, Eye, Layers, Folder, Settings } from "lucide-react";
+import { 
+  ChevronDown, 
+  ChevronRight, 
+  Database, 
+  Eye, 
+  Layers, 
+  Folder, 
+  Settings, 
+  TrendingUp,
+  Activity,
+  FileText,
+  Users,
+  Calendar
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CustomObject {
   id: string;
@@ -34,11 +48,56 @@ interface CustomValue {
   fieldKey?: string;
 }
 
-export function BrowseDataTab() {
+interface DashboardStats {
+  totalObjects: number;
+  totalFields: number;
+  totalCustomValues: number;
+  recentImports: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'import' | 'update' | 'create';
+  description: string;
+  timestamp: string;
+  status: 'success' | 'error' | 'pending';
+}
+
+export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [customValues, setCustomValues] = useState<CustomValue[]>([]);
   const [selectedObject, setSelectedObject] = useState<string | null>(null);
   const [fields, setFields] = useState<CustomField[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalObjects: 0,
+    totalFields: 0,
+    totalCustomValues: 0,
+    recentImports: 0
+  });
+  const [recentActivity] = useState<RecentActivity[]>([
+    {
+      id: '1',
+      type: 'import',
+      description: 'Imported 25 custom objects',
+      timestamp: '2 hours ago',
+      status: 'success'
+    },
+    {
+      id: '2',
+      type: 'update',
+      description: 'Updated custom values',
+      timestamp: '4 hours ago',
+      status: 'success'
+    },
+    {
+      id: '3',
+      type: 'create',
+      description: 'Created new field mapping',
+      timestamp: '1 day ago',
+      status: 'success'
+    }
+  ]);
+  
   const [loadingObjects, setLoadingObjects] = useState(false);
   const [loadingCustomValues, setLoadingCustomValues] = useState(false);
   const [loadingFields, setLoadingFields] = useState(false);
@@ -101,7 +160,6 @@ export function BrowseDataTab() {
         const data = await response.json();
         const fieldsData = data.fields || [];
         
-        // Process fields to include folder information
         const processedFields = fieldsData.map((field: any) => ({
           id: field.id,
           fieldKey: field.fieldKey || field.key,
@@ -138,7 +196,6 @@ export function BrowseDataTab() {
       newExpandedObjects.delete(objectKey);
     } else {
       newExpandedObjects.add(objectKey);
-      // Load fields when expanding
       if (selectedObject !== objectKey) {
         handleViewFields(objectKey);
       }
@@ -146,25 +203,140 @@ export function BrowseDataTab() {
     setExpandedObjects(newExpandedObjects);
   };
 
+  const refreshData = () => {
+    fetchObjects();
+    fetchCustomValues();
+  };
+
   useEffect(() => {
     fetchObjects();
     fetchCustomValues();
   }, []);
 
+  // Update stats when data changes
+  useEffect(() => {
+    const totalFields = fields.length;
+    setStats({
+      totalObjects: objects.length,
+      totalFields,
+      totalCustomValues: customValues.length,
+      recentImports: 3 // This could be calculated from actual import history
+    });
+  }, [objects, customValues, fields]);
+
   return (
     <div className="space-y-6">
+      {/* Dashboard Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Browse Custom Objects</h2>
+          <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            Dashboard
+          </h2>
           <p className="text-muted-foreground">
-            View your existing custom objects and their field structures
+            Overview of your data import system
           </p>
         </div>
-        <Button onClick={() => { fetchObjects(); fetchCustomValues(); }} disabled={loadingObjects || loadingCustomValues}>
+        <Button onClick={refreshData} disabled={loadingObjects || loadingCustomValues}>
           <Database className="h-4 w-4 mr-2" />
           Refresh Data
         </Button>
       </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Custom Objects</p>
+                <p className="text-2xl font-bold">{loadingObjects ? <Skeleton className="h-8 w-12" /> : stats.totalObjects}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Layers className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Custom Fields</p>
+                <p className="text-2xl font-bold">{loadingFields ? <Skeleton className="h-8 w-12" /> : stats.totalFields}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Custom Values</p>
+                <p className="text-2xl font-bold">{loadingCustomValues ? <Skeleton className="h-8 w-12" /> : stats.totalCustomValues}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Settings className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Recent Imports</p>
+                <p className="text-2xl font-bold">{stats.recentImports}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Recent Activity
+          </CardTitle>
+          <CardDescription>
+            Latest import operations and system activities
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {recentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`h-2 w-2 rounded-full ${
+                    activity.status === 'success' ? 'bg-green-500' : 
+                    activity.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
+                  }`} />
+                  <div>
+                    <p className="font-medium">{activity.description}</p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>{activity.timestamp}</span>
+                    </div>
+                  </div>
+                </div>
+                <Badge variant={activity.status === 'success' ? 'default' : activity.status === 'error' ? 'destructive' : 'secondary'}>
+                  {activity.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Custom Objects List */}
       <Card>

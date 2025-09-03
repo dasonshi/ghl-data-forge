@@ -1,25 +1,26 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuthStatus } from "@/components/AuthStatus";
-import { BrowseDataTab } from "@/components/BrowseDataTab";
+import { Dashboard } from "@/components/Dashboard";
 import { ImportObjectsTab } from "@/components/ImportObjectsTab";
 import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
+import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("browse");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      {/* Header */}
+      <Header />
+      
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="space-y-6">
-          {/* Header */}
+          {/* Page Title */}
           <div className="text-center space-y-4">
-            <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Savvy Sales
-            </h1>
             <h2 className="text-3xl font-bold text-foreground">
               Custom Data Importer
             </h2>
@@ -34,7 +35,7 @@ const Index = () => {
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="browse">Browse Data</TabsTrigger>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
               <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
               <TabsTrigger value="import-records">Import Records</TabsTrigger>
@@ -42,8 +43,8 @@ const Index = () => {
             </TabsList>
             
             <div className="mt-8">
-              <TabsContent value="browse" className="mt-0">
-                <BrowseDataTab />
+              <TabsContent value="dashboard" className="mt-0">
+                <Dashboard />
               </TabsContent>
               
               <TabsContent value="import-objects" className="mt-0">
