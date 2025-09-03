@@ -31,7 +31,7 @@ export function Header() {
       .slice(0, 2);
   };
 
-  const displayName = location?.companyName || location?.name || 'Data Importer';
+  const displayName = location?.name || 'Data Importer';
 
   return (
     <header className="border-b bg-card shadow-sm">
@@ -65,11 +65,6 @@ export function Header() {
               <h1 className="text-xl font-semibold text-foreground">
                 {displayName}
               </h1>
-              {location?.name && location?.companyName && location.name !== location.companyName && (
-                <p className="text-sm text-muted-foreground">
-                  {location.name}
-                </p>
-              )}
             </div>
           </div>
 
@@ -79,8 +74,8 @@ export function Header() {
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div className="text-right">
-                  <p className="text-sm font-medium">{user.userName}</p>
-                  <Badge variant="secondary" className="text-xs">
+                  <p className="text-sm font-medium leading-tight">{user.userName}</p>
+                  <Badge variant="secondary" className="text-xs mt-1">
                     {user.role}
                   </Badge>
                 </div>
@@ -88,7 +83,7 @@ export function Header() {
             )}
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Building2 className="h-4 w-4" />
-              <span>ID: {location?.id || 'Unknown'}</span>
+              <span>ID: {user?.userId || 'Unknown'}</span>
             </div>
           </div>
         </div>

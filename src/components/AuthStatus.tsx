@@ -17,7 +17,7 @@ export function AuthStatus() {
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
   const { toast } = useToast();
-  const { error: appError, refreshContext } = useAppContext();
+  const { error: appError, location, refreshContext } = useAppContext();
 
   const checkAuthStatus = async () => {
     try {
@@ -175,10 +175,10 @@ export function AuthStatus() {
                       Authenticated
                     </Badge>
                   </div>
-                  {authData.locationId && (
+                  {location?.id && (
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3" />
-                      <span>Location: {authData.locationId}</span>
+                      <span>Location: {location.id}</span>
                     </div>
                   )}
                 </div>
