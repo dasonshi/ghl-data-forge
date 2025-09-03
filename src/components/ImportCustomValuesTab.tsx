@@ -1,97 +1,134 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { CheckCircle2, AlertTriangle, Upload } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download, Upload, RefreshCw, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
 import { useLocationId } from "@/hooks/useLocationId";
 import Papa from "papaparse";
 
-interface CustomField {
+interface CustomValue {
   id: string;
-  fieldKey: string;
   name: string;
-  dataType: string;
-  picklistValues?: Array<{ value: string; label: string }>;
+  value: string;
+  fieldKey?: string;
 }
 
-type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
-
 interface ImportResult {
-  ok: boolean;
+  success: boolean;
   message: string;
-  stats: {
-    valuesProcessed: number;
+  created: CustomValue[];
+  updated: CustomValue[];
+  errors: any[];
+  summary: {
+    total: number;
+    created: number;
+    updated: number;
+    failed: number;
   };
 }
 
+type ImportStep = "upload" | "preview" | "importing" | "success";
+
 export function ImportCustomValuesTab() {
-  const [currentStep, setCurrentStep] = useState<ImportStep>("select");
-  const [selectedField, setSelectedField] = useState("");
-  const [fieldsData, setFieldsData] = useState<CustomField[]>([]);
+  const [currentStep, setCurrentStep] = useState<ImportStep>("upload");
+  const [mode, setMode] = useState<'new' | 'update'>('new');
+  const [customValues, setCustomValues] = useState<CustomValue[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [uploadedData, setUploadedData] = useState<any[]>([]);
   const [valuesFile, setValuesFile] = useState<File | null>(null);
-  const [valuesData, setValuesData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<ImportResult | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
 
   // Clear all data when location switches
   useLocationSwitch(async () => {
     console.log('🔄 ImportCustomValuesTab: Clearing data for location switch');
-    setCurrentStep("select");
-    setSelectedField("");
-    setFieldsData([]);
+    setCurrentStep("upload");
+    setMode('new');
+    setCustomValues([]);
+    setLoading(false);
+    setImporting(false);
+    setUploadedData([]);
     setValuesFile(null);
-    setValuesData([]);
     setProgress(0);
-    setResult(null);
-    
+    setImportResult(null);
+
     const id = await refresh();
-    await fetchPicklistFields(id || undefined);
+    await fetchCustomValues(id || undefined);
   });
 
-  const fetchPicklistFields = async (locId?: string) => {
+  const fetchCustomValues = async (locId?: string) => {
+    setLoading(true);
     try {
-      // Fetch all fields and filter for picklist fields
-      const response = await apiFetch('/api/fields', {}, locId ?? locationId ?? undefined);
+      console.log('🔍 ImportCustomValuesTab: fetchCustomValues with locationId:', locId ?? locationId ?? 'undefined');
+      const response = await apiFetch('/api/custom-values', {}, locId ?? locationId ?? undefined);
       
       if (response.ok) {
         const data = await response.json();
-        const allFields = data.fields || [];
-        
-        // Filter for picklist fields only
-        const picklistFields = allFields.filter((field: CustomField) => 
-          field.dataType === 'PICKLIST'
-        );
-        
-        setFieldsData(picklistFields);
+        const customValuesList = data.customValues || data || [];
+        setCustomValues(customValuesList);
+        console.log('✅ ImportCustomValuesTab: Loaded', customValuesList.length, 'custom values');
+      } else {
+        setCustomValues([]);
       }
     } catch (error) {
-      console.error('Failed to fetch picklist fields:', error);
+      console.error('Failed to fetch custom values:', error);
       toast({
         title: "Error",
-        description: "Failed to load picklist fields. Please try again.",
+        description: "Failed to load custom values. Please try again.",
         variant: "destructive",
       });
+      setCustomValues([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleFieldSelect = (fieldId: string) => {
-    setSelectedField(fieldId);
-  };
-
-  const handleContinueToUpload = () => {
-    if (selectedField) {
-      setCurrentStep("upload");
+  // Generate CSV template
+  const generateTemplate = () => {
+    let csvContent = '';
+    
+    if (mode === 'new') {
+      csvContent = 'name,value\nSample Field,Sample Value\nAnother Field,Another Value\n';
+    } else {
+      // Include existing custom values for update template
+      csvContent = 'id,name,value\n';
+      if (customValues.length > 0) {
+        customValues.slice(0, 3).forEach(cv => {
+          csvContent += `${cv.id},"${cv.name}","${cv.value}"\n`;
+        });
+      } else {
+        csvContent += 'sample_id,Sample Field,Sample Value\n';
+      }
     }
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = mode === 'new' 
+      ? 'custom-values-new-template.csv' 
+      : 'custom-values-update-template.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Template Downloaded",
+      description: `${mode === 'new' ? 'New import' : 'Update'} template downloaded successfully.`,
+    });
   };
 
   const handleValuesFile = (file: File) => {
@@ -111,7 +148,7 @@ export function ImportCustomValuesTab() {
         }
         
         const data = results.data as Record<string, string>[];
-        setValuesData(data);
+        setUploadedData(data);
         setCurrentStep("preview");
       },
       error: (error) => {
@@ -125,21 +162,21 @@ export function ImportCustomValuesTab() {
   };
 
   const handleImport = async () => {
-    if (!valuesFile || !selectedField) return;
+    if (!valuesFile) return;
 
     setCurrentStep("importing");
     setProgress(0);
 
     try {
       const formData = new FormData();
-      formData.append('values', valuesFile);
+      formData.append('customValues', valuesFile);
 
       // Simulate progress
       const progressInterval = setInterval(() => {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await apiFetch(`/api/fields/${selectedField}/values/import`, {
+      const response = await apiFetch('/api/custom-values/import', {
         method: 'POST',
         body: formData,
       }, locationId ?? undefined);
@@ -149,12 +186,15 @@ export function ImportCustomValuesTab() {
 
       if (response.ok) {
         const result = await response.json();
-        setResult(result);
+        setImportResult(result);
         setCurrentStep("success");
         toast({
           title: "Custom Values Imported",
-          description: "Your custom values have been imported successfully.",
+          description: `${result.summary?.created || 0} created, ${result.summary?.updated || 0} updated`,
         });
+        
+        // Refresh the custom values list
+        await fetchCustomValues();
       } else {
         throw new Error('Import failed');
       }
@@ -169,89 +209,164 @@ export function ImportCustomValuesTab() {
   };
 
   const handleStartOver = () => {
-    setCurrentStep("select");
-    setSelectedField("");
+    setCurrentStep("upload");
+    setUploadedData([]);
     setValuesFile(null);
-    setValuesData([]);
     setProgress(0);
-    setResult(null);
+    setImportResult(null);
   };
 
   useEffect(() => {
     (async () => {
       const id = await refresh();
-      await fetchPicklistFields(id || undefined);
+      await fetchCustomValues(id || undefined);
     })();
   }, []);
 
-  const selectedFieldData = fieldsData.find(field => field.id === selectedField);
-
-  const renderSelect = () => (
+  const renderUpload = () => (
     <div className="space-y-6">
-      <Alert>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          Select a picklist field to import custom values into it.
-        </AlertDescription>
-      </Alert>
-
+      {/* Existing Custom Values Display */}
       <Card>
         <CardHeader>
-          <CardTitle>Select Picklist Field</CardTitle>
-          <CardDescription>
-            Choose the picklist field you want to import values into
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Select value={selectedField} onValueChange={handleFieldSelect}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a picklist field" />
-            </SelectTrigger>
-            <SelectContent>
-              {fieldsData.map((field) => (
-                <SelectItem key={field.id} value={field.id}>
-                  {field.name} ({field.fieldKey})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {fieldsData.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No picklist fields found. Create picklist fields first before importing values.
-            </p>
-          )}
-
-          {selectedField && (
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Existing Custom Values ({customValues.length})</CardTitle>
+              <CardDescription>
+                Current custom values in your location
+              </CardDescription>
+            </div>
             <Button 
-              onClick={handleContinueToUpload}
-              className="w-full"
+              onClick={() => fetchCustomValues()} 
+              disabled={loading}
+              variant="outline"
+              size="sm"
             >
-              Continue to Upload
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto mb-4" />
+              Loading custom values...
+            </div>
+          ) : customValues.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <RefreshCw className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="font-medium">No custom values found</p>
+              <p className="text-sm">Create custom values in HighLevel first, or import new ones below.</p>
+            </div>
+          ) : (
+            <div className="rounded-md border max-h-96 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead className="w-[100px]">ID</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customValues.map((cv) => (
+                    <TableRow key={cv.id}>
+                      <TableCell className="font-medium">{cv.name}</TableCell>
+                      <TableCell className="max-w-xs truncate" title={cv.value}>
+                        {cv.value}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">
+                          {cv.id}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
-    </div>
-  );
 
-  const renderUpload = () => (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold">
-          Import Values for: {selectedFieldData?.name}
-        </h3>
-        <p className="text-sm text-muted-foreground">Field Key: {selectedFieldData?.fieldKey}</p>
-      </div>
+      {/* Import Mode Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Import Mode</CardTitle>
+          <CardDescription>
+            Choose whether to import new custom values or update existing ones
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Button
+              onClick={() => setMode('new')}
+              variant={mode === 'new' ? 'default' : 'outline'}
+              className="h-20 flex flex-col gap-2"
+            >
+              <Upload className="h-6 w-6" />
+              <span>Import New Values</span>
+              <span className="text-xs opacity-75">Create new custom values</span>
+            </Button>
+            
+            <Button
+              onClick={() => setMode('update')}
+              variant={mode === 'update' ? 'default' : 'outline'}
+              className="h-20 flex flex-col gap-2"
+            >
+              <RefreshCw className="h-6 w-6" />
+              <span>Update Existing Values</span>
+              <span className="text-xs opacity-75">Modify existing custom values</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="space-y-3">
-        <h3 className="font-medium">Upload Values CSV</h3>
-        <FileUploadZone
-          onFileSelect={handleValuesFile}
-          acceptedTypes=".csv"
-          maxSize={10}
-          selectedFile={valuesFile}
-        />
+      {/* Template Download and Upload */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              CSV Template
+            </CardTitle>
+            <CardDescription>
+              Download the {mode === 'new' ? 'new import' : 'update'} template and fill it with your data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={generateTemplate} 
+              variant="outline"
+              className="w-full"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download {mode === 'new' ? 'New Import' : 'Update'} Template
+            </Button>
+            {mode === 'update' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Template includes existing values with IDs for updating
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload Custom Values CSV</CardTitle>
+            <CardDescription>
+              Upload your completed CSV file to {mode === 'new' ? 'import new' : 'update existing'} custom values
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FileUploadZone 
+              onFileSelect={handleValuesFile} 
+              acceptedTypes=".csv"
+              maxSize={10}
+              selectedFile={valuesFile}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -260,28 +375,28 @@ export function ImportCustomValuesTab() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold">
-          Preview Values for: {selectedFieldData?.name}
+          Preview {mode === 'new' ? 'New' : 'Update'} Custom Values
         </h3>
         <p className="text-sm text-muted-foreground">
-          {valuesData.length} value{valuesData.length !== 1 ? 's' : ''} will be imported
+          {uploadedData.length} value{uploadedData.length !== 1 ? 's' : ''} will be {mode === 'new' ? 'imported' : 'updated'}
         </p>
       </div>
 
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Review your data before importing. All CSV values will be added to the picklist.
+          Review your data before importing. All CSV values will be {mode === 'new' ? 'created as new custom values' : 'used to update existing values'}.
         </AlertDescription>
       </Alert>
 
-      <DataPreviewTable data={valuesData} />
+      <DataPreviewTable data={uploadedData} />
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={() => setCurrentStep("upload")}>
           Back
         </Button>
         <Button variant="gradient" onClick={handleImport}>
-          Import Custom Values
+          {mode === 'new' ? 'Import New Values' : 'Update Values'}
         </Button>
       </div>
     </div>
@@ -293,7 +408,7 @@ export function ImportCustomValuesTab() {
         <Upload className="h-16 w-16 mx-auto text-primary animate-pulse" />
         <h3 className="text-xl font-semibold">Importing Custom Values...</h3>
         <p className="text-muted-foreground">
-          Please wait while we import values for {selectedFieldData?.name}
+          Please wait while we {mode === 'new' ? 'import your new custom values' : 'update your existing custom values'}
         </p>
       </div>
       
@@ -308,9 +423,9 @@ export function ImportCustomValuesTab() {
     <div className="space-y-6 text-center">
       <div className="space-y-4">
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
-        <h3 className="text-2xl font-bold">Custom Values Imported Successfully!</h3>
+        <h3 className="text-2xl font-bold">Custom Values {mode === 'new' ? 'Imported' : 'Updated'} Successfully!</h3>
         <p className="text-muted-foreground">
-          {result?.stats?.valuesProcessed || valuesData.length} value{(result?.stats?.valuesProcessed || valuesData.length) !== 1 ? 's' : ''} imported to {selectedFieldData?.name}
+          {importResult?.summary?.created || 0} created, {importResult?.summary?.updated || 0} updated
         </p>
       </div>
 
@@ -320,12 +435,20 @@ export function ImportCustomValuesTab() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Field:</span>
-            <span className="font-medium">{selectedFieldData?.name}</span>
+            <span>Total Processed:</span>
+            <span className="font-medium">{importResult?.summary?.total || 0}</span>
           </div>
           <div className="flex justify-between">
-            <span>Values Imported:</span>
-            <span className="font-medium">{result?.stats?.valuesProcessed || valuesData.length}</span>
+            <span>Created:</span>
+            <span className="font-medium text-success">{importResult?.summary?.created || 0}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Updated:</span>
+            <span className="font-medium text-primary">{importResult?.summary?.updated || 0}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Failed:</span>
+            <span className="font-medium text-destructive">{importResult?.summary?.failed || 0}</span>
           </div>
         </CardContent>
       </Card>
@@ -336,15 +459,15 @@ export function ImportCustomValuesTab() {
     </div>
   );
 
-  const steps = ["Choose Field", "Upload Data", "Preview Values", "Import Progress", "Review Results"];
-  const stepMap = { select: 0, upload: 1, preview: 2, importing: 3, success: 4 };
+  const steps = ["Upload & Configure", "Preview Data", "Import Progress", "Review Results"];
+  const stepMap = { upload: 0, preview: 1, importing: 2, success: 3 };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Import Custom Values</h2>
         <p className="text-muted-foreground">
-          Import custom values into picklist fields
+          View existing custom values and import new ones or update existing values
         </p>
       </div>
 
@@ -354,7 +477,6 @@ export function ImportCustomValuesTab() {
         className="mb-8"
       />
 
-      {currentStep === "select" && renderSelect()}
       {currentStep === "upload" && renderUpload()}
       {currentStep === "preview" && renderPreview()}
       {currentStep === "importing" && renderImporting()}
