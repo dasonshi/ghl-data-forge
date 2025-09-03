@@ -19,7 +19,7 @@ interface AuthData {
 export function AuthStatus() {
   const [authStatus, setAuthStatus] = useState<AuthData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { appContext } = useAppContext();
+  const { location } = useAppContext();
   const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
 
@@ -134,9 +134,9 @@ export function AuthStatus() {
                       Authenticated
                     </Badge>
                   </div>
-                  {appContext?.locationId && (
+                  {location?.id && (
                     <p className="text-sm text-muted-foreground">
-                      Location: {appContext.locationId}
+                      Location: {location.id}
                     </p>
                   )}
                 </div>

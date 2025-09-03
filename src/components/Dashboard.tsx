@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DashboardCard } from "@/components/DashboardCard";
+
 import { SuccessStats } from "@/components/SuccessStats";
 import { Database, FileText, Plus, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -96,30 +96,61 @@ export function Dashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <DashboardCard
-          title="Custom Objects"
-          value={loading ? "..." : stats?.totalObjects.toString() || "0"}
-          description="Total objects"
-          icon={Database}
-        />
-        <DashboardCard
-          title="Custom Fields"
-          value={loading ? "..." : stats?.totalFields.toString() || "0"}
-          description="Total fields"
-          icon={FileText}
-        />
-        <DashboardCard
-          title="Records"
-          value={loading ? "..." : stats?.totalRecords.toString() || "0"}
-          description="Total records"
-          icon={Plus}
-        />
-        <DashboardCard
-          title="Recent Imports"
-          value={stats?.recentImports.toString() || "0"}
-          description="Last 7 days"
-          icon={Upload}
-        />
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Custom Objects</p>
+                <p className="text-2xl font-bold">{loading ? "..." : stats?.totalObjects.toString() || "0"}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Database className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Custom Fields</p>
+                <p className="text-2xl font-bold">{loading ? "..." : stats?.totalFields.toString() || "0"}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Records</p>
+                <p className="text-2xl font-bold">{loading ? "..." : stats?.totalRecords.toString() || "0"}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-medium transition-all duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Recent Imports</p>
+                <p className="text-2xl font-bold">{stats?.recentImports.toString() || "0"}</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Upload className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
@@ -181,7 +212,12 @@ export function Dashboard() {
         </Card>
       </div>
 
-      <SuccessStats />
+      <SuccessStats stats={{
+        totalRecords: stats?.totalRecords || 0,
+        successfulImports: stats?.totalRecords || 0,
+        failedImports: 0,
+        duration: "N/A"
+      }} />
     </div>
   );
 }
