@@ -10,6 +10,8 @@ import { StepIndicator } from "@/components/StepIndicator";
 import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
+import { apiFetch } from '@/lib/api';
+import { useLocationId } from '@/hooks/useLocationId';
 import Papa from "papaparse";
 
 interface CustomObject {
@@ -51,58 +53,62 @@ export function ImportRecordsTab() {
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
 
   // Clear all data when location switches
-  useLocationSwitch(() => {
-    console.log('🔄 ImportRecordsTab: Clearing data for location switch');
-    setCurrentStep("mode");
-    setMode('new');
-    setObjects([]);
-    setSelectedObject("");
-    setAvailableFields([]);
-    setFieldsData([]);
-    setRecordsFile(null);
-    setRecordsData([]);
-    setProgress(0);
-    setResult(null);
-  });
+useLocationSwitch(async () => {
+  console.log('🔄 ImportRecordsTab: Clearing data for location switch');
+  setCurrentStep("mode");
+  setMode('new');
+  setObjects([]);
+  setSelectedObject("");
+  setAvailableFields([]);
+  setFieldsData([]);
+  setRecordsFile(null);
+  setRecordsData([]);
+  setProgress(0);
+  setResult(null);
 
-  const fetchObjects = async () => {
-    try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/objects', {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setObjects(data.objects || data || []);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load custom objects. Please try again.",
-        variant: "destructive",
-      });
+  const id = await refresh();
+  await fetchObjects(id || undefined);
+});
+
+const fetchObjects = async (locId?: string) => {
+  try {
+    const res = await apiFetch('/api/objects', {}, locId ?? locationId ?? undefined);
+    if (res.ok) {
+      const data = await res.json();
+      setObjects(data.objects || data || []);
     }
-  };
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: "Failed to load custom objects. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
 
-  const fetchFields = async (objectKey: string) => {
-    try {
-      const response = await fetch(`https://importer.api.savvysales.ai/api/objects/${objectKey}/fields`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const fields = data.fields || [];
-        setFieldsData(fields);
-        setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
-      }
-    } catch (error) {
-      // Use mock fields if API fails
+
+ const fetchFields = async (objectKey: string) => {
+  try {
+    const res = await apiFetch(`/api/objects/${objectKey}/fields`, {}, locationId ?? undefined);
+    if (res.ok) {
+      const data = await res.json();
+      const fields = data.fields || [];
+      setFieldsData(fields);
+      setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
+    } else {
       setAvailableFields(["name", "email", "phone", "company", "notes"]);
       setFieldsData([]);
     }
-  };
+  } catch {
+    setAvailableFields(["name", "email", "phone", "company", "notes"]);
+    setFieldsData([]);
+  }
+};
+
 
   const downloadTemplate = async () => {
     if (!selectedObject) {
@@ -116,7 +122,7 @@ export function ImportRecordsTab() {
 
     try {
       // Only fetch template since we already have fields data
-      const templateResponse = await fetch(`https://importer.api.savvysales.ai/api/objects/${selectedObject}/template`, {
+const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, locationId ?? undefined);
         credentials: 'include',
       });
 
@@ -286,11 +292,10 @@ export function ImportRecordsTab() {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await fetch(`https://importer.api.savvysales.ai/api/objects/${selectedObject}/records/import`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
+const response = await apiFetch(`/api/objects/${selectedObject}/records/import`, {
+  method: 'POST',
+  body: formData,
+}, locationId ?? undefined);
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -327,9 +332,12 @@ export function ImportRecordsTab() {
     setResult(null);
   };
 
-  useEffect(() => {
-    fetchObjects();
-  }, []);
+useEffect(() => {
+  (async () => {
+    const id = await refresh();
+    await fetchObjects(id || undefined);
+  })();
+}, []);
 
   const selectedObjectData = objects.find(obj => obj.key === selectedObject);
 
