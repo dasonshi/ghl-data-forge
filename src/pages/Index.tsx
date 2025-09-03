@@ -44,7 +44,7 @@ const Index = () => {
             
             <div className="mt-8">
               <TabsContent value="dashboard" className="mt-0">
-                <Dashboard />
+                <Dashboard onTabChange={setActiveTab} />
               </TabsContent>
               
               <TabsContent value="import-objects" className="mt-0">

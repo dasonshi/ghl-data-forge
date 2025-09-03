@@ -23,9 +23,10 @@ export function useAppInitialization(): AppContext {
 
   const applyPersonalization = (user: UserContext | null, branding: AgencyBranding | null) => {
     // Apply document title with agency branding
-    if (branding?.companyName) {
-      document.title = `${branding.companyName} - Data Importer`;
-    }
+    const title = branding?.companyName 
+      ? `${branding.companyName} - Data Importer`
+      : 'Data Importer';
+    document.title = title;
 
     // Apply dynamic branding colors if available
     if (branding?.primaryColor) {
@@ -34,6 +35,11 @@ export function useAppInitialization(): AppContext {
     
     if (branding?.secondaryColor) {
       document.documentElement.style.setProperty('--secondary', branding.secondaryColor);
+    }
+
+    // Detect if running in iframe (embedded context)
+    if (window.parent !== window) {
+      document.body.classList.add('embedded');
     }
   };
 

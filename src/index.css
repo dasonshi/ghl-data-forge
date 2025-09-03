@@ -133,3 +133,27 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Embedded context styles for iframe */
+body.embedded {
+  font-size: 14px;
+}
+
+body.embedded .nav-tabs {
+  font-size: 0.8rem;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+body.embedded .container {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+/* Navigation improvements */
+.nav-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
