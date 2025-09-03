@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertCircle, User, MapPin, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { useAppContext } from "@/hooks/useAppContext";
+import { apiFetch } from "@/lib/api";
+import { useLocationId } from "@/hooks/useLocationId";
 
 interface AuthData {
   authenticated: boolean;
@@ -14,149 +17,94 @@ interface AuthData {
 }
 
 export function AuthStatus() {
-  const [authData, setAuthData] = useState<AuthData | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [disconnecting, setDisconnecting] = useState(false);
+  const { appContext } = useAppContext();
+  const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
-  const { error: appError, location, refreshContext } = useAppContext();
 
-  // Clear auth data when location switches
-  useLocationSwitch(() => {
-    console.log('🔄 AuthStatus: Clearing auth data for location switch');
-    setAuthData(null);
+  // Clear all data when location switches
+  useLocationSwitch(async () => {
+    console.log('🔄 AuthStatus: Clearing data for location switch');
+    setAuthStatus(null);
     setLoading(true);
-    setDisconnecting(false);
-    // Re-check auth status for new location
-    checkAuthStatus();
+
+    const id = await refresh();
+    await fetchAuthStatus();
   });
 
-  const checkAuthStatus = async () => {
+  const fetchAuthStatus = async () => {
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/auth/status', {
-        credentials: 'include',
-      });
+      const response = await apiFetch('/api/auth/status', {}, locationId ?? undefined);
       
-      if (response.status === 429) {
-        console.warn('Rate limit exceeded, skipping auth check');
-        return;
+      if (response.ok) {
+        const data = await response.json();
+        setAuthStatus(data);
+      } else {
+        setAuthStatus(null);
       }
-      
-      const data = await response.json();
-      setAuthData(data);
     } catch (error) {
-      console.error('Auth check failed:', error);
-      setAuthData({ authenticated: false });
+      setAuthStatus(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = () => {
+  const handleConnect = () => {
     const popup = window.open(
-      'https://importer.api.savvysales.ai/oauth/install', 
-      'oauth', 
+      'https://importer.api.savvysales.ai/oauth/install',
+      'oauth',
       'width=600,height=600'
     );
 
-    // Listen for success message from popup
+    // Listen for auth success
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== 'https://importer.api.savvysales.ai') return;
       
       if (event.data.type === 'oauth_success') {
-        console.log('OAuth successful for location:', event.data.locationId);
         popup?.close();
-        
-        // Refresh both auth status and app context
-        checkAuthStatus();
-        refreshContext();
-        
+        fetchAuthStatus();
         toast({
-          title: "Authentication Successful",
-          description: "You are now connected to your subaccount.",
+          title: "Connected",
+          description: "Successfully connected to HighLevel.",
         });
-        
-        // Clean up listener
         window.removeEventListener('message', handleMessage);
       }
     };
 
     window.addEventListener('message', handleMessage);
-    
-    // Clean up if popup is closed manually
-    const checkClosed = setInterval(() => {
-      if (popup?.closed) {
-        window.removeEventListener('message', handleMessage);
-        clearInterval(checkClosed);
-      }
-    }, 1000);
   };
 
   const handleDisconnect = async () => {
-    setDisconnecting(true);
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/auth/disconnect', { 
-        method: 'POST',
-        credentials: 'include',
-      });
+      const response = await apiFetch('/api/auth/disconnect', { 
+        method: 'POST'
+      }, locationId ?? undefined);
       
       if (response.ok) {
-        setAuthData({ authenticated: false });
         toast({
           title: "Disconnected",
-          description: "You have been disconnected from your subaccount.",
+          description: "Successfully disconnected from HighLevel.",
         });
-        // Start OAuth flow again
-        handleLogin();
+        await fetchAuthStatus();
       } else {
-        throw new Error('Failed to disconnect');
+        throw new Error('Disconnect failed');
       }
     } catch (error) {
       toast({
-        title: "Disconnect Error",
-        description: "Failed to disconnect. Please try again.",
+        title: "Disconnect Failed",
+        description: "Failed to disconnect from HighLevel. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setDisconnecting(false);
     }
   };
 
   useEffect(() => {
-    checkAuthStatus();
+    (async () => {
+      const id = await refresh();
+      await fetchAuthStatus();
+    })();
   }, []);
-
-  // Show app not installed error if detected
-  if (appError === 'app_not_installed') {
-    return (
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-warning" />
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">App Not Installed</span>
-                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                    Installation Required
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  This app is not installed for the current location
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button variant="gradient" size="sm" onClick={handleLogin}>
-                <User className="h-4 w-4 mr-2" />
-                Install App
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (loading) {
     return (
@@ -176,7 +124,7 @@ export function AuthStatus() {
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {authData?.authenticated ? (
+            {authStatus?.authenticated ? (
               <>
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <div className="space-y-1">
@@ -186,17 +134,16 @@ export function AuthStatus() {
                       Authenticated
                     </Badge>
                   </div>
-                  {location?.id && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>Location: {location.id}</span>
-                    </div>
+                  {appContext?.locationId && (
+                    <p className="text-sm text-muted-foreground">
+                      Location: {appContext.locationId}
+                    </p>
                   )}
                 </div>
               </>
             ) : (
               <>
-                <AlertCircle className="h-5 w-5 text-warning" />
+                <AlertTriangle className="h-5 w-5 text-warning" />
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Not Connected</span>
@@ -213,23 +160,14 @@ export function AuthStatus() {
           </div>
           
           <div className="flex items-center gap-2">
-            {authData?.authenticated ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleDisconnect}
-                disabled={disconnecting}
-              >
-                {disconnecting ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" />
-                ) : (
-                  <User className="h-4 w-4 mr-2" />
-                )}
+            {authStatus?.authenticated ? (
+              <Button variant="outline" size="sm" onClick={handleDisconnect}>
+                <LogOut className="h-4 w-4 mr-2" />
                 Disconnect
               </Button>
             ) : (
-              <Button variant="gradient" size="sm" onClick={handleLogin}>
-                <User className="h-4 w-4 mr-2" />
+              <Button variant="gradient" size="sm" onClick={handleConnect}>
+                <ExternalLink className="h-4 w-4 mr-2" />
                 Connect Account
               </Button>
             )}

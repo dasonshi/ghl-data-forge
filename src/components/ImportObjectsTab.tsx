@@ -6,11 +6,11 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Download, Database, Info, FileText, Upload, CheckCircle2, AlertTriangle, Settings, Type, ArrowLeft } from "lucide-react";
+import { Download, CheckCircle2, AlertTriangle, Upload, ArrowLeft, Database, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
+import { apiFetch } from "@/lib/api";
+import { useLocationId } from "@/hooks/useLocationId";
 import Papa from "papaparse";
 
 type ImportStep = "upload" | "preview" | "importing" | "success";
@@ -29,6 +29,7 @@ export function ImportObjectsTab() {
   const [objectsData, setObjectsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
 
   // Clear all data when location switches
@@ -41,13 +42,13 @@ export function ImportObjectsTab() {
     setResult(null);
   });
 
-  const downloadObjectsTemplate = async () => {
+  const downloadTemplate = async () => {
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/templates/objects', {
-        credentials: 'include',
-      });
+      const response = await apiFetch('/templates/objects', {}, locationId ?? undefined);
+      
       if (response.ok) {
-        const blob = await response.blob();
+        const csvText = await response.text();
+        const blob = new Blob([csvText], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -59,7 +60,7 @@ export function ImportObjectsTab() {
         
         toast({
           title: "Template Downloaded",
-          description: "Objects CSV template downloaded successfully.",
+          description: "CSV template for objects downloaded successfully.",
         });
       }
     } catch (error) {
@@ -116,11 +117,10 @@ export function ImportObjectsTab() {
         setProgress(prev => Math.min(prev + 15, 90));
       }, 300);
 
-      const response = await fetch('https://importer.api.savvysales.ai/api/objects/import', {
+      const response = await apiFetch('/api/objects/import', {
         method: 'POST',
         body: formData,
-        credentials: 'include',
-      });
+      }, locationId ?? undefined);
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -176,7 +176,7 @@ export function ImportObjectsTab() {
           </CardHeader>
           <CardContent>
             <Button 
-              onClick={downloadObjectsTemplate}
+              onClick={downloadTemplate}
               variant="outline"
               className="w-full"
             >

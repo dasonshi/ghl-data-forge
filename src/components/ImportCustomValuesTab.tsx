@@ -1,570 +1,364 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileUploadZone } from "@/components/FileUploadZone";
+import { DataPreviewTable } from "@/components/DataPreviewTable";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { SuccessStats } from "@/components/SuccessStats";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Upload, RefreshCw, Eye } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
-import { useAppContext } from "@/hooks/useAppContext";
+import { apiFetch } from "@/lib/api";
+import { useLocationId } from "@/hooks/useLocationId";
 import Papa from "papaparse";
 
-interface CustomValue {
+interface CustomField {
   id: string;
+  fieldKey: string;
   name: string;
-  value: string;
-  fieldKey?: string;
+  dataType: string;
+  picklistValues?: Array<{ value: string; label: string }>;
 }
+
+type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
 
 interface ImportResult {
-  success: boolean;
+  ok: boolean;
   message: string;
-  created: CustomValue[];
-  updated: CustomValue[];
-  errors: any[];
-  summary: {
-    total: number;
-    created: number;
-    updated: number;
-    failed: number;
+  stats: {
+    valuesProcessed: number;
   };
 }
 
-export const ImportCustomValuesTab = () => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [mode, setMode] = useState<'new' | 'update'>('new');
-  const [customValues, setCustomValues] = useState<CustomValue[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [uploadedData, setUploadedData] = useState<any[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+export function ImportCustomValuesTab() {
+  const [currentStep, setCurrentStep] = useState<ImportStep>("select");
+  const [selectedField, setSelectedField] = useState("");
+  const [fieldsData, setFieldsData] = useState<CustomField[]>([]);
+  const [valuesFile, setValuesFile] = useState<File | null>(null);
+  const [valuesData, setValuesData] = useState<Record<string, string>[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
-  
-  // Get current location context
-  const { location, user } = useAppContext();
-  const currentLocationId = location?.id || user?.activeLocation;
 
-  // Clear all data when location switches and refetch for new location
-  useLocationSwitch(({ newLocationId }) => {
-    console.log('🔄 ImportCustomValuesTab: Location switch detected:', newLocationId);
+  // Clear all data when location switches
+  useLocationSwitch(async () => {
+    console.log('🔄 ImportCustomValuesTab: Clearing data for location switch');
+    setCurrentStep("select");
+    setSelectedField("");
+    setFieldsData([]);
+    setValuesFile(null);
+    setValuesData([]);
+    setProgress(0);
+    setResult(null);
     
-    // Clear all state immediately
-    setCurrentStep(1);
-    setMode('new');
-    setCustomValues([]);
-    setLoading(false);
-    setImporting(false);
-    setUploadedData([]);
-    setShowPreview(false);
-    setImportResult(null);
-    
-    // Wait a moment for location context to update, then refetch
-    setTimeout(() => {
-      fetchCustomValues(newLocationId);
-    }, 500);
+    const id = await refresh();
+    await fetchPicklistFields(id || undefined);
   });
 
-  const steps = [
-    "Select Mode",
-    "Download & Upload", 
-    "Review Results"
-  ];
-
-  // Fetch existing custom values with location awareness
-  const fetchCustomValues = async (locationId?: string) => {
-    setLoading(true);
+  const fetchPicklistFields = async (locId?: string) => {
     try {
-      const url = locationId 
-        ? `https://importer.api.savvysales.ai/api/custom-values?locationId=${locationId}`
-        : 'https://importer.api.savvysales.ai/api/custom-values';
-        
-      console.log('🔄 ImportCustomValuesTab: Fetching custom values for location:', locationId || 'cookie');
+      // Fetch all fields and filter for picklist fields
+      const response = await apiFetch('/api/fields', {}, locId ?? locationId ?? undefined);
       
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch custom values');
+      if (response.ok) {
+        const data = await response.json();
+        const allFields = data.fields || [];
+        
+        // Filter for picklist fields only
+        const picklistFields = allFields.filter((field: CustomField) => 
+          field.dataType === 'PICKLIST'
+        );
+        
+        setFieldsData(picklistFields);
       }
-      const data = await response.json();
-      const customValuesList = data.customValues || [];
-      console.log('✅ ImportCustomValuesTab: Loaded', customValuesList.length, 'custom values');
-      setCustomValues(customValuesList);
-      toast({
-        title: "Success",
-        description: `Loaded ${customValuesList.length} existing custom values`,
-      });
     } catch (error) {
-      console.error('Error fetching custom values:', error);
+      console.error('Failed to fetch picklist fields:', error);
       toast({
-        title: "Error", 
-        description: "Failed to fetch existing custom values",
+        title: "Error",
+        description: "Failed to load picklist fields. Please try again.",
         variant: "destructive",
       });
-      setCustomValues([]);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Initial load and location changes
-  useEffect(() => {
-    if (currentLocationId) {
-      console.log('🔄 ImportCustomValuesTab: Initial load for location:', currentLocationId);
-      fetchCustomValues(currentLocationId);
-    } else {
-      console.log('🔄 ImportCustomValuesTab: Initial load without specific location');
-      fetchCustomValues();
-    }
-  }, [currentLocationId]); // Re-run when location changes
+  const handleFieldSelect = (fieldId: string) => {
+    setSelectedField(fieldId);
+  };
 
-  // Generate CSV template
-  const generateTemplate = () => {
-    let csvContent = '';
+  const handleContinueToUpload = () => {
+    if (selectedField) {
+      setCurrentStep("upload");
+    }
+  };
+
+  const handleValuesFile = (file: File) => {
+    setValuesFile(file);
     
-    if (mode === 'new') {
-      csvContent = 'name,value\nSample Field,Sample Value\n';
-    } else {
-      // Include existing custom values for update template
-      csvContent = 'id,name,value\n';
-      if (customValues.length > 0) {
-        customValues.forEach(cv => {
-          csvContent += `${cv.id},"${cv.name}","${cv.value}"\n`;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0) {
+          toast({
+            title: "CSV Parse Error",
+            description: "There was an error parsing your CSV file. Please check the format.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const data = results.data as Record<string, string>[];
+        setValuesData(data);
+        setCurrentStep("preview");
+      },
+      error: (error) => {
+        toast({
+          title: "File Error",
+          description: "Failed to read CSV file. Please try again.",
+          variant: "destructive",
         });
-      } else {
-        csvContent += 'sample_id,Sample Field,Sample Value\n';
       }
-    }
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = mode === 'new' 
-      ? 'custom-values-new-template.csv' 
-      : 'custom-values-update-template.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Template Downloaded",
-      description: `${mode === 'new' ? 'New import' : 'Update'} template downloaded successfully.`,
     });
   };
 
-  // Handle file upload and parse CSV
-  const handleFileUpload = async (file: File) => {
-    try {
-      const text = await file.text();
-      const result = Papa.parse(text, { 
-        header: true, 
-        skipEmptyLines: true 
-      });
-      
-      if (result.errors.length > 0) {
-        toast({
-          title: "CSV Parse Error",
-          description: "There were errors parsing your CSV file",
-          variant: "destructive",
-        });
-        console.error('CSV parse errors:', result.errors);
-        return;
-      }
+  const handleImport = async () => {
+    if (!valuesFile || !selectedField) return;
 
-      setUploadedData(result.data);
-      setShowPreview(true);
-      
-      toast({
-        title: "File Uploaded",
-        description: `Parsed ${result.data.length} rows. Please review and confirm import.`,
-      });
-    } catch (error) {
-      console.error('Error reading file:', error);
-      toast({
-        title: "File Error",
-        description: "Failed to read the uploaded file",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Confirm and execute import with location awareness
-  const confirmImport = async () => {
-    if (!currentLocationId) {
-      toast({
-        title: "Import Error",
-        description: "No location context available. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setImporting(true);
-    const formData = new FormData();
-    
-    // Convert uploaded data back to CSV for server
-    const csvContent = Papa.unparse(uploadedData);
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    formData.append('customValues', blob, 'import.csv');
+    setCurrentStep("importing");
+    setProgress(0);
 
     try {
-      // Use location-aware endpoint
-      const url = `https://importer.api.savvysales.ai/api/custom-values/import?locationId=${currentLocationId}`;
-      
-      const response = await fetch(url, {
+      const formData = new FormData();
+      formData.append('values', valuesFile);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
+      const response = await apiFetch(`/api/fields/${selectedField}/values/import`, {
         method: 'POST',
         body: formData,
-        credentials: 'include',
-      });
+      }, locationId ?? undefined);
 
-      const result = await response.json();
-      setImportResult(result);
-      
-      if (result.success) {
+      clearInterval(progressInterval);
+      setProgress(100);
+
+      if (response.ok) {
+        const result = await response.json();
+        setResult(result);
+        setCurrentStep("success");
         toast({
-          title: "Import Successful",
-          description: `${result.summary.created} created, ${result.summary.updated} updated`,
+          title: "Custom Values Imported",
+          description: "Your custom values have been imported successfully.",
         });
-        // Refresh the custom values list for the current location
-        fetchCustomValues(currentLocationId);
       } else {
-        toast({
-          title: "Import Completed with Errors",
-          description: `${result.summary.failed} failed out of ${result.summary.total}`,
-          variant: "destructive",
-        });
+        throw new Error('Import failed');
       }
-      
-      setCurrentStep(3);
-      setShowPreview(false);
     } catch (error) {
-      console.error('Error importing custom values:', error);
       toast({
         title: "Import Failed",
-        description: "Failed to import custom values",
+        description: "Failed to import custom values. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setImporting(false);
+      setCurrentStep("preview");
     }
   };
 
-  const cancelPreview = () => {
-    setShowPreview(false);
-    setUploadedData([]);
+  const handleStartOver = () => {
+    setCurrentStep("select");
+    setSelectedField("");
+    setValuesFile(null);
+    setValuesData([]);
+    setProgress(0);
+    setResult(null);
   };
 
-  const resetProcess = () => {
-    setCurrentStep(1);
-    setImportResult(null);
-    setUploadedData([]);
-    setShowPreview(false);
-    setMode('new');
-  };
+  useEffect(() => {
+    (async () => {
+      const id = await refresh();
+      await fetchPicklistFields(id || undefined);
+    })();
+  }, []);
+
+  const selectedFieldData = fieldsData.find(field => field.id === selectedField);
+
+  const renderSelect = () => (
+    <div className="space-y-6">
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          Select a picklist field to import custom values into it.
+        </AlertDescription>
+      </Alert>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Picklist Field</CardTitle>
+          <CardDescription>
+            Choose the picklist field you want to import values into
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Select value={selectedField} onValueChange={handleFieldSelect}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a picklist field" />
+            </SelectTrigger>
+            <SelectContent>
+              {fieldsData.map((field) => (
+                <SelectItem key={field.id} value={field.id}>
+                  {field.name} ({field.fieldKey})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {fieldsData.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No picklist fields found. Create picklist fields first before importing values.
+            </p>
+          )}
+
+          {selectedField && (
+            <Button 
+              onClick={handleContinueToUpload}
+              className="w-full"
+            >
+              Continue to Upload
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderUpload = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold">
+          Import Values for: {selectedFieldData?.name}
+        </h3>
+        <p className="text-sm text-muted-foreground">Field Key: {selectedFieldData?.fieldKey}</p>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="font-medium">Upload Values CSV</h3>
+        <FileUploadZone
+          onFileSelect={handleValuesFile}
+          acceptedTypes=".csv"
+          maxSize={10}
+          selectedFile={valuesFile}
+        />
+      </div>
+    </div>
+  );
+
+  const renderPreview = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold">
+          Preview Values for: {selectedFieldData?.name}
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          {valuesData.length} value{valuesData.length !== 1 ? 's' : ''} will be imported
+        </p>
+      </div>
+
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          Review your data before importing. All CSV values will be added to the picklist.
+        </AlertDescription>
+      </Alert>
+
+      <DataPreviewTable data={valuesData} />
+
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+          Back
+        </Button>
+        <Button variant="gradient" onClick={handleImport}>
+          Import Custom Values
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderImporting = () => (
+    <div className="space-y-6 text-center">
+      <div className="space-y-4">
+        <Upload className="h-16 w-16 mx-auto text-primary animate-pulse" />
+        <h3 className="text-xl font-semibold">Importing Custom Values...</h3>
+        <p className="text-muted-foreground">
+          Please wait while we import values for {selectedFieldData?.name}
+        </p>
+      </div>
+      
+      <div className="space-y-2 max-w-md mx-auto">
+        <Progress value={progress} className="w-full" />
+        <p className="text-sm text-muted-foreground">{progress}% complete</p>
+      </div>
+    </div>
+  );
+
+  const renderSuccess = () => (
+    <div className="space-y-6 text-center">
+      <div className="space-y-4">
+        <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
+        <h3 className="text-2xl font-bold">Custom Values Imported Successfully!</h3>
+        <p className="text-muted-foreground">
+          {result?.stats?.valuesProcessed || valuesData.length} value{(result?.stats?.valuesProcessed || valuesData.length) !== 1 ? 's' : ''} imported to {selectedFieldData?.name}
+        </p>
+      </div>
+
+      <Card className="max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Import Summary</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span>Field:</span>
+            <span className="font-medium">{selectedFieldData?.name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Values Imported:</span>
+            <span className="font-medium">{result?.stats?.valuesProcessed || valuesData.length}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button variant="gradient" onClick={handleStartOver}>
+        Import More Values
+      </Button>
+    </div>
+  );
+
+  const steps = ["Choose Field", "Upload Data", "Preview Values", "Import Progress", "Review Results"];
+  const stepMap = { select: 0, upload: 1, preview: 2, importing: 3, success: 4 };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Import Custom Values</h2>
         <p className="text-muted-foreground">
-          Import custom values for your location
-          {location?.name && <span className="ml-2 font-medium">• {location.name}</span>}
+          Import custom values into picklist fields
         </p>
       </div>
-      
-      <StepIndicator steps={steps} currentStep={currentStep - 1} />
-      
-      {/* Existing Custom Values Display */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Existing Custom Values</CardTitle>
-              <CardDescription>
-                Current custom values in your location
-                {location?.name && <span className="ml-2 font-medium">• {location.name}</span>}
-              </CardDescription>
-            </div>
-            <Button 
-              onClick={() => fetchCustomValues(currentLocationId)} 
-              disabled={loading}
-              variant="outline"
-              size="sm"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading custom values...
-            </div>
-          ) : customValues.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <RefreshCw className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="font-medium">No custom values found</p>
-              <p className="text-sm">Create custom values in HighLevel first, or import new ones below.</p>
-              {currentLocationId && (
-                <p className="text-xs mt-2">Location: {currentLocationId}</p>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-md border max-h-96 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Key Name</TableHead>
-                    <TableHead>Current Value</TableHead>
-                    <TableHead className="w-[100px]">ID</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customValues.map((cv) => (
-                    <TableRow key={cv.id}>
-                      <TableCell className="font-medium">{cv.name}</TableCell>
-                      <TableCell className="max-w-xs truncate" title={cv.value}>
-                        {cv.value}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-xs">
-                          {cv.id}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {currentStep === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Import Mode</CardTitle>
-            <CardDescription>
-              Choose whether to import new custom values or update existing ones
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Button
-                onClick={() => {
-                  setMode('new');
-                  setCurrentStep(2);
-                }}
-                variant={mode === 'new' ? 'default' : 'outline'}
-                className="h-24 flex flex-col gap-2"
-              >
-                <Upload className="h-6 w-6" />
-                <span>Import New Custom Values</span>
-                <span className="text-xs opacity-75">Create new custom values</span>
-              </Button>
-              
-              <Button
-                onClick={() => {
-                  setMode('update');
-                  setCurrentStep(2);
-                }}
-                variant={mode === 'update' ? 'default' : 'outline'}
-                className="h-24 flex flex-col gap-2"
-              >
-                <RefreshCw className="h-6 w-6" />
-                <span>Update Existing Values</span>
-                <span className="text-xs opacity-75">Modify existing custom values</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <StepIndicator 
+        steps={steps} 
+        currentStep={stepMap[currentStep]} 
+        className="mb-8"
+      />
 
-      {currentStep === 2 && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Download Template Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Download CSV Template</CardTitle>
-              <CardDescription>
-                Download the {mode === 'new' ? 'new import' : 'update'} template and fill it with your data
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 border rounded-lg bg-muted/50">
-                <h4 className="font-semibold mb-2">
-                  {mode === 'new' ? 'New Custom Values Template' : 'Update Custom Values Template'}
-                </h4>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {mode === 'new' 
-                    ? 'Template includes: name, value columns'
-                    : 'Template includes existing custom values with: id, name, value columns'
-                  }
-                </p>
-                <Button onClick={generateTemplate} className="w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download {mode === 'new' ? 'New Import' : 'Update'} Template
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Upload CSV Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Custom Values CSV</CardTitle>
-              <CardDescription>
-                Upload your completed CSV file to {mode === 'new' ? 'import new' : 'update existing'} custom values
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {showPreview ? (
-                <div className="space-y-4">
-                  <div className="p-4 border rounded-lg bg-blue-50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Eye className="h-4 w-4 text-blue-600" />
-                      <h4 className="font-semibold text-blue-900">Preview Upload Data</h4>
-                    </div>
-                    <p className="text-sm text-blue-700 mb-4">
-                      {uploadedData.length} rows ready to import. Please review and confirm.
-                    </p>
-                    
-                    <div className="rounded-md border max-h-60 overflow-y-auto bg-white">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Value</TableHead>
-                            {mode === 'update' && <TableHead>ID</TableHead>}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {uploadedData.map((row: any, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{row.name}</TableCell>
-                              <TableCell className="max-w-xs truncate" title={row.value}>
-                                {row.value}
-                              </TableCell>
-                              {mode === 'update' && <TableCell>{row.id}</TableCell>}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    
-                    <div className="flex gap-2 mt-4">
-                      <Button onClick={confirmImport} disabled={importing} className="flex-1">
-                        {importing ? "Importing..." : "Confirm Import"}
-                      </Button>
-                      <Button onClick={cancelPreview} variant="outline" disabled={importing}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : importing ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Importing custom values...</p>
-                </div>
-              ) : (
-                <FileUploadZone 
-                  onFileSelect={handleFileUpload} 
-                  acceptedTypes=".csv"
-                />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Back button */}
-      {currentStep === 2 && (
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setCurrentStep(1)}>
-            Back
-          </Button>
-        </div>
-      )}
-
-      {currentStep === 3 && importResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Results</CardTitle>
-            <CardDescription>
-              Summary of your custom values import
-              {location?.name && <span className="ml-2 font-medium">• {location.name}</span>}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="p-4 border rounded-lg bg-muted/50">
-              <h4 className="font-semibold mb-2">Server Response</h4>
-              <div className="text-sm space-y-2">
-                <div><span className="font-medium">Status:</span> {importResult.success ? 'Success' : 'Failed'}</div>
-                <div><span className="font-medium">Message:</span> {importResult.message}</div>
-                
-                {importResult.summary && (
-                  <div className="mt-3">
-                    <div className="font-medium mb-1">Summary:</div>
-                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
-                      <li>Total processed: {importResult.summary.total}</li>
-                      <li>Created: {importResult.summary.created}</li>
-                      <li>Updated: {importResult.summary.updated}</li>
-                      <li>Failed: {importResult.summary.failed}</li>
-                    </ul>
-                  </div>
-                )}
-                
-                {importResult.created?.length > 0 && (
-                  <div className="mt-3">
-                    <div className="font-medium mb-1">Created Items:</div>
-                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
-                      {importResult.created.map((item, idx) => (
-                        <li key={idx}>{item.name}: {item.value}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {importResult.updated?.length > 0 && (
-                  <div className="mt-3">
-                    <div className="font-medium mb-1">Updated Items:</div>
-                    <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-2">
-                      {importResult.updated.map((item, idx) => (
-                        <li key={idx}>{item.name}: {item.value}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {importResult.errors.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-semibold text-destructive">Errors:</h4>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {importResult.errors.map((error, index) => (
-                    <div key={index} className="p-2 bg-destructive/10 rounded text-sm">
-                      <span className="font-medium">{error.name}:</span> {error.error}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <Button onClick={resetProcess} className="w-full">
-              Import More Custom Values
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {currentStep === "select" && renderSelect()}
+      {currentStep === "upload" && renderUpload()}
+      {currentStep === "preview" && renderPreview()}
+      {currentStep === "importing" && renderImporting()}
+      {currentStep === "success" && renderSuccess()}
     </div>
   );
-};
+}

@@ -6,13 +6,12 @@ import { FileUploadZone } from "@/components/FileUploadZone";
 import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Download, Plus, CheckCircle2, AlertTriangle, Database, Info, FileText, Settings, Type, Folder, Hash, ArrowLeft } from "lucide-react";
+import { StepIndicator } from "@/components/StepIndicator";
+import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
-import { useAppContext } from "@/hooks/useAppContext";
-import { StepIndicator } from "@/components/StepIndicator";
+import { apiFetch } from "@/lib/api";
+import { useLocationId } from "@/hooks/useLocationId";
 import Papa from "papaparse";
 
 interface CustomObject {
@@ -24,122 +23,67 @@ interface CustomObject {
   };
 }
 
-interface AuthData {
-  authenticated: boolean;
-  locationId?: string;
-  tokenStatus?: string;
-}
-
 type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
 
-interface CustomField {
-  id: string;
-  key: string;
-  name: string;
-  type: string;
-  required?: boolean;
-  parentId?: string;
-  folderName?: string;
-}
-
-interface FolderInfo {
-  id: string;
-  name: string;
-  fields: CustomField[];
+interface ImportResult {
+  ok: boolean;
+  message: string;
+  stats: {
+    fieldsProcessed: number;
+  };
 }
 
 export function AddFieldsTab() {
   const [currentStep, setCurrentStep] = useState<ImportStep>("select");
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
-  const [availableFields, setAvailableFields] = useState<CustomField[]>([]);
-  const [folders, setFolders] = useState<FolderInfo[]>([]);
+  const [availableFields, setAvailableFields] = useState<string[]>([]);
   const [fieldsFile, setFieldsFile] = useState<File | null>(null);
   const [fieldsData, setFieldsData] = useState<Record<string, string>[]>([]);
-  const [mapping, setMapping] = useState<Record<string, string>>({});
   const [progress, setProgress] = useState(0);
-  const [authData, setAuthData] = useState<AuthData | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
-  
-  // Get current location context
-  const { location, user } = useAppContext();
-  const currentLocationId = location?.id || user?.activeLocation;
 
-  // Clear all data when location switches and refetch for new location
-  useLocationSwitch(({ newLocationId }) => {
-    console.log('🔄 AddFieldsTab: Location switch detected:', newLocationId);
-    
-    // Clear all state immediately
+  // Clear all data when location switches
+  useLocationSwitch(async () => {
+    console.log('🔄 AddFieldsTab: Clearing data for location switch');
     setCurrentStep("select");
     setObjects([]);
     setSelectedObject("");
     setAvailableFields([]);
-    setFolders([]);
     setFieldsFile(null);
     setFieldsData([]);
-    setMapping({});
     setProgress(0);
-    setAuthData(null);
-    
-    // Wait a moment for location context to update, then refetch
-    setTimeout(() => {
-      fetchAuthStatus();
-      fetchObjects(newLocationId);
-    }, 500);
+    setResult(null);
+
+    const id = await refresh();
+    await fetchObjects(id || undefined);
   });
 
-  const fetchAuthStatus = async () => {
+  const fetchObjects = async (locId?: string) => {
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/auth/status', {
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setAuthData(data);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setAuthData({ authenticated: false });
-    }
-  };
-
-  const fetchObjects = async (locationId?: string) => {
-    try {
-      const url = locationId 
-        ? `https://importer.api.savvysales.ai/api/objects?locationId=${locationId}`
-        : 'https://importer.api.savvysales.ai/api/objects';
-        
-      console.log('🔄 AddFieldsTab: Fetching objects for location:', locationId || 'cookie');
-      
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const objectsList = data.objects || data || [];
-        console.log('✅ AddFieldsTab: Loaded', objectsList.length, 'objects');
-        setObjects(objectsList);
-      } else {
-        console.error('Failed to fetch objects:', response.status);
-        setObjects([]);
+      const res = await apiFetch('/api/objects', {}, locId ?? locationId ?? undefined);
+      if (res.ok) {
+        const data = await res.json();
+        setObjects(data.objects || data || []);
       }
     } catch (error) {
-      console.error('Error fetching objects:', error);
       toast({
         title: "Error",
         description: "Failed to load custom objects. Please try again.",
         variant: "destructive",
       });
-      setObjects([]);
     }
   };
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/templates/fields', {
-        credentials: 'include',
-      });
+      const response = await apiFetch('/templates/fields', {}, locationId ?? undefined);
       
       if (response.ok) {
-        const blob = await response.blob();
+        const csvText = await response.text();
+        const blob = new Blob([csvText], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -151,20 +95,13 @@ export function AddFieldsTab() {
         
         toast({
           title: "Template Downloaded",
-          description: "Fields CSV template downloaded successfully.",
-        });
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        toast({
-          title: "Download Failed",
-          description: `Server error: ${errorData.error || 'Failed to generate template'}. Please contact support.`,
-          variant: "destructive",
+          description: "CSV template for fields downloaded successfully.",
         });
       }
     } catch (error) {
       toast({
         title: "Download Failed",
-        description: "Network error occurred. Please check your connection and try again.",
+        description: "Failed to download template. Please try again.",
         variant: "destructive",
       });
     }
@@ -172,71 +109,18 @@ export function AddFieldsTab() {
 
   const fetchFields = async (objectKey: string) => {
     try {
-      const url = currentLocationId
-        ? `https://importer.api.savvysales.ai/api/objects/${objectKey}/fields?locationId=${currentLocationId}`
-        : `https://importer.api.savvysales.ai/api/objects/${objectKey}/fields`;
-        
-      console.log('🔄 AddFieldsTab: Fetching fields for object:', objectKey, 'location:', currentLocationId);
-      
-      const response = await fetch(url, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
+      const res = await apiFetch(`/api/objects/${objectKey}/fields`, {}, locationId ?? undefined);
+      if (res.ok) {
+        const data = await res.json();
         const fields = data.fields || [];
-        const folderData = data.folders || [];
-
-        // Process fields and organize by folder
-        const processedFields: CustomField[] = fields.map((field: any) => ({
-          id: field.id,
-          key: field.fieldKey || field.key,
-          name: field.name,
-          type: field.dataType || field.type,
-          required: field.required,
-          parentId: field.parentId,
-          folderName: field.folder?.field?.name || 'No Folder'
-        }));
-
-        // Organize fields by folder
-        const folderMap = new Map<string, FolderInfo>();
-        
-        // Add folders first
-        folderData.forEach((folder: any) => {
-          folderMap.set(folder.id, {
-            id: folder.id,
-            name: folder.field?.name || folder.name,
-            fields: []
-          });
-        });
-
-        // Add fields to their respective folders
-        processedFields.forEach(field => {
-          if (field.parentId && folderMap.has(field.parentId)) {
-            folderMap.get(field.parentId)!.fields.push(field);
-          } else {
-            // Fields without folder
-            if (!folderMap.has('no-folder')) {
-              folderMap.set('no-folder', {
-                id: 'no-folder',
-                name: 'Ungrouped Fields',
-                fields: []
-              });
-            }
-            folderMap.get('no-folder')!.fields.push(field);
-          }
-        });
-
-        setAvailableFields(processedFields);
-        setFolders(Array.from(folderMap.values()));
+        setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
       } else {
-        console.error('Failed to fetch fields:', response.status);
-        setAvailableFields([]);
-        setFolders([]);
+        // Default fields if none exist
+        setAvailableFields(["name", "email", "phone", "company", "notes"]);
       }
-    } catch (error) {
-      console.error('Failed to fetch fields:', error);
-      setAvailableFields([]);
-      setFolders([]);
+    } catch {
+      // Default fields on error
+      setAvailableFields(["name", "email", "phone", "company", "notes"]);
     }
   };
 
@@ -253,29 +137,36 @@ export function AddFieldsTab() {
 
   const handleFieldsFile = (file: File) => {
     setFieldsFile(file);
-    // Mock CSV parsing - replace with actual parsing
-    const mockData = [
-      { key: "industry", name: "Industry", type: "TEXT", required: "false", description: "Customer industry" },
-      { key: "budget", name: "Budget", type: "NUMBER", required: "true", description: "Project budget" },
-      { key: "priority", name: "Priority", type: "SELECT", required: "false", description: "Task priority level" },
-    ];
-    setFieldsData(mockData);
-    setCurrentStep("preview");
-  };
-
-  const handleMappingChange = (column: string, field: string) => {
-    setMapping(prev => ({ ...prev, [column]: field }));
+    
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0) {
+          toast({
+            title: "CSV Parse Error",
+            description: "There was an error parsing your CSV file. Please check the format.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const data = results.data as Record<string, string>[];
+        setFieldsData(data);
+        setCurrentStep("preview");
+      },
+      error: (error) => {
+        toast({
+          title: "File Error",
+          description: "Failed to read CSV file. Please try again.",
+          variant: "destructive",
+        });
+      }
+    });
   };
 
   const handleImport = async () => {
-    if (!fieldsFile || !selectedObject || !currentLocationId) {
-      toast({
-        title: "Import Error",
-        description: "Missing required data for import. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!fieldsFile || !selectedObject) return;
 
     setCurrentStep("importing");
     setProgress(0);
@@ -286,36 +177,32 @@ export function AddFieldsTab() {
 
       // Simulate progress
       const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 15, 90));
-      }, 300);
+        setProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
 
-      // Use location-aware endpoint
-      const url = `https://importer.api.savvysales.ai/api/objects/${selectedObject}/fields/import?locationId=${currentLocationId}`;
-      
-      const response = await fetch(url, {
+      const response = await apiFetch(`/api/objects/${selectedObject}/fields/import`, {
         method: 'POST',
         body: formData,
-        credentials: 'include',
-      });
+      }, locationId ?? undefined);
 
       clearInterval(progressInterval);
       setProgress(100);
 
       if (response.ok) {
+        const result = await response.json();
+        setResult(result);
         setCurrentStep("success");
         toast({
-          title: "Fields Added",
-          description: "Custom fields have been imported successfully.",
+          title: "Fields Imported",
+          description: "Your fields have been imported successfully.",
         });
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Import failed');
+        throw new Error('Import failed');
       }
     } catch (error) {
-      console.error('Import failed:', error);
       toast({
         title: "Import Failed",
-        description: `Failed to import custom fields: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: "Failed to import fields. Please try again.",
         variant: "destructive",
       });
       setCurrentStep("preview");
@@ -327,23 +214,18 @@ export function AddFieldsTab() {
     setSelectedObject("");
     setFieldsFile(null);
     setFieldsData([]);
-    setMapping({});
     setProgress(0);
+    setResult(null);
   };
 
-  // Initial load and location changes
   useEffect(() => {
-    fetchAuthStatus();
-    if (currentLocationId) {
-      console.log('🔄 AddFieldsTab: Initial load for location:', currentLocationId);
-      fetchObjects(currentLocationId);
-    } else {
-      console.log('🔄 AddFieldsTab: Initial load without specific location');
-      fetchObjects();
-    }
-  }, [currentLocationId]); // Re-run when location changes
+    (async () => {
+      const id = await refresh();
+      await fetchObjects(id || undefined);
+    })();
+  }, []);
 
-  const selectedObjectData = Array.isArray(objects) ? objects.find(obj => obj.key === selectedObject) : undefined;
+  const selectedObjectData = objects.find(obj => obj.key === selectedObject);
 
   const renderSelect = () => (
     <div className="space-y-6">
@@ -351,7 +233,6 @@ export function AddFieldsTab() {
         <Database className="h-4 w-4" />
         <AlertDescription>
           Select an existing custom object to import fields into it.
-          {location?.name && <span className="ml-2 font-medium">• Current location: {location.name}</span>}
         </AlertDescription>
       </Alert>
 
@@ -368,7 +249,7 @@ export function AddFieldsTab() {
               <SelectValue placeholder="Select a custom object" />
             </SelectTrigger>
             <SelectContent>
-              {Array.isArray(objects) && objects.map((object) => (
+              {objects.map((object) => (
                 <SelectItem key={object.id} value={object.key}>
                   {object.labels.singular} ({object.key})
                 </SelectItem>
@@ -376,15 +257,10 @@ export function AddFieldsTab() {
             </SelectContent>
           </Select>
 
-          {(!Array.isArray(objects) || objects.length === 0) && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="font-medium">No custom objects found</p>
-              <p className="text-sm">Create custom objects first before importing fields.</p>
-              {currentLocationId && (
-                <p className="text-xs mt-2">Location: {currentLocationId}</p>
-              )}
-            </div>
+          {objects.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No custom objects found. Create custom objects first before importing fields.
+            </p>
           )}
 
           {selectedObject && (
@@ -400,18 +276,14 @@ export function AddFieldsTab() {
     </div>
   );
 
-  // Rest of the render methods remain the same...
   const renderUpload = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">
-            Importing Fields to: {selectedObjectData?.labels.singular}
+            Import Fields for: {selectedObjectData?.labels.singular}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Object Key: {selectedObject}
-            {location?.name && <span className="ml-2">• {location.name}</span>}
-          </p>
+          <p className="text-sm text-muted-foreground">Object Key: {selectedObject}</p>
         </div>
         <Button variant="outline" onClick={() => setCurrentStep("select")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -419,8 +291,7 @@ export function AddFieldsTab() {
         </Button>
       </div>
 
-      {/* Rest of the upload UI remains the same */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -428,7 +299,7 @@ export function AddFieldsTab() {
               CSV Template
             </CardTitle>
             <CardDescription>
-              Download the fields template and fill it with your custom field definitions
+              Download the template and fill it with your field definitions
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -445,72 +316,23 @@ export function AddFieldsTab() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Folder className="h-5 w-5" />
-              Existing Field Organization
-            </CardTitle>
+            <CardTitle>Available Fields</CardTitle>
             <CardDescription>
-              Current fields organized by folders with parentId references
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="max-h-96 overflow-y-auto">
-            {folders.length > 0 ? (
-              <Accordion type="multiple" className="w-full">
-                {folders.map((folder) => (
-                  <AccordionItem key={folder.id} value={folder.id}>
-                    <AccordionTrigger className="text-left">
-                      <div className="flex items-center gap-2">
-                        <Folder className="h-4 w-4" />
-                        <span>{folder.name}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {folder.fields.length} fields
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                          <Hash className="h-3 w-3" />
-                          Parent ID: <code className="bg-muted px-1 rounded">{folder.id}</code>
-                        </div>
-                        {folder.fields.map((field) => (
-                          <div key={field.id} className="text-sm bg-muted/30 px-3 py-2 rounded border-l-2 border-primary/20">
-                            <div className="font-medium">{field.name}</div>
-                            <div className="text-xs text-muted-foreground space-y-1">
-                              <div>Key: <code className="bg-muted px-1 rounded">{field.key}</code></div>
-                              <div>Type: <Badge variant="outline" className="text-xs">{field.type}</Badge></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Folder className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No existing fields found</p>
-                <p className="text-xs">Select an object to view its field organization</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Field Guide Card - keeping original content */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              Field Guide
-            </CardTitle>
-            <CardDescription>
-              Complete reference for CSV template fields
+              Fields available for mapping in this object
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Original field guide content remains the same */}
-            <p className="text-sm text-muted-foreground">Complete field reference guide available in original component</p>
+            <div className="space-y-2">
+              {availableFields.length > 0 ? (
+                availableFields.map((field, index) => (
+                  <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded">
+                    {field}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">Loading fields...</p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -543,7 +365,7 @@ export function AddFieldsTab() {
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Review your field definitions carefully. These will be imported into the selected custom object.
+          Review your data before importing. All CSV columns will be imported as-is.
         </AlertDescription>
       </Alert>
 
@@ -564,10 +386,10 @@ export function AddFieldsTab() {
   const renderImporting = () => (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
-        <Plus className="h-16 w-16 mx-auto text-primary animate-pulse" />
+        <Upload className="h-16 w-16 mx-auto text-primary animate-pulse" />
         <h3 className="text-xl font-semibold">Importing Fields...</h3>
         <p className="text-muted-foreground">
-          Please wait while we import the custom fields into your object
+          Please wait while we import your fields into {selectedObjectData?.labels.singular}
         </p>
       </div>
       
@@ -584,13 +406,13 @@ export function AddFieldsTab() {
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
         <h3 className="text-2xl font-bold">Fields Imported Successfully!</h3>
         <p className="text-muted-foreground">
-          {fieldsData.length} custom field{fieldsData.length !== 1 ? 's' : ''} imported into {selectedObjectData?.labels.singular}
+          {result?.stats?.fieldsProcessed || fieldsData.length} field{(result?.stats?.fieldsProcessed || fieldsData.length) !== 1 ? 's' : ''} imported to {selectedObjectData?.labels.singular}
         </p>
       </div>
 
       <Card className="max-w-md mx-auto">
         <CardHeader>
-          <CardTitle>Summary</CardTitle>
+          <CardTitle>Import Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
@@ -599,7 +421,11 @@ export function AddFieldsTab() {
           </div>
           <div className="flex justify-between">
             <span>Fields Imported:</span>
-            <span className="font-medium">{fieldsData.length}</span>
+            <span className="font-medium">{result?.stats?.fieldsProcessed || fieldsData.length}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>CSV Columns:</span>
+            <span className="font-medium">{fieldsData.length > 0 ? Object.keys(fieldsData[0]).length : 0}</span>
           </div>
         </CardContent>
       </Card>
@@ -616,9 +442,9 @@ export function AddFieldsTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Import Custom Fields</h2>
+        <h2 className="text-2xl font-bold">Import Fields</h2>
         <p className="text-muted-foreground">
-          Import new custom fields into existing custom objects
+          Import custom fields into existing custom objects
         </p>
       </div>
 

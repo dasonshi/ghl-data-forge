@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api';
+import { useLocationId } from '@/hooks/useLocationId';
 
-export interface AgencyBranding {
-  companyName: string;
+interface AgencyBranding {
+  companyName?: string;
   logoUrl?: string;
-  locationId?: string;
-  locationName?: string;
   primaryColor?: string;
   secondaryColor?: string;
 }
@@ -12,53 +12,46 @@ export interface AgencyBranding {
 export function useAgencyBranding() {
   const [branding, setBranding] = useState<AgencyBranding | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { locationId, refresh } = useLocationId();
 
   useEffect(() => {
     const fetchBranding = async () => {
       try {
+        setLoading(true);
+        
         // First try to get agency branding
-        const response = await fetch('https://importer.api.savvysales.ai/api/agency-branding', {
-          credentials: 'include',
-        });
+        const response = await apiFetch('/api/agency-branding', {}, locationId ?? undefined);
         
         if (response.ok) {
           const data = await response.json();
           setBranding(data);
         } else {
           // Fallback: try to get auth status which includes locationId
-          const authResponse = await fetch('https://importer.api.savvysales.ai/api/auth/status', {
-            credentials: 'include',
-          });
+          const authResponse = await apiFetch('/api/auth/status', {}, locationId ?? undefined);
           
           if (authResponse.ok) {
             const authData = await authResponse.json();
+            // Use default branding with location info if available
             setBranding({
-              companyName: 'Savvy Sales',
-              locationId: authData.locationId || 'Unknown',
-              locationName: authData.locationName || null
+              companyName: authData.subAccountName || 'HighLevel',
             });
           } else {
-            setBranding({
-              companyName: 'Savvy Sales',
-              locationId: 'Unknown'
-            });
+            setBranding(null);
           }
         }
-      } catch (err) {
-        setError('Failed to load agency branding');
-        // Fallback branding
-        setBranding({
-          companyName: 'Savvy Sales',
-          locationId: 'Unknown'
-        });
+      } catch (error) {
+        console.error('Failed to fetch agency branding:', error);
+        setBranding(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBranding();
+    (async () => {
+      const id = await refresh();
+      await fetchBranding();
+    })();
   }, []);
 
-  return { branding, loading, error };
+  return { branding, loading };
 }
