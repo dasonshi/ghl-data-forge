@@ -28,7 +28,7 @@ interface CustomField {
   picklistValues?: Array<{ value: string; label: string }>;
 }
 
-type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
+type ImportStep = "mode" | "select" | "upload" | "preview" | "importing" | "success";
 
 interface ImportResult {
   ok: boolean;
@@ -39,7 +39,8 @@ interface ImportResult {
 }
 
 export function ImportRecordsTab() {
-  const [currentStep, setCurrentStep] = useState<ImportStep>("select");
+  const [currentStep, setCurrentStep] = useState<ImportStep>("mode");
+  const [mode, setMode] = useState<'new' | 'update'>('new');
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
   const [availableFields, setAvailableFields] = useState<string[]>([]);
@@ -105,13 +106,18 @@ export function ImportRecordsTab() {
       if (templateResponse.ok) {
         const csvText = await templateResponse.text();
         
-        // Parse CSV and filter out external_id and object_key columns
-        const lines = csvText.split('\n');
-        if (lines.length > 0) {
-          const headers = lines[0].split(',');
-          const filteredHeaders = headers.filter(header => 
-            header.trim() !== 'external_id' && header.trim() !== 'object_key'
-          );
+          // Parse CSV and filter out external_id and object_key columns, conditionally include id
+          const lines = csvText.split('\n');
+          if (lines.length > 0) {
+            const headers = lines[0].split(',');
+            let filteredHeaders = headers.filter(header => 
+              header.trim() !== 'external_id' && header.trim() !== 'object_key'
+            );
+            
+            // Add id column at the beginning if in update mode
+            if (mode === 'update') {
+              filteredHeaders = ['id', ...filteredHeaders];
+            }
           
           // Generate sample data based on field types
           const generateSampleValue = (fieldName: string) => {
@@ -148,22 +154,27 @@ export function ImportRecordsTab() {
               default:
                 return 'sample_value';
             }
-          };
-          
-          const sampleRow = filteredHeaders.map(header => generateSampleValue(header.trim()));
-          
-          // Reconstruct CSV with filtered headers and sample row
-          const csvLines = [
-            filteredHeaders.join(','),
-            sampleRow.join(',')
-          ];
+            };
+            
+            const sampleRow = filteredHeaders.map(header => {
+              if (header.trim() === 'id' && mode === 'update') {
+                return 'record_id_123';
+              }
+              return generateSampleValue(header.trim());
+            });
+            
+            // Reconstruct CSV with filtered headers and sample row
+            const csvLines = [
+              filteredHeaders.join(','),
+              sampleRow.join(',')
+            ];
           const filteredCsv = csvLines.join('\n');
           
           const blob = new Blob([filteredCsv], { type: 'text/csv' });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `${selectedObject}-template.csv`;
+          a.download = `${selectedObject}-${mode}-template.csv`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
@@ -171,7 +182,7 @@ export function ImportRecordsTab() {
           
           toast({
             title: "Template Downloaded",
-            description: `CSV template for ${selectedObjectData?.labels.singular} downloaded with sample data.`,
+            description: `CSV template for ${mode === 'new' ? 'importing new' : 'updating existing'} ${selectedObjectData?.labels.singular} records downloaded.`,
           });
         }
       }
@@ -289,7 +300,8 @@ export function ImportRecordsTab() {
   };
 
   const handleStartOver = () => {
-    setCurrentStep("select");
+    setCurrentStep("mode");
+    setMode('new');
     setSelectedObject("");
     setAvailableFields([]);
     setRecordsFile(null);
@@ -304,20 +316,83 @@ export function ImportRecordsTab() {
 
   const selectedObjectData = objects.find(obj => obj.key === selectedObject);
 
-  const renderSelect = () => (
+  const renderMode = () => (
     <div className="space-y-6">
       <Alert>
         <Database className="h-4 w-4" />
         <AlertDescription>
-          Select a custom object to import records into. The object must already exist and have custom fields defined.
+          Choose whether to import new records or update existing ones. Update mode requires record IDs in your CSV.
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
+          <CardTitle>Select Import Mode</CardTitle>
+          <CardDescription>
+            Choose whether to import new records or update existing ones
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Button
+              onClick={() => {
+                setMode('new');
+                setCurrentStep('select');
+              }}
+              variant={mode === 'new' ? 'default' : 'outline'}
+              className="h-24 flex flex-col gap-2"
+            >
+              <Upload className="h-6 w-6" />
+              <span>Import New Records</span>
+              <span className="text-xs opacity-75">Create new records</span>
+            </Button>
+            
+            <Button
+              onClick={() => {
+                setMode('update');
+                setCurrentStep('select');
+              }}
+              variant={mode === 'update' ? 'default' : 'outline'}
+              className="h-24 flex flex-col gap-2"
+            >
+              <Database className="h-6 w-6" />
+              <span>Update Existing Records</span>
+              <span className="text-xs opacity-75">Modify existing records (requires IDs)</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderSelect = () => (
+    <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">
+              {mode === 'new' ? 'Import New Records' : 'Update Existing Records'}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {mode === 'new' ? 'Create new records in a custom object' : 'Update existing records using their IDs'}
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => setCurrentStep("mode")}>
+            Change Mode
+          </Button>
+        </div>
+
+        <Alert>
+          <Database className="h-4 w-4" />
+          <AlertDescription>
+            Select a custom object to {mode === 'new' ? 'import records into' : 'update records in'}. The object must already exist and have custom fields defined.
+          </AlertDescription>
+        </Alert>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Select Custom Object</CardTitle>
           <CardDescription>
-            Choose the custom object you want to import records into
+            Choose the custom object you want to {mode === 'new' ? 'import records into' : 'update records in'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -375,7 +450,7 @@ export function ImportRecordsTab() {
               CSV Template
             </CardTitle>
             <CardDescription>
-              Download the records template and fill it with your data
+              Download the {mode === 'new' ? 'new records' : 'update records'} template and fill it with your data
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -385,8 +460,13 @@ export function ImportRecordsTab() {
               onClick={downloadTemplate}
             >
               <Database className="h-4 w-4 mr-2" />
-              Download Records Template
+              Download {mode === 'new' ? 'New Records' : 'Update Records'} Template
             </Button>
+            {mode === 'update' && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Template includes ID column for updating existing records
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -452,7 +532,7 @@ export function ImportRecordsTab() {
           Back to Upload
         </Button>
         <Button variant="gradient" onClick={handleImport}>
-          Import Records
+          {mode === 'new' ? 'Import New Records' : 'Update Records'}
         </Button>
       </div>
     </div>
@@ -464,7 +544,7 @@ export function ImportRecordsTab() {
         <Upload className="h-16 w-16 mx-auto text-primary animate-pulse" />
         <h3 className="text-xl font-semibold">Importing Records...</h3>
         <p className="text-muted-foreground">
-          Please wait while we import your records into {selectedObjectData?.labels.singular}
+          Please wait while we {mode === 'new' ? 'import your records into' : 'update your records in'} {selectedObjectData?.labels.singular}
         </p>
       </div>
       
@@ -479,9 +559,9 @@ export function ImportRecordsTab() {
     <div className="space-y-6 text-center">
       <div className="space-y-4">
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
-        <h3 className="text-2xl font-bold">Records Imported Successfully!</h3>
+        <h3 className="text-2xl font-bold">Records {mode === 'new' ? 'Imported' : 'Updated'} Successfully!</h3>
         <p className="text-muted-foreground">
-          {result?.stats?.recordsProcessed || recordsData.length} record{(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} imported to {selectedObjectData?.labels.singular}
+          {result?.stats?.recordsProcessed || recordsData.length} record{(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} {mode === 'new' ? 'imported to' : 'updated in'} {selectedObjectData?.labels.singular}
         </p>
       </div>
 
@@ -495,7 +575,7 @@ export function ImportRecordsTab() {
             <span className="font-medium">{selectedObjectData?.labels.singular}</span>
           </div>
           <div className="flex justify-between">
-            <span>Records Imported:</span>
+            <span>Records {mode === 'new' ? 'Imported' : 'Updated'}:</span>
             <span className="font-medium">{result?.stats?.recordsProcessed || recordsData.length}</span>
           </div>
           <div className="flex justify-between">
@@ -516,10 +596,11 @@ export function ImportRecordsTab() {
       <div>
         <h2 className="text-2xl font-bold">Import Records</h2>
         <p className="text-muted-foreground">
-          Import records into existing custom objects with field mapping
+          {mode === 'new' ? 'Import new records into existing custom objects' : 'Update existing records in custom objects using their IDs'}
         </p>
       </div>
 
+      {currentStep === "mode" && renderMode()}
       {currentStep === "select" && renderSelect()}
       {currentStep === "upload" && renderUpload()}
       {currentStep === "preview" && renderPreview()}
