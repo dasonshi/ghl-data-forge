@@ -13,10 +13,7 @@ import {
   Folder, 
   Settings, 
   TrendingUp,
-  Activity,
-  FileText,
-  Users,
-  Calendar
+  FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,13 +52,6 @@ interface DashboardStats {
   recentImports: number;
 }
 
-interface RecentActivity {
-  id: string;
-  type: 'import' | 'update' | 'create';
-  description: string;
-  timestamp: string;
-  status: 'success' | 'error' | 'pending';
-}
 
 export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
@@ -74,29 +64,6 @@ export function Dashboard() {
     totalCustomValues: 0,
     recentImports: 0
   });
-  const [recentActivity] = useState<RecentActivity[]>([
-    {
-      id: '1',
-      type: 'import',
-      description: 'Imported 25 custom objects',
-      timestamp: '2 hours ago',
-      status: 'success'
-    },
-    {
-      id: '2',
-      type: 'update',
-      description: 'Updated custom values',
-      timestamp: '4 hours ago',
-      status: 'success'
-    },
-    {
-      id: '3',
-      type: 'create',
-      description: 'Created new field mapping',
-      timestamp: '1 day ago',
-      status: 'success'
-    }
-  ]);
   
   const [loadingObjects, setLoadingObjects] = useState(false);
   const [loadingCustomValues, setLoadingCustomValues] = useState(false);
@@ -301,42 +268,6 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Activity
-          </CardTitle>
-          <CardDescription>
-            Latest import operations and system activities
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`h-2 w-2 rounded-full ${
-                    activity.status === 'success' ? 'bg-green-500' : 
-                    activity.status === 'error' ? 'bg-red-500' : 'bg-yellow-500'
-                  }`} />
-                  <div>
-                    <p className="font-medium">{activity.description}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      <span>{activity.timestamp}</span>
-                    </div>
-                  </div>
-                </div>
-                <Badge variant={activity.status === 'success' ? 'default' : activity.status === 'error' ? 'destructive' : 'secondary'}>
-                  {activity.status}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Custom Objects List */}
       <Card>
