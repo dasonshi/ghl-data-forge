@@ -8,6 +8,7 @@ import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { Header } from "@/components/Header";
 import { LocationMismatchAlert } from "@/components/LocationMismatchAlert";
+import { AgencyBrandingSettings } from "@/components/AgencyBrandingSettings";
 import { useAppInitialization } from "@/hooks/useAppInitialization";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -65,6 +66,11 @@ const Index = () => {
 
           {/* Authentication Status */}
           <AuthStatus />
+
+          {/* Agency Branding Settings */}
+          <div className="flex justify-center">
+            <AgencyBrandingSettings />
+          </div>
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
