@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, Upload, RefreshCw, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
+import { useAppContext } from "@/hooks/useAppContext";
 import Papa from "papaparse";
 
 interface CustomValue {
@@ -42,10 +43,16 @@ export const ImportCustomValuesTab = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
+  
+  // Get current location context
+  const { location, user } = useAppContext();
+  const currentLocationId = location?.id || user?.activeLocation;
 
-  // Clear all data when location switches
-  useLocationSwitch(() => {
-    console.log('🔄 ImportCustomValuesTab: Clearing data for location switch');
+  // Clear all data when location switches and refetch for new location
+  useLocationSwitch(({ newLocationId }) => {
+    console.log('🔄 ImportCustomValuesTab: Location switch detected:', newLocationId);
+    
+    // Clear all state immediately
     setCurrentStep(1);
     setMode('new');
     setCustomValues([]);
@@ -54,6 +61,11 @@ export const ImportCustomValuesTab = () => {
     setUploadedData([]);
     setShowPreview(false);
     setImportResult(null);
+    
+    // Wait a moment for location context to update, then refetch
+    setTimeout(() => {
+      fetchCustomValues(newLocationId);
+    }, 500);
   });
 
   const steps = [
@@ -62,21 +74,29 @@ export const ImportCustomValuesTab = () => {
     "Review Results"
   ];
 
-  // Fetch existing custom values
-  const fetchCustomValues = async () => {
+  // Fetch existing custom values with location awareness
+  const fetchCustomValues = async (locationId?: string) => {
     setLoading(true);
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/custom-values', {
+      const url = locationId 
+        ? `https://importer.api.savvysales.ai/api/custom-values?locationId=${locationId}`
+        : 'https://importer.api.savvysales.ai/api/custom-values';
+        
+      console.log('🔄 ImportCustomValuesTab: Fetching custom values for location:', locationId || 'cookie');
+      
+      const response = await fetch(url, {
         credentials: 'include',
       });
       if (!response.ok) {
         throw new Error('Failed to fetch custom values');
       }
       const data = await response.json();
-      setCustomValues(data.customValues || []);
+      const customValuesList = data.customValues || [];
+      console.log('✅ ImportCustomValuesTab: Loaded', customValuesList.length, 'custom values');
+      setCustomValues(customValuesList);
       toast({
         title: "Success",
-        description: `Loaded ${data.customValues?.length || 0} existing custom values`,
+        description: `Loaded ${customValuesList.length} existing custom values`,
       });
     } catch (error) {
       console.error('Error fetching custom values:', error);
@@ -85,14 +105,22 @@ export const ImportCustomValuesTab = () => {
         description: "Failed to fetch existing custom values",
         variant: "destructive",
       });
+      setCustomValues([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial load and location changes
   useEffect(() => {
-    fetchCustomValues();
-  }, []);
+    if (currentLocationId) {
+      console.log('🔄 ImportCustomValuesTab: Initial load for location:', currentLocationId);
+      fetchCustomValues(currentLocationId);
+    } else {
+      console.log('🔄 ImportCustomValuesTab: Initial load without specific location');
+      fetchCustomValues();
+    }
+  }, [currentLocationId]); // Re-run when location changes
 
   // Generate CSV template
   const generateTemplate = () => {
@@ -124,7 +152,10 @@ export const ImportCustomValuesTab = () => {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
     
-    // Don't auto-advance step - user can download and upload on same step
+    toast({
+      title: "Template Downloaded",
+      description: `${mode === 'new' ? 'New import' : 'Update'} template downloaded successfully.`,
+    });
   };
 
   // Handle file upload and parse CSV
@@ -163,8 +194,17 @@ export const ImportCustomValuesTab = () => {
     }
   };
 
-  // Confirm and execute import
+  // Confirm and execute import with location awareness
   const confirmImport = async () => {
+    if (!currentLocationId) {
+      toast({
+        title: "Import Error",
+        description: "No location context available. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setImporting(true);
     const formData = new FormData();
     
@@ -174,7 +214,10 @@ export const ImportCustomValuesTab = () => {
     formData.append('customValues', blob, 'import.csv');
 
     try {
-      const response = await fetch('https://importer.api.savvysales.ai/api/custom-values/import', {
+      // Use location-aware endpoint
+      const url = `https://importer.api.savvysales.ai/api/custom-values/import?locationId=${currentLocationId}`;
+      
+      const response = await fetch(url, {
         method: 'POST',
         body: formData,
         credentials: 'include',
@@ -188,8 +231,8 @@ export const ImportCustomValuesTab = () => {
           title: "Import Successful",
           description: `${result.summary.created} created, ${result.summary.updated} updated`,
         });
-        // Refresh the custom values list
-        fetchCustomValues();
+        // Refresh the custom values list for the current location
+        fetchCustomValues(currentLocationId);
       } else {
         toast({
           title: "Import Completed with Errors",
@@ -227,6 +270,14 @@ export const ImportCustomValuesTab = () => {
 
   return (
     <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Import Custom Values</h2>
+        <p className="text-muted-foreground">
+          Import custom values for your location
+          {location?.name && <span className="ml-2 font-medium">• {location.name}</span>}
+        </p>
+      </div>
+      
       <StepIndicator steps={steps} currentStep={currentStep - 1} />
       
       {/* Existing Custom Values Display */}
@@ -237,10 +288,11 @@ export const ImportCustomValuesTab = () => {
               <CardTitle>Existing Custom Values</CardTitle>
               <CardDescription>
                 Current custom values in your location
+                {location?.name && <span className="ml-2 font-medium">• {location.name}</span>}
               </CardDescription>
             </div>
             <Button 
-              onClick={fetchCustomValues} 
+              onClick={() => fetchCustomValues(currentLocationId)} 
               disabled={loading}
               variant="outline"
               size="sm"
@@ -257,7 +309,12 @@ export const ImportCustomValuesTab = () => {
             </div>
           ) : customValues.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No custom values found
+              <RefreshCw className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="font-medium">No custom values found</p>
+              <p className="text-sm">Create custom values in HighLevel first, or import new ones below.</p>
+              {currentLocationId && (
+                <p className="text-xs mt-2">Location: {currentLocationId}</p>
+              )}
             </div>
           ) : (
             <div className="rounded-md border max-h-96 overflow-y-auto">
@@ -443,6 +500,7 @@ export const ImportCustomValuesTab = () => {
             <CardTitle>Import Results</CardTitle>
             <CardDescription>
               Summary of your custom values import
+              {location?.name && <span className="ml-2 font-medium">• {location.name}</span>}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
