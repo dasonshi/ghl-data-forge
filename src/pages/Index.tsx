@@ -7,61 +7,10 @@ import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { Header } from "@/components/Header";
-import { LocationMismatchAlert } from "@/components/LocationMismatchAlert";
-import { AgencyBrandingSettings } from "@/components/AgencyBrandingSettings";
-import { useAppInitialization } from "@/hooks/useAppInitialization";
 import { Toaster } from "@/components/ui/toaster";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const { locationMismatch, location, loading } = useAppInitialization();
-
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-subtle">
-        <Header />
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading...</p>
-          </div>
-        </div>
-        <Toaster />
-      </div>
-    );
-  }
-
-  // Show location mismatch alert
-  if (locationMismatch) {
-    return (
-      <div className="min-h-screen bg-gradient-subtle">
-        <Header />
-        <LocationMismatchAlert />
-        <Toaster />
-      </div>
-    );
-  }
-
-  // Show limited UI when no location context
-  if (!location) {
-    return (
-      <div className="min-h-screen bg-gradient-subtle">
-        <Header />
-        
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="text-center py-12">
-            <h2 className="text-xl font-semibold mb-4">No Location Context</h2>
-            <p className="text-muted-foreground">
-              Please ensure you're accessing this app from within a HighLevel location where it's installed.
-            </p>
-          </div>
-        </div>
-        
-        <Toaster />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -83,11 +32,6 @@ const Index = () => {
           {/* Authentication Status */}
           <AuthStatus />
 
-          {/* Agency Branding Settings */}
-          <div className="flex justify-center">
-            <AgencyBrandingSettings />
-          </div>
-
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
@@ -100,7 +44,7 @@ const Index = () => {
             
             <div className="mt-8">
               <TabsContent value="dashboard" className="mt-0">
-                <Dashboard onTabChange={setActiveTab} />
+                <Dashboard />
               </TabsContent>
               
               <TabsContent value="import-objects" className="mt-0">

@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export function Header() {
-  const { location, userContext, loading } = useAppInitialization();
+  const { branding, userContext, loading } = useAppInitialization();
 
   if (loading) {
     return (
@@ -23,14 +23,12 @@ export function Header() {
   }
 
   const getInitials = (name: string) => {
-    if (!name) return 'SS';
     return name
       .split(' ')
-      .map(word => word?.[0])
-      .filter(Boolean)
+      .map(word => word[0])
       .join('')
       .toUpperCase()
-      .slice(0, 2) || 'SS';
+      .slice(0, 2);
   };
 
   return (
@@ -40,10 +38,10 @@ export function Header() {
           <div className="flex items-center space-x-3">
             {/* Logo or Initials */}
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              {location?.logoUrl ? (
+              {branding?.logoUrl ? (
                 <img 
-                  src={location.logoUrl} 
-                  alt={`${location?.companyName || 'Company'} logo`}
+                  src={branding.logoUrl} 
+                  alt={`${branding.companyName} logo`}
                   className="h-full w-full object-contain rounded-lg"
                   onError={(e) => {
                     // Fallback to initials if logo fails to load
@@ -51,23 +49,23 @@ export function Header() {
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.textContent = getInitials(location?.companyName || 'SS');
+                      parent.textContent = getInitials(branding.companyName);
                     }
                   }}
                 />
               ) : (
-                getInitials(location?.companyName || 'SS')
+                getInitials(branding?.companyName || 'SS')
               )}
             </div>
             
-            {/* Company Name & Title */}
+            {/* Company Name */}
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                {location?.companyName || 'Agency'} - Data Importer
+                {branding?.companyName || 'Savvy Sales'}
               </h1>
-              {location?.name && (
+              {branding?.locationName && (
                 <p className="text-sm text-muted-foreground">
-                  {location.name}
+                  {branding.locationName}
                 </p>
               )}
             </div>
@@ -75,28 +73,21 @@ export function Header() {
 
           {/* User & Location Info */}
           <div className="flex items-center space-x-4">
-            {userContext?.name ? (
+            {userContext && (
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div className="text-right">
-                  <p className="text-sm font-medium">Welcome, {userContext.name}!</p>
+                  <p className="text-sm font-medium">{userContext.name}</p>
                   <Badge variant="secondary" className="text-xs">
-                    {userContext.role || 'User'}
+                    {userContext.role}
                   </Badge>
                 </div>
               </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Welcome!</p>
-              </div>
             )}
-            {location?.id && (
-              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                <Building2 className="h-4 w-4" />
-                <span>ID: {location.id}</span>
-              </div>
-            )}
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+              <span>ID: {branding?.locationId || 'Unknown'}</span>
+            </div>
           </div>
         </div>
       </div>

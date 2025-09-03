@@ -17,8 +17,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DashboardCard } from "./DashboardCard";
-import { useAppInitialization } from "@/hooks/useAppInitialization";
 
 interface CustomObject {
   id: string;
@@ -55,11 +53,7 @@ interface DashboardStats {
 }
 
 
-interface DashboardProps {
-  onTabChange?: (tab: string) => void;
-}
-
-export function Dashboard({ onTabChange }: DashboardProps) {
+export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [customValues, setCustomValues] = useState<CustomValue[]>([]);
   const [selectedObject, setSelectedObject] = useState<string | null>(null);
@@ -76,7 +70,6 @@ export function Dashboard({ onTabChange }: DashboardProps) {
   const [loadingFields, setLoadingFields] = useState(false);
   const [expandedObjects, setExpandedObjects] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-  const { userContext, location } = useAppInitialization();
 
   const fetchCustomValues = async () => {
     setLoadingCustomValues(true);
@@ -200,53 +193,14 @@ export function Dashboard({ onTabChange }: DashboardProps) {
 
   return (
     <div className="space-y-6">
-      {/* Personalized Welcome Section */}
-      <div className="text-center py-8 bg-gradient-subtle rounded-lg border">
-        <div className="mx-auto max-w-md">
-          <h2 className="text-2xl font-bold text-foreground mb-4">
-            {userContext 
-              ? `Hi ${userContext.name}, ready to import data for ${location?.companyName || 'your agency'}?`
-              : `Welcome to ${location?.companyName || 'Your Agency'}'s Data Dashboard`
-            }
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Manage your custom objects, fields, and values all in one place. Get started by exploring your data or importing new records.
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <DashboardCard
-              title="Import Objects"
-              description="Create and manage custom objects"
-              icon={<Layers className="h-5 w-5" />}
-              action={{
-                label: "Get Started",
-                onClick: () => onTabChange?.('import-objects'),
-                variant: "default"
-              }}
-              className="flex-1 max-w-xs"
-            />
-            <DashboardCard
-              title="Import Records"
-              description="Upload data to your objects"
-              icon={<Database className="h-5 w-5" />}
-              action={{
-                label: "Upload Data",
-                onClick: () => onTabChange?.('import-records'),
-                variant: "outline"
-              }}
-              className="flex-1 max-w-xs"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Dashboard Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Data Overview
-          </h3>
+          <h2 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            Dashboard
+          </h2>
           <p className="text-muted-foreground">
-            Current status of your data import system
+            Overview of your data import system
           </p>
         </div>
         <Button onClick={refreshData} disabled={loadingObjects || loadingCustomValues}>

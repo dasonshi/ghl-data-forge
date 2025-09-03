@@ -18,11 +18,10 @@ export function useUserContext() {
   useEffect(() => {
     const initializeUserContext = async () => {
       try {
-        // Step 1: Get user context via postMessage with timeout
-        const encryptedData = await new Promise<any>((resolve) => {
+        // Step 1: Get user context via postMessage
+        const encryptedData = await new Promise<any>((resolve, reject) => {
           const timeout = setTimeout(() => {
-            console.log('User context timeout - continuing without user data');
-            resolve(null); // Fallback to no user context
+            reject(new Error('Timeout waiting for user data'));
           }, 5000);
 
           window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
@@ -38,21 +37,19 @@ export function useUserContext() {
           window.addEventListener('message', messageHandler);
         });
 
-        // Step 2: Decrypt user context (if available)
-        if (encryptedData) {
-          const userResponse = await fetch('https://importer.api.savvysales.ai/api/decrypt-user-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ encryptedData })
-          });
+        // Step 2: Decrypt user context
+        const userResponse = await fetch('https://importer.api.savvysales.ai/api/decrypt-user-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ encryptedData })
+        });
 
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            setUserContext(userData);
-          } else {
-            console.warn('Failed to decrypt user data, continuing without user context');
-          }
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUserContext(userData);
+        } else {
+          throw new Error('Failed to decrypt user data');
         }
       } catch (err) {
         console.error('User context initialization failed:', err);
