@@ -33,13 +33,19 @@ export function Dashboard() {
   const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
 
-  const fetchData = async () => {
+  const fetchData = async (currentLocationId?: string) => {
     try {
       setLoading(true);
-      console.log('🔍 Dashboard: fetchData with locationId:', locationId);
+      const activeLocationId = currentLocationId || locationId;
+      console.log('🔍 Dashboard: fetchData with locationId:', activeLocationId);
+      
+      if (!activeLocationId) {
+        console.warn('No location ID available for data fetch');
+        return;
+      }
       
       // Fetch objects with location ID
-      const objectsResponse = await apiFetch('/api/objects', {}, locationId ?? undefined);
+      const objectsResponse = await apiFetch('/api/objects', {}, activeLocationId);
       
       if (objectsResponse.ok) {
         const data = await objectsResponse.json();
@@ -50,7 +56,7 @@ export function Dashboard() {
         const fieldsMap: Record<string, CustomField[]> = {};
         for (const obj of objects) {
           try {
-            const schemaResponse = await apiFetch(`/api/objects/${obj.key}/schema?fetchProperties=true`, {}, locationId ?? undefined);
+            const schemaResponse = await apiFetch(`/api/objects/${obj.key}/schema?fetchProperties=true`, {}, activeLocationId);
             if (schemaResponse.ok) {
               const schema = await schemaResponse.json();
               // Extract fields from schema
@@ -82,11 +88,24 @@ export function Dashboard() {
     }
   };
 
+  const handleRefresh = async () => {
+    const freshLocationId = await refresh();
+    await fetchData(freshLocationId);
+  };
+
   useEffect(() => {
-    (async () => {
-      const id = await refresh();
-      await fetchData();
-    })();
+    handleRefresh();
+  }, []);
+
+  // Listen for location changes and refresh data automatically
+  useEffect(() => {
+    const handleLocationSwitch = () => {
+      console.log('🔄 Dashboard: Location switch detected, refreshing data');
+      handleRefresh();
+    };
+
+    window.addEventListener('location-switch', handleLocationSwitch);
+    return () => window.removeEventListener('location-switch', handleLocationSwitch);
   }, []);
 
   const totalFields = Object.values(allFields).reduce((sum, fields) => sum + fields.length, 0);
@@ -102,7 +121,7 @@ export function Dashboard() {
             Overview of your custom objects and fields
           </p>
         </div>
-        <Button onClick={fetchData} disabled={loading} variant="outline">
+        <Button onClick={handleRefresh} disabled={loading} variant="outline">
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh Data
         </Button>
