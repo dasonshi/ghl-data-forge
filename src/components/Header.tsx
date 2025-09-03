@@ -23,12 +23,14 @@ export function Header() {
   }
 
   const getInitials = (name: string) => {
+    if (!name) return 'SS';
     return name
       .split(' ')
-      .map(word => word[0])
+      .map(word => word?.[0])
+      .filter(Boolean)
       .join('')
       .toUpperCase()
-      .slice(0, 2);
+      .slice(0, 2) || 'SS';
   };
 
   return (
@@ -38,10 +40,10 @@ export function Header() {
           <div className="flex items-center space-x-3">
             {/* Logo or Initials */}
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              {location?.logoUrl ? (
+              {branding?.companyLogo ? (
                 <img 
-                  src={location.logoUrl} 
-                  alt={`${location.companyName} logo`}
+                  src={branding.companyLogo} 
+                  alt={`${branding.companyName || 'Company'} logo`}
                   className="h-full w-full object-contain rounded-lg"
                   onError={(e) => {
                     // Fallback to initials if logo fails to load
@@ -49,19 +51,19 @@ export function Header() {
                     target.style.display = 'none';
                     const parent = target.parentElement;
                     if (parent) {
-                      parent.textContent = getInitials(location?.companyName || branding?.companyName || 'SS');
+                      parent.textContent = getInitials(branding?.companyName || 'SS');
                     }
                   }}
                 />
               ) : (
-                getInitials(location?.companyName || branding?.companyName || 'SS')
+                getInitials(branding?.companyName || 'SS')
               )}
             </div>
             
             {/* Company Name & Title */}
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                {location?.companyName || branding?.companyName || 'Agency'} - Data Importer
+                {branding?.companyName || 'Agency'} - Data Importer
               </h1>
               {location?.name && (
                 <p className="text-sm text-muted-foreground">
@@ -73,13 +75,13 @@ export function Header() {
 
           {/* User & Location Info */}
           <div className="flex items-center space-x-4">
-            {userContext ? (
+            {userContext?.name ? (
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div className="text-right">
                   <p className="text-sm font-medium">Welcome, {userContext.name}!</p>
                   <Badge variant="secondary" className="text-xs">
-                    {userContext.role}
+                    {userContext.role || 'User'}
                   </Badge>
                 </div>
               </div>
@@ -89,7 +91,7 @@ export function Header() {
                 <p className="text-sm font-medium">Welcome!</p>
               </div>
             )}
-            {location && (
+            {location?.id && (
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <Building2 className="h-4 w-4" />
                 <span>ID: {location.id}</span>
