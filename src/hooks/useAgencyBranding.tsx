@@ -5,8 +5,12 @@ import { useLocationId } from '@/hooks/useLocationId';
 interface AgencyBranding {
   companyName?: string;
   logoUrl?: string;
+  website?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  locationName?: string;
+  timezone?: string;
+  country?: string;
 }
 
 export function useAgencyBranding() {
@@ -26,18 +30,7 @@ export function useAgencyBranding() {
           const data = await response.json();
           setBranding(data);
         } else {
-          // Fallback: try to get auth status which includes locationId
-          const authResponse = await apiFetch('/api/auth/status', {}, locationId ?? undefined);
-          
-          if (authResponse.ok) {
-            const authData = await authResponse.json();
-            // Use default branding with location info if available
-            setBranding({
-              companyName: authData.subAccountName || 'HighLevel',
-            });
-          } else {
-            setBranding(null);
-          }
+          setBranding(null);
         }
       } catch (error) {
         console.error('Failed to fetch agency branding:', error);

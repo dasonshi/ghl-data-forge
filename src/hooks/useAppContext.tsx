@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE } from '@/lib/api';
 
 export interface User {
   userId: string;
@@ -76,7 +77,7 @@ export function useAppContext(): AppContext {
         let response;
         if (encryptedData) {
           console.log('🔄 Trying encrypted context fetch...');
-          response = await fetch('https://importer.api.savvysales.ai/api/app-context', {
+          response = await fetch(`${API_BASE}/api/app-context`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -87,7 +88,7 @@ export function useAppContext(): AppContext {
         // If no encrypted data or request failed, try auth-based endpoint
         if (!encryptedData || !response || !response.ok) {
           console.log('🔄 Trying auth-based context fetch...');
-          response = await fetch('https://importer.api.savvysales.ai/api/auth/status', {
+          response = await fetch(`${API_BASE}/api/auth/status`, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include'

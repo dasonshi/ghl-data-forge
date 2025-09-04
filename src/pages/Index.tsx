@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuthStatus } from "@/components/AuthStatus";
 import { Dashboard } from "@/components/Dashboard";
@@ -9,11 +9,58 @@ import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
 import { useAppContext } from "@/hooks/useAppContext";
+import { useAgencyBranding } from "@/hooks/useAgencyBranding";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, ExternalLink } from "lucide-react";
+import { API_BASE } from "@/lib/api";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { loading, error } = useAppContext();
+  const { branding } = useAgencyBranding();
 
+  // Update document title when branding changes
+  useEffect(() => {
+    const companyName = branding?.companyName || 'HighLevel';
+    document.title = `${companyName} - Data Importer`;
+  }, [branding]);
+
+  const handleConnect = () => {
+    const popup = window.open(
+      `${API_BASE}/oauth/install`,
+      'oauth',
+      'width=600,height=600'
+    );
+  };
+
+  // Show app installation error
+  if (error === 'app_not_installed') {
+    return (
+      <div className="min-h-screen bg-gradient-subtle">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <Card className="max-w-md w-full">
+              <CardContent className="p-6 text-center space-y-4">
+                <AlertTriangle className="h-12 w-12 text-warning mx-auto" />
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">App Not Installed</h3>
+                  <p className="text-sm text-muted-foreground">
+                    This app needs to be installed for the current location.
+                  </p>
+                </div>
+                <Button onClick={handleConnect} className="w-full">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Connect Account
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
   // Show loading state while initializing
   if (loading) {
     return (

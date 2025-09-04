@@ -7,8 +7,9 @@ import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, LogOut } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { useAppContext } from "@/hooks/useAppContext";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE } from "@/lib/api";
 import { useLocationId } from "@/hooks/useLocationId";
+import { useAgencyBranding } from "@/hooks/useAgencyBranding";
 
 interface AuthData {
   authenticated: boolean;
@@ -21,6 +22,7 @@ export function AuthStatus() {
   const [loading, setLoading] = useState(true);
   const { location } = useAppContext();
   const { locationId, refresh } = useLocationId();
+  const { branding } = useAgencyBranding();
   const { toast } = useToast();
 
   console.log('🔍 AuthStatus: location from context:', location?.id, 'locationId from hook:', locationId);
@@ -54,7 +56,7 @@ export function AuthStatus() {
 
   const handleConnect = () => {
     const popup = window.open(
-      'https://importer.api.savvysales.ai/oauth/install',
+      `${API_BASE}/oauth/install`,
       'oauth',
       'width=600,height=600'
     );
@@ -130,17 +132,17 @@ export function AuthStatus() {
               <>
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Connected to Subaccount</span>
-                    <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                      Authenticated
-                    </Badge>
-                  </div>
-                  {location?.id && (
-                    <p className="text-sm text-muted-foreground">
-                      Location: {location.id}
-                    </p>
-                  )}
+                   <div className="flex items-center gap-2">
+                     <span className="font-medium">Connected to {branding?.companyName || 'HighLevel'}</span>
+                     <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                       Authenticated
+                     </Badge>
+                   </div>
+                   {location?.id && (
+                     <p className="text-sm text-muted-foreground">
+                       {branding?.locationName ? `Connected to ${branding.locationName} (${branding.companyName || 'HighLevel'})` : `Location: ${location.id}`}
+                     </p>
+                   )}
                 </div>
               </>
             ) : (
