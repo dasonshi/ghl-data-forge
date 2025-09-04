@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch, API_BASE } from "@/lib/api";
-import { useLocationId } from "@/hooks/useLocationId";
+import { useAppContext } from "@/hooks/useAppContext";
 
 interface CustomObject {
   id: string;
@@ -30,13 +30,13 @@ export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [allFields, setAllFields] = useState<Record<string, CustomField[]>>({});
   const [loading, setLoading] = useState(true);
-  const { locationId, refresh } = useLocationId();
+  const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
   const fetchData = async (currentLocationId?: string) => {
     try {
       setLoading(true);
-      const activeLocationId = currentLocationId || locationId;
+      const activeLocationId = currentLocationId || location?.id;
       console.log('🔍 Dashboard: fetchData with locationId:', activeLocationId);
       
       if (!activeLocationId) {
@@ -106,8 +106,8 @@ export function Dashboard() {
   };
 
   const handleRefresh = async () => {
-    const freshLocationId = await refresh();
-    await fetchData(freshLocationId);
+    await refreshContext();
+    await fetchData();
   };
 
   useEffect(() => {
