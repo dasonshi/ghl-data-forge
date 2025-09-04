@@ -111,14 +111,14 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    handleRefresh();
-  }, []);
+    fetchData();
+  }, [location?.id]);
 
   // Listen for location changes and refresh data automatically
   useEffect(() => {
     const handleLocationSwitch = () => {
       console.log('🔄 Dashboard: Location switch detected, refreshing data');
-      handleRefresh();
+      fetchData();
     };
 
     window.addEventListener('location-switch', handleLocationSwitch);

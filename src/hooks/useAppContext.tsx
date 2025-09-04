@@ -155,6 +155,8 @@ export function useAppContext(): AppContext {
   }, []); // Remove all dependencies to prevent infinite loops
 
   const refreshContext = useCallback(async () => {
+    // Reset fetch lock to ensure refresh works even if there's a pending fetch
+    fetchingRef.current = false;
     setLoading(true);
     await fetchAppContext();
   }, [fetchAppContext]);
