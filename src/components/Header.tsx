@@ -1,10 +1,12 @@
 import { Building2, User } from "lucide-react";
 import { useAppContext } from "@/hooks/useAppContext";
+import { useLocationId } from "@/hooks/useLocationId";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export function Header() {
   const { user, location, loading } = useAppContext();
+  const { locationId } = useLocationId();
 
   if (loading) {
     return (
@@ -83,7 +85,7 @@ export function Header() {
             )}
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               <Building2 className="h-4 w-4" />
-              <span>ID: {user?.userId || 'Unknown'}</span>
+              <span>Location: {locationId || 'Unknown'}</span>
             </div>
           </div>
         </div>
