@@ -11,7 +11,7 @@ import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } fr
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
-import { useLocationId } from '@/hooks/useLocationId';
+import { useAppContext } from '@/hooks/useAppContext';
 import Papa from "papaparse";
 
 interface CustomObject {
@@ -53,7 +53,7 @@ export function ImportRecordsTab() {
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const { locationId, refresh } = useLocationId();
+  const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
   // Clear all data when location switches
@@ -70,13 +70,13 @@ useLocationSwitch(async () => {
   setProgress(0);
   setResult(null);
 
-  const id = await refresh();
-  await fetchObjects(id || undefined);
+  await refreshContext();
+  await fetchObjects();
 });
 
-const fetchObjects = async (locId?: string) => {
+const fetchObjects = async () => {
   try {
-    const res = await apiFetch('/api/objects', {}, locId ?? locationId ?? undefined);
+    const res = await apiFetch('/api/objects', {}, location?.id ?? undefined);
     if (res.ok) {
       const data = await res.json();
       setObjects(data.objects || data || []);
@@ -93,7 +93,7 @@ const fetchObjects = async (locId?: string) => {
 
  const fetchFields = async (objectKey: string) => {
   try {
-    const res = await apiFetch(`/api/objects/${objectKey}/fields`, {}, locationId ?? undefined);
+    const res = await apiFetch(`/api/objects/${objectKey}/fields`, {}, location?.id ?? undefined);
     if (res.ok) {
       const data = await res.json();
       const fields = data.fields || [];
@@ -122,7 +122,7 @@ const fetchObjects = async (locId?: string) => {
 
     try {
       // Only fetch template since we already have fields data
-      const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, locationId ?? undefined);
+      const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, location?.id ?? undefined);
 
       if (templateResponse.ok) {
         const csvText = await templateResponse.text();
@@ -293,7 +293,7 @@ const fetchObjects = async (locId?: string) => {
 const response = await apiFetch(`/api/objects/${selectedObject}/records/import`, {
   method: 'POST',
   body: formData,
-}, locationId ?? undefined);
+}, location?.id ?? undefined);
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -331,11 +331,8 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
   };
 
 useEffect(() => {
-  (async () => {
-    const id = await refresh();
-    await fetchObjects(id || undefined);
-  })();
-}, []);
+  fetchObjects();
+}, [location?.id]);
 
   const selectedObjectData = objects.find(obj => obj.key === selectedObject);
 

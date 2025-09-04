@@ -12,7 +12,7 @@ import { Download, Upload, RefreshCw, Eye, CheckCircle2, AlertTriangle } from "l
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
-import { useLocationId } from "@/hooks/useLocationId";
+import { useAppContext } from "@/hooks/useAppContext";
 import Papa from "papaparse";
 
 interface CustomValue {
@@ -48,7 +48,7 @@ export function ImportCustomValuesTab() {
   const [valuesFile, setValuesFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const { locationId, refresh } = useLocationId();
+  const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
   // Clear all data when location switches
@@ -64,15 +64,15 @@ export function ImportCustomValuesTab() {
     setProgress(0);
     setImportResult(null);
 
-    const id = await refresh();
-    await fetchCustomValues(id || undefined);
+    await refreshContext();
+    await fetchCustomValues();
   });
 
-  const fetchCustomValues = async (locId?: string) => {
+  const fetchCustomValues = async () => {
     setLoading(true);
     try {
-      console.log('🔍 ImportCustomValuesTab: fetchCustomValues with locationId:', locId ?? locationId ?? 'undefined');
-      const response = await apiFetch('/api/custom-values', {}, locId ?? locationId ?? undefined);
+      console.log('🔍 ImportCustomValuesTab: fetchCustomValues with locationId:', location?.id ?? 'undefined');
+      const response = await apiFetch('/api/custom-values', {}, location?.id ?? undefined);
       
       if (response.ok) {
         const data = await response.json();
@@ -179,7 +179,7 @@ export function ImportCustomValuesTab() {
       const response = await apiFetch('/api/custom-values/import', {
         method: 'POST',
         body: formData,
-      }, locationId ?? undefined);
+      }, location?.id ?? undefined);
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -217,11 +217,8 @@ export function ImportCustomValuesTab() {
   };
 
   useEffect(() => {
-    (async () => {
-      const id = await refresh();
-      await fetchCustomValues(id || undefined);
-    })();
-  }, []);
+    fetchCustomValues();
+  }, [location?.id]);
 
   const renderUpload = () => (
     <div className="space-y-6">
