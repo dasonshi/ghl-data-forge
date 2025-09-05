@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { API_BASE } from '@/lib/api';
+import { apiFetch, API_BASE } from '@/lib/api';
 
 export interface User {
   userId: string;
@@ -35,6 +35,7 @@ export function useAppContext(): AppContext {
   const [location, setLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentLocationId, setCurrentLocationId] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Use ref to track if we're currently fetching to prevent duplicate calls
@@ -77,22 +78,18 @@ export function useAppContext(): AppContext {
         let response;
         if (encryptedData) {
           console.log('🔄 Trying encrypted context fetch...');
-          response = await fetch(`${API_BASE}/api/app-context`, {
+          response = await apiFetch('/api/app-context', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
             body: JSON.stringify({ encryptedData })
-          });
+          }, currentLocationId);
         }
         
         // If no encrypted data or request failed, try auth-based endpoint
         if (!encryptedData || !response || !response.ok) {
           console.log('🔄 Trying auth-based context fetch...');
-          response = await fetch(`${API_BASE}/api/auth/status`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-          });
+          response = await apiFetch('/api/auth/status', {
+            method: 'GET'
+          }, currentLocationId);
         }
 
         if (response.ok) {
@@ -101,17 +98,18 @@ export function useAppContext(): AppContext {
           
           // Extract location info from multiple possible sources
           const newLocationId = data.location?.id || data.locationId || null;
-          const currentLocationId = localStorage.getItem('currentLocationId');
+          const storedLocationId = localStorage.getItem('currentLocationId');
           
-          console.log('🔍 Location comparison:', { current: currentLocationId, new: newLocationId });
+          console.log('🔍 Location comparison:', { current: storedLocationId, new: newLocationId });
           
           setUser(data.user);
           setLocation(data.location);
+          setCurrentLocationId(newLocationId);
           setError(null);
           
           // Check if location changed and broadcast event
-          if (currentLocationId && currentLocationId !== newLocationId && newLocationId) {
-            console.log('🔄 Location switch detected:', { from: currentLocationId, to: newLocationId });
+          if (storedLocationId && storedLocationId !== newLocationId && newLocationId) {
+            console.log('🔄 Location switch detected:', { from: storedLocationId, to: newLocationId });
             
             // Update stored location
             localStorage.setItem('currentLocationId', newLocationId);
@@ -128,7 +126,7 @@ export function useAppContext(): AppContext {
             console.log('🔄 Broadcasting location switch event:', switchEvent.detail);
             window.dispatchEvent(switchEvent);
             
-          } else if (!currentLocationId && newLocationId) {
+          } else if (!storedLocationId && newLocationId) {
             // First time setting location
             console.log('🔄 Setting initial location:', newLocationId);
             localStorage.setItem('currentLocationId', newLocationId);
@@ -180,6 +178,7 @@ export function useAppContext(): AppContext {
       // Clear all existing state immediately
       setUser(null);
       setLocation(null);
+      setCurrentLocationId(newLocationId);
       setError(null);
       setLoading(true);
       
@@ -223,7 +222,12 @@ export function useAppContext(): AppContext {
   }, []); // Remove dependencies that cause infinite loops
 
   useEffect(() => {
-    // Initial load only
+    // Initial load only - set initial locationId from storage
+    const storedLocationId = localStorage.getItem('currentLocationId');
+    if (storedLocationId) {
+      setCurrentLocationId(storedLocationId);
+    }
+    
     console.log('🔄 useAppContext: Setting up listeners...');
     fetchAppContext();
 

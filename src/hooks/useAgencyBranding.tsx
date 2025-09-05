@@ -23,8 +23,8 @@ export function useAgencyBranding() {
       try {
         setLoading(true);
         
-        // First try to get agency branding
-        const response = await apiFetch('/api/agency-branding', {}, locationId ?? undefined);
+        // Always pass the current locationId, even if null
+        const response = await apiFetch('/api/agency-branding', {}, locationId);
         
         if (response.ok) {
           const data = await response.json();
@@ -40,11 +40,24 @@ export function useAgencyBranding() {
       }
     };
 
+    // Listen for location switches and refetch
+    const handleLocationSwitch = () => {
+      console.log('🔄 useAgencyBranding: Location switch detected, refetching...');
+      fetchBranding();
+    };
+
+    window.addEventListener('location-switch', handleLocationSwitch);
+
+    // Initial fetch
     (async () => {
       const id = await refresh();
       await fetchBranding();
     })();
-  }, []);
+
+    return () => {
+      window.removeEventListener('location-switch', handleLocationSwitch);
+    };
+  }, [locationId]); // Re-run when locationId changes
 
   return { branding, loading };
 }
