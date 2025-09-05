@@ -53,9 +53,31 @@ export function useAppContext(): AppContext {
     try {
       console.log('🔄 Fetching app context...');
       
-      // Call app-context endpoint only once
+      // Get encrypted data from HighLevel (with timeout)
+      const encryptedData = await new Promise<any>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          console.log('⏰ Timeout waiting for encrypted user data - proceeding without');
+          resolve(null);
+        }, 3000); // Shorter timeout
+
+        window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+        
+        const messageHandler = (event: MessageEvent) => {
+          if (event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
+            clearTimeout(timeout);
+            window.removeEventListener('message', messageHandler);
+            console.log('✅ Received encrypted user data');
+            resolve(event.data.payload);
+          }
+        };
+        
+        window.addEventListener('message', messageHandler);
+      });
+
+      // Call app-context endpoint (must be POST)
       const response = await apiFetch('/api/app-context', {
-        method: 'GET'
+        method: 'POST',
+        body: JSON.stringify({ encryptedData: encryptedData || {} })
       }, currentLocationId);
 
       if (response.ok) {
