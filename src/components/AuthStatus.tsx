@@ -1,58 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { useAppContext } from "@/hooks/useAppContext";
 import { apiFetch, API_BASE } from "@/lib/api";
-import { useLocationId } from "@/hooks/useLocationId";
 import { useAgencyBranding } from "@/hooks/useAgencyBranding";
 
-interface AuthData {
-  authenticated: boolean;
-  locationId?: string;
-  tokenStatus?: string;
-}
-
 export function AuthStatus() {
-  const [authStatus, setAuthStatus] = useState<AuthData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { location } = useAppContext();
-  const { locationId, refresh } = useLocationId();
+  const { user, location, loading, refreshContext } = useAppContext();
   const { branding } = useAgencyBranding();
   const { toast } = useToast();
 
-  console.log('🔍 AuthStatus: location from context:', location?.id, 'locationId from hook:', locationId);
-
-  // Clear all data when location switches
-  useLocationSwitch(async () => {
-    console.log('🔄 AuthStatus: Clearing data for location switch');
-    setAuthStatus(null);
-    setLoading(true);
-
-    const id = await refresh();
-    await fetchAuthStatus();
-  });
-
-  const fetchAuthStatus = async () => {
-    try {
-      const response = await apiFetch('/api/auth/status', {}, locationId ?? undefined);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAuthStatus(data);
-      } else {
-        setAuthStatus(null);
-      }
-    } catch (error) {
-      setAuthStatus(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Connected if we have both user and location data
+  const isConnected = !!(user && location);
 
   const handleConnect = () => {
     const popup = window.open(
@@ -67,7 +30,7 @@ export function AuthStatus() {
       
       if (event.data.type === 'oauth_success') {
         popup?.close();
-        fetchAuthStatus();
+        refreshContext();
         toast({
           title: "Connected",
           description: "Successfully connected to HighLevel.",
@@ -83,14 +46,14 @@ export function AuthStatus() {
     try {
       const response = await apiFetch('/api/auth/disconnect', { 
         method: 'POST'
-      }, locationId ?? undefined);
+      }, location?.id);
       
       if (response.ok) {
         toast({
           title: "Disconnected",
           description: "Successfully disconnected from HighLevel.",
         });
-        await fetchAuthStatus();
+        refreshContext();
       } else {
         throw new Error('Disconnect failed');
       }
@@ -102,13 +65,6 @@ export function AuthStatus() {
       });
     }
   };
-
-  useEffect(() => {
-    (async () => {
-      const id = await refresh();
-      await fetchAuthStatus();
-    })();
-  }, []);
 
   if (loading) {
     return (
@@ -128,7 +84,7 @@ export function AuthStatus() {
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {authStatus?.authenticated ? (
+            {isConnected ? (
               <>
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <div className="space-y-1">
@@ -140,7 +96,7 @@ export function AuthStatus() {
                    </div>
                    {location?.id && (
                      <p className="text-sm text-muted-foreground">
-                       {branding?.locationName ? `Connected to ${branding.locationName} (${branding.companyName || 'HighLevel'})` : `Location: ${location.id}`}
+                       Location: {location.id}
                      </p>
                    )}
                 </div>
@@ -164,7 +120,7 @@ export function AuthStatus() {
           </div>
           
           <div className="flex items-center gap-2">
-            {authStatus?.authenticated ? (
+            {isConnected ? (
               <Button variant="outline" size="sm" onClick={handleDisconnect}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Disconnect
