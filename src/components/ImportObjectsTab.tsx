@@ -6,7 +6,7 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { Download, CheckCircle2, AlertTriangle, Upload, ArrowLeft, Database, Info } from "lucide-react";
+import { Download, CheckCircle2, AlertTriangle, Upload, ArrowLeft, Database, Info, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
@@ -163,15 +163,89 @@ export function ImportObjectsTab() {
         </AlertDescription>
       </Alert>
 
+      {/* Object Parameters Help Section - Full Width */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5" />
+            Custom Object Parameters Guide
+          </CardTitle>
+          <CardDescription>
+            Required and optional parameters for each custom object in your CSV
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6 text-sm">
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-primary mb-2">Required Fields</h4>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">labels_singular</p>
+                    <p className="text-muted-foreground">Singular name of the custom object (e.g., "Pet")</p>
+                  </div>
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">labels_plural</p>
+                    <p className="text-muted-foreground">Plural name of the custom object (e.g., "Pets")</p>
+                  </div>
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">key</p>
+                    <p className="text-muted-foreground">Internal identifier (lowercase + underscore_separated). 'custom_objects.' prefix added automatically (e.g., "pet" becomes "custom_objects.pet")</p>
+                  </div>
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">primary_display_key</p>
+                    <p className="text-muted-foreground">Key for the primary display field (lowercase + underscore_separated). 'custom_objects.[object_key].' prefix added automatically</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-primary mb-2">Required Fields (continued)</h4>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">primary_display_name</p>
+                    <p className="text-muted-foreground">Display name for the primary property (e.g., "Pet Name")</p>
+                  </div>
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">primary_display_dataType</p>
+                    <p className="text-muted-foreground">Primary property data type: TEXT or NUMERICAL</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-secondary mb-2">Optional Fields</h4>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">description</p>
+                    <p className="text-muted-foreground">Description of the custom object (e.g., "These are non vaccinated pets")</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <Alert className="mt-4">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              <strong>Primary Display Property:</strong> This is the main field that will be displayed on the record page for your custom object. It serves as the identifier for each record.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      {/* Template Download and Upload Section - Side by Side */}
       <div className="grid md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Download className="h-5 w-5" />
-              Objects Template
+              CSV Template
             </CardTitle>
             <CardDescription>
-              Download the CSV template to define your custom objects
+              Download the template and fill it with your object definitions
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -189,44 +263,22 @@ export function ImportObjectsTab() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              Objects Guide
+              <Upload className="h-5 w-5" />
+              Upload CSV
             </CardTitle>
             <CardDescription>
-              Complete reference for CSV template fields
+              Upload your completed CSV file with object definitions
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-2">
-                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">1</div>
-                <p>Download the objects CSV template</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">2</div>
-                <p>Fill in the required fields for each custom object</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">3</div>
-                <p>Upload the completed CSV file below</p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="bg-primary/10 text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs font-medium mt-0.5">4</div>
-                <p>Preview and import your custom objects</p>
-              </div>
-            </div>
+            <FileUploadZone
+              onFileSelect={handleObjectsFile}
+              acceptedTypes=".csv"
+              maxSize={10}
+              selectedFile={objectsFile}
+            />
           </CardContent>
         </Card>
-      </div>
-
-      <div className="space-y-3">
-        <h3 className="font-medium">Upload Objects CSV</h3>
-        <FileUploadZone
-          onFileSelect={handleObjectsFile}
-          acceptedTypes=".csv"
-          maxSize={10}
-          selectedFile={objectsFile}
-        />
       </div>
     </div>
   );
