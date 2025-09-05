@@ -153,7 +153,14 @@ export function AddFieldsTab() {
         }
         
         const data = results.data as Record<string, string>[];
-        setFieldsData(data);
+        
+        // Auto-generate fieldKey for each row based on the name field
+        const dataWithFieldKeys = data.map(row => ({
+          ...row,
+          fieldKey: `custom_object.${selectedObject}.${row.name ? row.name.toLowerCase().replace(/\s+/g, '_') : 'unnamed_field'}`
+        }));
+        
+        setFieldsData(dataWithFieldKeys);
         setCurrentStep("preview");
       },
       error: (error) => {
@@ -289,54 +296,8 @@ export function AddFieldsTab() {
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              CSV Template
-            </CardTitle>
-            <CardDescription>
-              Download the template and fill it with your field definitions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={downloadTemplate}
-            >
-              <Database className="h-4 w-4 mr-2" />
-              Download Fields Template
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Fields</CardTitle>
-            <CardDescription>
-              Fields available for mapping in this object
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {availableFields.length > 0 ? (
-                availableFields.map((field, index) => (
-                  <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded">
-                    {field}
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">Loading fields...</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Field Parameters Help Section */}
-      <Card className="mt-6">
+      {/* Field Parameters Help Section - Full Width */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5" />
@@ -359,10 +320,12 @@ export function AddFieldsTab() {
                   <div className="border-l-2 border-primary pl-3">
                     <p className="font-medium">dataType</p>
                     <p className="text-muted-foreground">Field type: TEXT, LARGE_TEXT, NUMERICAL, PHONE, MONETARY, CHECKBOX, SINGLE_OPTIONS, MULTIPLE_OPTIONS, DATE, TEXTBOX_LIST, FILE_UPLOAD, RADIO, EMAIL</p>
-                  </div>
-                  <div className="border-l-2 border-primary pl-3">
-                    <p className="font-medium">fieldKey</p>
-                    <p className="text-muted-foreground">Unique identifier (e.g., "custom_object.pet.name")</p>
+                    <Alert className="mt-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        For SINGLE_OPTIONS, MULTIPLE_OPTIONS, RADIO, CHECKBOX, and TEXTBOX_LIST fields, include an "options" column with pipe-separated values (e.g., "Option 1|Option 2|Option 3")
+                      </AlertDescription>
+                    </Alert>
                   </div>
                   <div className="border-l-2 border-primary pl-3">
                     <p className="font-medium">showInForms</p>
@@ -396,28 +359,60 @@ export function AddFieldsTab() {
                     <p className="font-medium">allowCustomOption</p>
                     <p className="text-muted-foreground">Boolean - for RADIO fields, allows custom values</p>
                   </div>
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">options</p>
+                    <p className="text-muted-foreground">Pipe-separated values for select/radio fields (e.g., "Red|Blue|Green")</p>
+                  </div>
                 </div>
               </div>
-              
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  For SINGLE_OPTIONS, MULTIPLE_OPTIONS, RADIO, CHECKBOX, and TEXTBOX_LIST fields, include an "options" column with pipe-separated values (e.g., "Option 1|Option 2|Option 3")
-                </AlertDescription>
-              </Alert>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <div className="space-y-3">
-        <h3 className="font-medium">Upload Fields CSV</h3>
-        <FileUploadZone
-          onFileSelect={handleFieldsFile}
-          acceptedTypes=".csv"
-          maxSize={10}
-          selectedFile={fieldsFile}
-        />
+      {/* Template Download and Upload Section - Side by Side */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              CSV Template
+            </CardTitle>
+            <CardDescription>
+              Download the template and fill it with your field definitions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={downloadTemplate}
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Download Fields Template
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5" />
+              Upload CSV
+            </CardTitle>
+            <CardDescription>
+              Upload your completed CSV file with field definitions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FileUploadZone
+              onFileSelect={handleFieldsFile}
+              acceptedTypes=".csv"
+              maxSize={10}
+              selectedFile={fieldsFile}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
