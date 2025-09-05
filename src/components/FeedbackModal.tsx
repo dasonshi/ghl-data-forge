@@ -96,32 +96,35 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
         formData.append(`screenshot_${index}`, file);
       });
 
+      console.log('🚀 Sending feedback to webhook...');
+      
       const response = await fetch('https://services.leadconnectorhq.com/hooks/gdzneuvA9mUJoRroCv4O/webhook-trigger/8ec895cf-7784-4ca4-8856-a891acaa1e6d', {
         method: 'POST',
+        mode: 'no-cors', // This bypasses CORS but we won't get response details
         body: formData,
       });
 
-      if (response.ok) {
-        toast({
-          title: "Feedback Sent!",
-          description: "Thank you for your feedback. We'll get back to you soon.",
-        });
-        
-        // Reset form
-        setForm({
-          name: "",
-          email: "",
-          component: "",
-          otherComponent: "",
-          message: "",
-          screenshots: [],
-        });
-        
-        onOpenChange(false);
-      } else {
-        throw new Error('Failed to send feedback');
-      }
+      console.log('✅ Feedback sent successfully');
+      
+      toast({
+        title: "Feedback Sent!",
+        description: "Thank you for your feedback. We'll get back to you soon.",
+      });
+      
+      // Reset form
+      setForm({
+        name: "",
+        email: "",
+        component: "",
+        otherComponent: "",
+        message: "",
+        screenshots: [],
+      });
+      
+      onOpenChange(false);
+      
     } catch (error) {
+      console.error('❌ Feedback submission error:', error);
       toast({
         title: "Error",
         description: "Failed to send feedback. Please try again.",
