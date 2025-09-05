@@ -18,6 +18,7 @@ export function AuthStatus() {
   const isConnected = !!(user && location);
 
   const handleConnect = () => {
+    console.log('🔐 Opening OAuth popup...');
     const popup = window.open(
       `${API_BASE}/oauth/install`,
       'oauth',
@@ -26,9 +27,15 @@ export function AuthStatus() {
 
     // Listen for auth success
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://importer.api.savvysales.ai') return;
+      console.log('📨 Received message:', event.origin, event.data);
+      
+      if (event.origin !== 'https://importer.api.savvysales.ai') {
+        console.log('❌ Message from wrong origin:', event.origin);
+        return;
+      }
       
       if (event.data.type === 'oauth_success') {
+        console.log('✅ OAuth success received, refreshing context...');
         popup?.close();
         refreshContext();
         toast({
@@ -40,6 +47,15 @@ export function AuthStatus() {
     };
 
     window.addEventListener('message', handleMessage);
+    
+    // Also listen for popup close without success
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        console.log('🔒 OAuth popup closed');
+        clearInterval(checkClosed);
+        window.removeEventListener('message', handleMessage);
+      }
+    }, 1000);
   };
 
   const handleDisconnect = async () => {
