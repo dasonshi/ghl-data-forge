@@ -114,15 +114,25 @@ export function Dashboard() {
     fetchData();
   }, [location?.id]);
 
-  // Listen for location changes and refresh data automatically
+  // Listen for location changes and auth success to refresh data automatically
   useEffect(() => {
     const handleLocationSwitch = () => {
       console.log('🔄 Dashboard: Location switch detected, refreshing data');
       fetchData();
     };
 
+    const handleAuthSuccess = () => {
+      console.log('🔄 Dashboard: Auth success detected, refreshing data');
+      fetchData();
+    };
+
     window.addEventListener('location-switch', handleLocationSwitch);
-    return () => window.removeEventListener('location-switch', handleLocationSwitch);
+    window.addEventListener('auth-success', handleAuthSuccess);
+    
+    return () => {
+      window.removeEventListener('location-switch', handleLocationSwitch);
+      window.removeEventListener('auth-success', handleAuthSuccess);
+    };
   }, []);
 
   const totalFields = Object.values(allFields).reduce((sum, fields) => sum + fields.length, 0);

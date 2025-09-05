@@ -38,6 +38,10 @@ export function AuthStatus() {
         console.log('✅ OAuth success received, refreshing context...');
         popup?.close();
         refreshContext();
+        
+        // Trigger dashboard refresh after successful auth
+        window.dispatchEvent(new CustomEvent('auth-success'));
+        
         toast({
           title: "Connected",
           description: "Successfully connected to HighLevel.",

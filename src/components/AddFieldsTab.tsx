@@ -7,7 +7,7 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } from "lucide-react";
+import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
@@ -334,6 +334,81 @@ export function AddFieldsTab() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Field Parameters Help Section */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5" />
+            Field Parameters Guide
+          </CardTitle>
+          <CardDescription>
+            Required and optional parameters for each field in your CSV
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6 text-sm">
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-primary mb-2">Required Fields</h4>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">name</p>
+                    <p className="text-muted-foreground">Display name for the field (e.g., "Full Name")</p>
+                  </div>
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">dataType</p>
+                    <p className="text-muted-foreground">Field type: TEXT, LARGE_TEXT, NUMERICAL, PHONE, MONETARY, CHECKBOX, SINGLE_OPTIONS, MULTIPLE_OPTIONS, DATE, TEXTBOX_LIST, FILE_UPLOAD, RADIO, EMAIL</p>
+                  </div>
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">fieldKey</p>
+                    <p className="text-muted-foreground">Unique identifier (e.g., "custom_object.pet.name")</p>
+                  </div>
+                  <div className="border-l-2 border-primary pl-3">
+                    <p className="font-medium">showInForms</p>
+                    <p className="text-muted-foreground">Boolean (true/false) - whether field appears in forms</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-secondary mb-2">Optional Fields</h4>
+                <div className="space-y-2">
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">description</p>
+                    <p className="text-muted-foreground">Field description or help text</p>
+                  </div>
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">placeholder</p>
+                    <p className="text-muted-foreground">Placeholder text for the field</p>
+                  </div>
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">acceptedFormats</p>
+                    <p className="text-muted-foreground">For FILE_UPLOAD: .pdf, .docx, .doc, .jpg, .jpeg, .png, .gif, .csv, .xlsx, .xls</p>
+                  </div>
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">maxFileLimit</p>
+                    <p className="text-muted-foreground">Number - maximum files for FILE_UPLOAD fields</p>
+                  </div>
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">allowCustomOption</p>
+                    <p className="text-muted-foreground">Boolean - for RADIO fields, allows custom values</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  For SINGLE_OPTIONS, MULTIPLE_OPTIONS, RADIO, CHECKBOX, and TEXTBOX_LIST fields, include an "options" column with pipe-separated values (e.g., "Option 1|Option 2|Option 3")
+                </AlertDescription>
+              </Alert>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="space-y-3">
         <h3 className="font-medium">Upload Fields CSV</h3>
