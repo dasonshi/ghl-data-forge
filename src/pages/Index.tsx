@@ -6,17 +6,19 @@ import { ImportObjectsTab } from "@/components/ImportObjectsTab";
 import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
+import { FeedbackModal } from "@/components/FeedbackModal";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
+import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/hooks/useAppContext";
 import { useAgencyBranding } from "@/hooks/useAgencyBranding";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, ExternalLink } from "lucide-react";
+import { AlertTriangle, ExternalLink, MessageCircle } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const { loading, error } = useAppContext();
   const { branding } = useAgencyBranding();
 
@@ -130,6 +132,22 @@ const Index = () => {
           </Tabs>
         </div>
       </div>
+      
+      {/* Feedback Button - Fixed Position */}
+      <Button
+        onClick={() => setFeedbackModalOpen(true)}
+        className="fixed right-6 top-1/2 -translate-y-1/2 z-50 shadow-lg"
+        size="lg"
+      >
+        <MessageCircle className="h-4 w-4 mr-2" />
+        Questions?
+      </Button>
+
+      {/* Feedback Modal */}
+      <FeedbackModal 
+        open={feedbackModalOpen} 
+        onOpenChange={setFeedbackModalOpen} 
+      />
       
       <Toaster />
     </div>
