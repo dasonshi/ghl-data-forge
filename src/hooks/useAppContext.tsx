@@ -103,9 +103,9 @@ export function useAppContext(): AppContext {
         // Apply personalization
         applyPersonalization(data.user, data.location);
       } else if (response.status === 422) {
-        // Handle app not installed - redirect to OAuth
-        console.log('🔄 App not installed, redirecting to OAuth...');
-        window.location.href = '/oauth/install';
+        // Handle app not installed - set error state instead of redirecting
+        console.log('🔍 App not installed for current location');
+        setError('app_not_installed');
       } else {
         const errorData = await response.json();
         if (errorData.error === 'app_not_installed') {
