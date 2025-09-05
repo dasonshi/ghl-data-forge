@@ -68,8 +68,25 @@ export function Header() {
             </div>
           </div>
 
-          {/* User & Location Info */}
+          {/* Connection Status & User Info */}
           <div className="flex items-center space-x-4">
+            {/* Connection Status */}
+            <div className="flex items-center space-x-2">
+              <div className="text-right">
+                {user && location ? (
+                  <>
+                    <p className="text-sm font-medium leading-tight text-green-600">Connected</p>
+                    {location.id && (
+                      <p className="text-xs text-muted-foreground">Location: {location.id}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm font-medium leading-tight text-red-600">Not Connected</p>
+                )}
+              </div>
+            </div>
+
+            {/* User Info */}
             {user && (
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
@@ -81,10 +98,6 @@ export function Header() {
                 </div>
               </div>
             )}
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Building2 className="h-4 w-4" />
-              <span>ID: {user?.userId || 'Unknown'}</span>
-            </div>
           </div>
         </div>
       </div>
