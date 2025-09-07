@@ -111,7 +111,11 @@ export function Dashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    const initializeData = async () => {
+      await refreshContext();
+      await fetchData();
+    };
+    initializeData();
   }, [location?.id]);
 
   // Listen for location changes and auth success to refresh data automatically
