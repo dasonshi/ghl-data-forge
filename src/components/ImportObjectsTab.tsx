@@ -176,19 +176,31 @@ export function ImportObjectsTab() {
         <CardContent>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold text-primary mb-3">Required Fields</h4>
+              <h4 className="font-semibold text-primary mb-3">Object Labels (Required)</h4>
               <div className="space-y-3">
                 <div className="border-l-2 border-primary pl-3">
-                  <p className="font-medium">name</p>
-                  <p className="text-muted-foreground text-sm">What to call one item (e.g., "Product", "Service")</p>
+                  <p className="font-medium">singular</p>
+                  <p className="text-muted-foreground text-sm">Singular name of the custom object (e.g., "Pet", "Product")</p>
                 </div>
                 <div className="border-l-2 border-primary pl-3">
                   <p className="font-medium">plural</p>
-                  <p className="text-muted-foreground text-sm">What to call multiple items (e.g., "Products", "Services")</p>
+                  <p className="text-muted-foreground text-sm">Plural name of the custom object (e.g., "Pets", "Products")</p>
+                </div>
+              </div>
+
+              <h4 className="font-semibold text-primary mb-3 mt-6">Primary Display Property (Required)</h4>
+              <div className="space-y-3">
+                <div className="border-l-2 border-primary pl-3">
+                  <p className="font-medium">key</p>
+                  <p className="text-muted-foreground text-sm">Internal reference key (lowercase + underscore_separated)</p>
                 </div>
                 <div className="border-l-2 border-primary pl-3">
-                  <p className="font-medium">primary_field_name</p>
-                  <p className="text-muted-foreground text-sm">Main field that identifies each record</p>
+                  <p className="font-medium">name</p>
+                  <p className="text-muted-foreground text-sm">Display name for the primary property (e.g., "Pet Name")</p>
+                </div>
+                <div className="border-l-2 border-primary pl-3">
+                  <p className="font-medium">dataType</p>
+                  <p className="text-muted-foreground text-sm">Data type: either "TEXT" or "NUMERICAL"</p>
                 </div>
               </div>
             </div>
@@ -198,14 +210,15 @@ export function ImportObjectsTab() {
               <div className="space-y-3">
                 <div className="border-l-2 border-muted pl-3">
                   <p className="font-medium">description</p>
-                  <p className="text-muted-foreground text-sm">Brief description of the object</p>
+                  <p className="text-muted-foreground text-sm">Brief description of what this object represents</p>
                 </div>
               </div>
               
               <Alert className="mt-4">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>Example:</strong> "Product" → "Products" → "Product Name"
+                  <strong>Example Row:</strong><br/>
+                  singular: "Pet", plural: "Pets", key: "pet_name", name: "Pet Name", dataType: "TEXT", description: "Animal companions"
                 </AlertDescription>
               </Alert>
             </div>
