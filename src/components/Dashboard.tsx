@@ -30,14 +30,13 @@ export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [allFields, setAllFields] = useState<Record<string, CustomField[]>>({});
   const [loading, setLoading] = useState(true);
-  const { location, refreshContext, user, currentLocationId } = useAppContext();
+  const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
-  const fetchData = async (locationIdOverride?: string) => {
+  const fetchData = async (currentLocationId?: string) => {
     try {
       setLoading(true);
-      // Use user.activeLocation as priority, then currentLocationId, then location.id
-      const activeLocationId = locationIdOverride || (user?.activeLocation) || currentLocationId || location?.id;
+      const activeLocationId = currentLocationId || location?.id;
       console.log('🔍 Dashboard: fetchData with locationId:', activeLocationId);
       
       if (!activeLocationId) {
@@ -116,12 +115,8 @@ export function Dashboard() {
       await refreshContext();
       await fetchData();
     };
-    
-    // Only initialize if we have user data
-    if (user && currentLocationId) {
-      initializeData();
-    }
-  }, [user, currentLocationId, refreshContext, fetchData]);
+    initializeData();
+  }, [location?.id]);
 
   // Listen for location changes and auth success to refresh data automatically
   useEffect(() => {

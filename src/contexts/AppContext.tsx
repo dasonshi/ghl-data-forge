@@ -25,8 +25,7 @@ export interface AppContextType {
   location: Location | null;
   loading: boolean;
   error: string | null;
-  refreshContext: () => Promise<any>;
-  currentLocationId: string | null;
+  refreshContext: () => Promise<void>;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
