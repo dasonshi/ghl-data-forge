@@ -163,10 +163,6 @@ export function ImportObjectsTab() {
         </AlertDescription>
       </Alert>
 
-      {/* Object Parameters Help Section - Full Width */}
-      <Card>
-        <CardHeader>
-{/* Object Parameters Help Section - Simplified for User Fields */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -178,21 +174,21 @@ export function ImportObjectsTab() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4 text-sm">
+          <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-semibold text-primary mb-3">Required Fields</h4>
               <div className="space-y-3">
                 <div className="border-l-2 border-primary pl-3">
                   <p className="font-medium">name</p>
-                  <p className="text-muted-foreground">What to call one item (e.g., "Product", "Service", "Pet")</p>
+                  <p className="text-muted-foreground text-sm">What to call one item (e.g., "Product", "Service")</p>
                 </div>
                 <div className="border-l-2 border-primary pl-3">
                   <p className="font-medium">plural</p>
-                  <p className="text-muted-foreground">What to call multiple items (e.g., "Products", "Services", "Pets")</p>
+                  <p className="text-muted-foreground text-sm">What to call multiple items (e.g., "Products", "Services")</p>
                 </div>
                 <div className="border-l-2 border-primary pl-3">
                   <p className="font-medium">primary_field_name</p>
-                  <p className="text-muted-foreground">The main field that identifies each record (e.g., "Product Name", "Service Title", "Pet Name")</p>
+                  <p className="text-muted-foreground text-sm">Main field that identifies each record</p>
                 </div>
               </div>
             </div>
@@ -202,18 +198,18 @@ export function ImportObjectsTab() {
               <div className="space-y-3">
                 <div className="border-l-2 border-muted pl-3">
                   <p className="font-medium">description</p>
-                  <p className="text-muted-foreground">Brief description of what this object represents</p>
+                  <p className="text-muted-foreground text-sm">Brief description of the object</p>
                 </div>
               </div>
+              
+              <Alert className="mt-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>Example:</strong> "Product" → "Products" → "Product Name"
+                </AlertDescription>
+              </Alert>
             </div>
           </div>
-          
-          <Alert className="mt-4">
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              <strong>Example:</strong> For a product catalog, you'd enter "Product" as name, "Products" as plural, and "Product Name" as the primary field.
-            </AlertDescription>
-          </Alert>
         </CardContent>
       </Card>
 
