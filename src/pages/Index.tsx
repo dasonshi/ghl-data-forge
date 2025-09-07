@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button";
 import { useAppContext } from "@/hooks/useAppContext";
 import { useAgencyBranding } from "@/hooks/useAgencyBranding";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, ExternalLink, MessageCircle } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
-  const { loading, error } = useAppContext();
+  const { loading, error, refreshContext } = useAppContext();
   const { branding } = useAgencyBranding();
 
   // Update document title when branding changes
@@ -29,14 +30,29 @@ const Index = () => {
   }, [branding]);
 
   const handleConnect = () => {
+    console.log('🔐 Opening OAuth popup...');
     const popup = window.open(
       `${API_BASE}/oauth/install`,
       'oauth',
       'width=600,height=600'
     );
+
+    // Listen for auth success
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://importer.api.savvysales.ai') return;
+      
+      if (event.data.type === 'oauth_success') {
+        console.log('✅ OAuth success received, refreshing context...');
+        popup?.close();
+        refreshContext();
+        window.removeEventListener('message', handleMessage);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
   };
 
-  // Show app installation error
+  // Handle different error types
   if (error === 'app_not_installed') {
     return (
       <div className="min-h-screen bg-gradient-subtle">
@@ -52,13 +68,29 @@ const Index = () => {
                     This app needs to be installed for the current location.
                   </p>
                 </div>
-                <Button onClick={handleConnect} className="w-full">
+                <Button onClick={handleConnect} variant="gradient" className="w-full">
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Connect Account
+                  Install App
                 </Button>
               </CardContent>
             </Card>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error === 'missing_location') {
+    return (
+      <div className="min-h-screen bg-gradient-subtle">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              No location ID found. Please access this app from within HighLevel.
+            </AlertDescription>
+          </Alert>
         </div>
       </div>
     );
