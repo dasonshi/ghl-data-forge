@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SuccessStats } from "@/components/SuccessStats";
 import { Database, FileText, RefreshCw, Eye } from "lucide-react";
@@ -30,48 +30,63 @@ export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [allFields, setAllFields] = useState<Record<string, CustomField[]>>({});
   const [loading, setLoading] = useState(true);
-  const { location, refreshContext } = useAppContext();
+  const { currentLocationId, location } = useAppContext();
   const { toast } = useToast();
+  
+  // Use ref to track if we're fetching to prevent duplicates
+  const fetchingRef = useRef(false);
+  const lastLocationIdRef = useRef<string | null>(null);
 
-  const fetchData = async (currentLocationId?: string) => {
+  const fetchData = async () => {
+    // Prevent duplicate fetches
+    if (fetchingRef.current) {
+      console.log('Dashboard: Already fetching, skipping...');
+      return;
+    }
+    
+    // Don't fetch if we don't have a location
+    if (!currentLocationId) {
+      console.log('Dashboard: No location ID, skipping fetch');
+      setLoading(false);
+      return;
+    }
+    
+    // Don't re-fetch if location hasn't changed
+    if (lastLocationIdRef.current === currentLocationId && objects.length > 0) {
+      console.log('Dashboard: Same location, data already loaded');
+      return;
+    }
+    
+    fetchingRef.current = true;
+    lastLocationIdRef.current = currentLocationId;
+    
     try {
       setLoading(true);
-      const activeLocationId = currentLocationId || location?.id;
-      console.log('🔍 Dashboard: fetchData with locationId:', activeLocationId);
-      
-      if (!activeLocationId) {
-        console.warn('No location ID available for data fetch');
-        return;
-      }
+      console.log('🔍 Dashboard: Fetching data for location:', currentLocationId);
       
       // Fetch objects with location ID
-      const objectsResponse = await apiFetch('/api/objects', {}, activeLocationId);
+      const objectsResponse = await apiFetch('/api/objects', {}, currentLocationId);
       
       if (objectsResponse.ok) {
         const data = await objectsResponse.json();
-        const objects = data.objects || data || [];
-        setObjects(objects);
+        const fetchedObjects = data.objects || data || [];
+        setObjects(fetchedObjects);
         
         // Fetch schema for each object (includes all fields)
         const fieldsMap: Record<string, CustomField[]> = {};
-        for (const obj of objects) {
+        for (const obj of fetchedObjects) {
           try {
             // Extract raw key (e.g., "test" from "custom_objects.test")
             const rawKey = obj.key.includes('.') ? obj.key.split('.').pop() : obj.key;
             
-            // Try without locationId first (use existing cookie)
-            let schemaResponse = await fetch(`${API_BASE}/api/objects/${rawKey}/schema?fetchProperties=true`, {
-              credentials: 'include',
-              cache: 'no-store'
-            });
-            
-            // If unauthorized or failed, retry with locationId override
-            if (!schemaResponse.ok && activeLocationId) {
-              schemaResponse = await fetch(`${API_BASE}/api/objects/${rawKey}/schema?fetchProperties=true&locationId=${activeLocationId}`, {
+            // Fetch schema with locationId
+            const schemaResponse = await fetch(
+              `${API_BASE}/api/objects/${rawKey}/schema?fetchProperties=true&locationId=${currentLocationId}`,
+              {
                 credentials: 'include',
                 cache: 'no-store'
-              });
-            }
+              }
+            );
             
             if (schemaResponse.ok) {
               const schema = await schemaResponse.json();
@@ -79,7 +94,7 @@ export function Dashboard() {
               const fields = schema.properties || schema.fields || [];
               fieldsMap[obj.key] = Array.isArray(fields) ? fields : Object.values(fields);
             } else {
-              console.warn(`Failed to fetch schema for object ${obj.key} (${rawKey}):`, schemaResponse.status);
+              console.warn(`Failed to fetch schema for object ${obj.key}:`, schemaResponse.status);
               fieldsMap[obj.key] = [];
             }
           } catch (error) {
@@ -102,39 +117,36 @@ export function Dashboard() {
       setAllFields({});
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   };
 
   const handleRefresh = async () => {
-    await refreshContext();
+    // Force refresh by clearing the last location ID
+    lastLocationIdRef.current = null;
     await fetchData();
   };
 
+  // Fetch data when location changes
   useEffect(() => {
-    const initializeData = async () => {
-      await refreshContext();
-      await fetchData();
-    };
-    initializeData();
-  }, [location?.id]);
-
-  // Listen for location changes and auth success to refresh data automatically
-  useEffect(() => {
-    const handleLocationSwitch = () => {
-      console.log('🔄 Dashboard: Location switch detected, refreshing data');
+    if (currentLocationId) {
       fetchData();
-    };
+    } else {
+      setLoading(false);
+    }
+  }, [currentLocationId]); // Only depend on currentLocationId
 
+  // Listen for auth success events only
+  useEffect(() => {
     const handleAuthSuccess = () => {
       console.log('🔄 Dashboard: Auth success detected, refreshing data');
+      lastLocationIdRef.current = null; // Force refresh
       fetchData();
     };
 
-    window.addEventListener('location-switch', handleLocationSwitch);
     window.addEventListener('auth-success', handleAuthSuccess);
     
     return () => {
-      window.removeEventListener('location-switch', handleLocationSwitch);
       window.removeEventListener('auth-success', handleAuthSuccess);
     };
   }, []);
