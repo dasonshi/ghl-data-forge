@@ -37,16 +37,29 @@ export function AuthStatus() {
       if (event.data.type === 'oauth_success') {
         console.log('✅ OAuth success received, refreshing context...');
         popup?.close();
-        refreshContext();
-        
-        // Trigger dashboard refresh after successful auth
-        window.dispatchEvent(new CustomEvent('auth-success'));
-        
-        toast({
-          title: "Connected",
-          description: "Successfully connected to HighLevel.",
-        });
         window.removeEventListener('message', handleMessage);
+        
+        // Wait a moment for backend to process the installation
+        setTimeout(async () => {
+          try {
+            await refreshContext();
+            
+            // Trigger dashboard refresh after successful auth
+            window.dispatchEvent(new CustomEvent('auth-success'));
+            
+            toast({
+              title: "Connected",
+              description: "Successfully connected to HighLevel.",
+            });
+          } catch (error) {
+            console.error('Failed to refresh context after OAuth:', error);
+            toast({
+              title: "Connection Issue",
+              description: "Connected but failed to refresh data. Please refresh the page.",
+              variant: "destructive",
+            });
+          }
+        }, 1000); // Give backend time to process
       }
     };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
-import { useLocationId } from '@/hooks/useLocationId';
+import { useAppContext } from '@/hooks/useAppContext';
 
 interface AgencyBranding {
   companyName?: string;
@@ -16,20 +16,28 @@ interface AgencyBranding {
 export function useAgencyBranding() {
   const [branding, setBranding] = useState<AgencyBranding | null>(null);
   const [loading, setLoading] = useState(true);
-  const { locationId, refresh } = useLocationId();
+  const { currentLocationId, user } = useAppContext();
 
   useEffect(() => {
     const fetchBranding = async () => {
+      // Don't fetch if we don't have a user/location yet
+      if (!user || !currentLocationId) {
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         
-        // Always pass the current locationId, even if null
+        // Use the locationId from app context
+        const locationId = user.activeLocation || currentLocationId;
         const response = await apiFetch('/api/agency-branding', {}, locationId);
         
         if (response.ok) {
           const data = await response.json();
           setBranding(data);
         } else {
+          console.warn('Failed to fetch agency branding:', response.status);
           setBranding(null);
         }
       } catch (error) {
@@ -46,18 +54,23 @@ export function useAgencyBranding() {
       fetchBranding();
     };
 
+    // Listen for auth success and refetch
+    const handleAuthSuccess = () => {
+      console.log('🔄 useAgencyBranding: Auth success detected, refetching...');
+      fetchBranding();
+    };
+
     window.addEventListener('location-switch', handleLocationSwitch);
+    window.addEventListener('auth-success', handleAuthSuccess);
 
     // Initial fetch
-    (async () => {
-      const id = await refresh();
-      await fetchBranding();
-    })();
+    fetchBranding();
 
     return () => {
       window.removeEventListener('location-switch', handleLocationSwitch);
+      window.removeEventListener('auth-success', handleAuthSuccess);
     };
-  }, [locationId]); // Re-run when locationId changes
+  }, [currentLocationId, user]); // Re-run when locationId or user changes
 
   return { branding, loading };
 }

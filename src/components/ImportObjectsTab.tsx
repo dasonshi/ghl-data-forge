@@ -10,7 +10,7 @@ import { Download, CheckCircle2, AlertTriangle, Upload, ArrowLeft, Database, Inf
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
-import { useLocationId } from "@/hooks/useLocationId";
+import { useAppContext } from "@/hooks/useAppContext";
 import Papa from "papaparse";
 
 type ImportStep = "upload" | "preview" | "importing" | "success";
@@ -29,7 +29,7 @@ export function ImportObjectsTab() {
   const [objectsData, setObjectsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const { locationId, refresh } = useLocationId();
+  const { user, currentLocationId } = useAppContext();
   const { toast } = useToast();
 
   // Clear all data when location switches
@@ -44,7 +44,7 @@ export function ImportObjectsTab() {
 
   const downloadTemplate = async () => {
     try {
-      const response = await apiFetch('/templates/objects', {}, locationId ?? undefined);
+      const response = await apiFetch('/templates/objects', {}, currentLocationId ?? undefined);
       
       if (response.ok) {
         const csvText = await response.text();
@@ -120,7 +120,7 @@ export function ImportObjectsTab() {
       const response = await apiFetch('/api/objects/import', {
         method: 'POST',
         body: formData,
-      }, locationId ?? undefined);
+      }, currentLocationId ?? undefined);
 
       clearInterval(progressInterval);
       setProgress(100);
