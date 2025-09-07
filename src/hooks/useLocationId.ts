@@ -7,14 +7,29 @@ export function useLocationId() {
 
   async function refresh() {
     try {
-      const r = await fetch(`${API_BASE}/api/auth/status`, {
+      // Get the locationId from the URL or context
+      const locationIdParam = new URLSearchParams(window.location.search).get('locationId') || 
+                             localStorage.getItem('currentLocationId');
+      
+      if (!locationIdParam) {
+        setLocationId(null);
+        return null;
+      }
+      
+      // Check with the specific location
+      const r = await fetch(`${API_BASE}/api/auth/status?locationId=${locationIdParam}`, {
         credentials: 'include',
         cache: 'no-store',
       });
       const j = await r.json();
-      const id = j?.locationId ?? null;
-      setLocationId(id);
-      return id;
+      
+      if (j.authenticated) {
+        setLocationId(locationIdParam);
+        return locationIdParam;
+      } else {
+        setLocationId(null);
+        return null;
+      }
     } catch (error) {
       console.error('useLocationId: Failed to refresh:', error);
       setLocationId(null);

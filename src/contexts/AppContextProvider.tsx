@@ -17,6 +17,8 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
   
   // Use ref to track if we're currently fetching to prevent duplicate calls
   const fetchingRef = useRef(false);
+  // Add a ref to prevent duplicate initialization
+  const isInitialized = useRef(false);
 
   const fetchAppContext = useCallback(async () => {
     // Prevent concurrent fetches
@@ -157,14 +159,21 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
   }, [fetchAppContext, user, location, toast]);
 
   useEffect(() => {
-    // Initial load only - set initial locationId from storage
-    const storedLocationId = localStorage.getItem('currentLocationId');
-    if (storedLocationId) {
-      setCurrentLocationId(storedLocationId);
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      
+      // Get the locationId from the URL or context
+      const locationId = new URLSearchParams(window.location.search).get('locationId') || 
+                         localStorage.getItem('currentLocationId');
+      
+      if (locationId) {
+        setCurrentLocationId(locationId);
+        localStorage.setItem('currentLocationId', locationId);
+      }
+      
+      console.log('🔄 AppContextProvider: Initial load only...');
+      fetchAppContext();
     }
-    
-    console.log('🔄 AppContextProvider: Initial load only...');
-    fetchAppContext();
 
     // Listen for location changes from HighLevel
     window.addEventListener('message', handleLocationChange);
