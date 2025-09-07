@@ -18,9 +18,9 @@ export function DataPreviewTable({ data }: DataPreviewTableProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="border rounded-md">
+        <div className="border rounded-md max-h-96 overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background">
               <TableRow>
                 {columns.map((column) => (
                   <TableHead key={column} className="whitespace-nowrap">

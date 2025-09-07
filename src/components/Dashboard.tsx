@@ -255,7 +255,20 @@ export function Dashboard() {
                           )}
                           <div className="text-left">
                             <h3 className="font-medium">{object.labels.singular}</h3>
-                            <p className="text-sm text-muted-foreground">{object.key}</p>
+                            <p 
+                              className="text-sm text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(object.key);
+                                toast({
+                                  title: "Copied!",
+                                  description: `Object key "${object.key}" copied to clipboard`,
+                                });
+                              }}
+                              title="Click to copy"
+                            >
+                              {object.key}
+                            </p>
                             {object.description && (
                               <p className="text-xs text-muted-foreground mt-1">{object.description}</p>
                             )}
@@ -279,8 +292,21 @@ export function Dashboard() {
                             {objectFields.map((field, index) => (
                               <div key={index} className="flex items-center justify-between p-3 rounded border-l-2 border-muted bg-muted/20">
                                 <div>
-                                  <p className="text-sm font-medium">{field.name}</p>
-                                  <p className="text-xs text-muted-foreground">{field.fieldKey}</p>
+                                   <p className="text-sm font-medium">{field.name}</p>
+                                   <p 
+                                     className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       navigator.clipboard.writeText(field.fieldKey);
+                                       toast({
+                                         title: "Copied!",
+                                         description: `Field key "${field.fieldKey}" copied to clipboard`,
+                                       });
+                                     }}
+                                     title="Click to copy"
+                                   >
+                                     {field.fieldKey}
+                                   </p>
                                   {field.description && (
                                     <p className="text-xs text-muted-foreground mt-1">{field.description}</p>
                                   )}
