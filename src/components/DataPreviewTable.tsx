@@ -3,9 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 interface DataPreviewTableProps {
   data: Record<string, string>[];
+  errorRows?: number[];
 }
 
-export function DataPreviewTable({ data }: DataPreviewTableProps) {
+export function DataPreviewTable({ data, errorRows = [] }: DataPreviewTableProps) {
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
   const previewData = data.slice(0, 5); // Show first 5 rows
 
@@ -31,7 +32,10 @@ export function DataPreviewTable({ data }: DataPreviewTableProps) {
             </TableHeader>
             <TableBody>
               {previewData.map((row, index) => (
-                <TableRow key={index}>
+                <TableRow 
+                  key={index} 
+                  className={errorRows.includes(index) ? 'bg-destructive/10 hover:bg-destructive/20' : ''}
+                >
                   {columns.map((column) => (
                     <TableCell key={column} className="max-w-[200px] truncate">
                       {row[column]}

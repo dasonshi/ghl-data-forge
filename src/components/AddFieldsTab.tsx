@@ -425,39 +425,155 @@ const downloadTemplate = async () => {
     </div>
   );
 
-  const renderPreview = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">
-            Preview Fields for: {selectedObjectData?.labels.singular}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {fieldsData.length} field{fieldsData.length !== 1 ? 's' : ''} will be imported
-          </p>
+  const renderPreview = () => {
+    // Validate the data and collect errors
+    const validationErrors: Record<number, string[]> = {};
+    
+    fieldsData.forEach((row, index) => {
+      const errors: string[] = [];
+      
+      // Check required fields
+      if (!row.name || row.name.trim() === '') {
+        errors.push('Name is required');
+      }
+      
+      const dataType = (row.data_type || row.dataType || 'TEXT').toUpperCase();
+      
+      // Validate data type
+      const validTypes = ['TEXT', 'LARGE_TEXT', 'NUMERICAL', 'PHONE', 'MONETORY', 'CHECKBOX', 
+                         'SINGLE_OPTIONS', 'MULTIPLE_OPTIONS', 'DATE', 'TEXTBOX_LIST', 
+                         'FILE_UPLOAD', 'RADIO', 'EMAIL'];
+      if (!validTypes.includes(dataType)) {
+        errors.push(`Invalid data type: ${row.data_type || row.dataType}`);
+      }
+      
+      // Check options for fields that require them
+      const optionTypes = ['SINGLE_OPTIONS', 'MULTIPLE_OPTIONS', 'RADIO', 'CHECKBOX', 'TEXTBOX_LIST'];
+      if (optionTypes.includes(dataType)) {
+        if (!row.options || row.options.trim() === '') {
+          errors.push(`${dataType} requires options (pipe-separated values)`);
+        } else if (dataType === 'CHECKBOX') {
+          const optionCount = row.options.split('|').filter((o: string) => o.trim() !== '').length;
+          if (optionCount < 2) {
+            errors.push('CHECKBOX requires at least 2 options');
+          }
+        }
+      }
+      
+      // Validate show_in_forms
+      const showInForms = row.show_in_forms || row.showInForms;
+      if (showInForms && !['true', 'false', ''].includes(showInForms.toLowerCase())) {
+        errors.push('show_in_forms must be true or false');
+      }
+      
+      // Validate file upload fields
+      if (dataType === 'FILE_UPLOAD') {
+        const maxFileLimit = row.max_file_limit || row.maxFileLimit;
+        if (maxFileLimit && isNaN(parseInt(maxFileLimit))) {
+          errors.push('max_file_limit must be a number');
+        }
+        
+        const acceptedFormats = row.accepted_formats || row.acceptedFormats;
+        if (acceptedFormats) {
+          const validFormats = ['.pdf', '.docx', '.doc', '.jpg', '.jpeg', '.png', '.gif', '.csv', '.xlsx', '.xls'];
+          const formats = acceptedFormats.split(',').map((f: string) => {
+            const trimmed = f.trim();
+            return trimmed.startsWith('.') ? trimmed : `.${trimmed}`;
+          });
+          
+          const invalidFormats = formats.filter(f => !validFormats.includes(f.toLowerCase()));
+          if (invalidFormats.length > 0) {
+            errors.push(`Invalid file formats: ${invalidFormats.join(', ')}`);
+          }
+        }
+      }
+      
+      // Validate RADIO allow_custom_option
+      const allowCustomOption = row.allow_custom_option || row.allowCustomOption;
+      if (dataType === 'RADIO' && allowCustomOption && 
+          !['true', 'false', ''].includes(allowCustomOption.toLowerCase())) {
+        errors.push('allow_custom_option must be true or false');
+      }
+      
+      if (errors.length > 0) {
+        validationErrors[index] = errors;
+      }
+    });
+    
+    const hasErrors = Object.keys(validationErrors).length > 0;
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">
+              Preview Fields for: {selectedObjectData?.labels.singular}
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              {fieldsData.length} field{fieldsData.length !== 1 ? 's' : ''} to import
+              {hasErrors && (
+                <span className="text-destructive ml-2">
+                  ({Object.keys(validationErrors).length} with errors)
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {hasErrors ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <p className="font-semibold mb-2">Validation errors found. Please fix these issues before importing:</p>
+              <ul className="list-disc list-inside space-y-2 mt-2 text-sm">
+                {Object.entries(validationErrors).slice(0, 5).map(([index, errors]) => (
+                  <li key={index}>
+                    <span className="font-medium">Row {parseInt(index) + 2} ({fieldsData[parseInt(index)].name || 'unnamed'}):</span>
+                    <ul className="list-disc list-inside ml-4 text-muted-foreground">
+                      {errors.map((error, errIndex) => (
+                        <li key={errIndex}>{error}</li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+                {Object.keys(validationErrors).length > 5 && (
+                  <li className="text-muted-foreground">
+                    ...and {Object.keys(validationErrors).length - 5} more rows with errors
+                  </li>
+                )}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert>
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <AlertDescription>
+              All fields validated successfully. Ready to import.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <DataPreviewTable 
+          data={fieldsData} 
+          errorRows={hasErrors ? Object.keys(validationErrors).map(k => parseInt(k)) : undefined}
+        />
+
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <Button 
+            variant="gradient" 
+            onClick={handleImport}
+            disabled={hasErrors}
+          >
+            {hasErrors ? 'Fix Errors to Continue' : 'Import Fields'}
+          </Button>
         </div>
       </div>
-
-      <Alert>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          Review your data before importing. All CSV columns will be imported as-is.
-        </AlertDescription>
-      </Alert>
-
-      <DataPreviewTable data={fieldsData} />
-
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-        <Button variant="gradient" onClick={handleImport}>
-          Import Fields
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderImporting = () => (
     <div className="space-y-6 text-center">
