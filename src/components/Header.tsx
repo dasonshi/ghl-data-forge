@@ -1,10 +1,12 @@
 import { Building2, User } from "lucide-react";
 import { useAppContext } from "@/hooks/useAppContext";
+import { useAgencyBranding } from "@/hooks/useAgencyBranding";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 export function Header() {
   const { user, location, loading } = useAppContext();
+  const { branding, loading: brandingLoading } = useAgencyBranding();
 
   if (loading) {
     return (
@@ -31,7 +33,7 @@ export function Header() {
       .slice(0, 2);
   };
 
-  const displayName = location?.name || 'Data Importer';
+  const displayName = branding?.companyName || branding?.locationName || location?.name || 'DI Data Importer';
 
   return (
     <header className="border-b bg-card shadow-sm">
@@ -40,9 +42,9 @@ export function Header() {
           <div className="flex items-center space-x-3">
             {/* Logo or Initials */}
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              {location?.logoUrl ? (
+              {branding?.logoUrl || location?.logoUrl ? (
                 <img 
-                  src={location.logoUrl} 
+                  src={branding?.logoUrl || location?.logoUrl} 
                   alt={`${displayName} logo`}
                   className="h-full w-full object-contain rounded-lg"
                   onError={(e) => {
