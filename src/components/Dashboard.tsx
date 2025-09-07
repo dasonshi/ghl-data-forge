@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SuccessStats } from "@/components/SuccessStats";
-import { Database, FileText, RefreshCw, Eye } from "lucide-react";
+import { Database, FileText, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch, API_BASE } from "@/lib/api";
 import { useAppContext } from "@/hooks/useAppContext";
@@ -30,6 +31,7 @@ export function Dashboard() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [allFields, setAllFields] = useState<Record<string, CustomField[]>>({});
   const [loading, setLoading] = useState(true);
+  const [expandedObjects, setExpandedObjects] = useState<Set<string>>(new Set());
   const { currentLocationId, location } = useAppContext();
   const { toast } = useToast();
   
@@ -153,6 +155,18 @@ export function Dashboard() {
 
   const totalFields = Object.values(allFields).reduce((sum, fields) => sum + fields.length, 0);
 
+  const toggleObjectExpanded = (objectKey: string) => {
+    setExpandedObjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(objectKey)) {
+        newSet.delete(objectKey);
+      } else {
+        newSet.add(objectKey);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -201,101 +215,92 @@ export function Dashboard() {
         </Card>    
       </div>
 
-      {/* Custom Objects List */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Custom Objects ({objects.length})
-            </CardTitle>
-            <CardDescription>
-              All custom objects in your location
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              </div>
-            ) : objects.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No custom objects found</p>
-                <p className="text-sm">Create custom objects in HighLevel first</p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {objects.map((object) => (
-                  <div key={object.id} className="flex items-center justify-between p-3 rounded-lg border">
-                    <div>
-                      <h3 className="font-medium">{object.labels.singular}</h3>
-                      <p className="text-sm text-muted-foreground">{object.key}</p>
-                      {object.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{object.description}</p>
-                      )}
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {allFields[object.key]?.length || 0} fields
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Custom Fields List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Custom Fields ({totalFields})
-            </CardTitle>
-            <CardDescription>
-              All custom fields across all objects
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              </div>
-            ) : totalFields === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No custom fields found</p>
-                <p className="text-sm">Create custom fields in your objects first</p>
-              </div>
-            ) : (
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {Object.entries(allFields).map(([objectKey, fields]) => (
-                  fields.length > 0 && (
-                    <div key={objectKey} className="space-y-2">
-                      <h4 className="font-medium text-sm text-primary">
-                        {objects.find(obj => obj.key === objectKey)?.labels.singular || objectKey}
-                      </h4>
-                      <div className="space-y-1 pl-4">
-                        {fields.map((field, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 rounded border-l-2 border-muted">
-                            <div>
-                              <p className="text-sm font-medium">{field.name}</p>
-                              <p className="text-xs text-muted-foreground">{field.fieldKey}</p>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {field.dataType}
-                            </Badge>
+      {/* Custom Objects with Expandable Fields */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Custom Objects & Fields ({objects.length} objects, {totalFields} fields)
+          </CardTitle>
+          <CardDescription>
+            All custom objects and their fields. Click to expand and view fields.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : objects.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="font-medium">No custom objects found</p>
+              <p className="text-sm">Create custom objects in HighLevel first</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {objects.map((object) => {
+                const objectFields = allFields[object.key] || [];
+                const isExpanded = expandedObjects.has(object.key);
+                
+                return (
+                  <Collapsible key={object.id} open={isExpanded} onOpenChange={() => toggleObjectExpanded(object.key)}>
+                    <CollapsibleTrigger className="w-full">
+                      <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <div className="text-left">
+                            <h3 className="font-medium">{object.labels.singular}</h3>
+                            <p className="text-sm text-muted-foreground">{object.key}</p>
+                            {object.description && (
+                              <p className="text-xs text-muted-foreground mt-1">{object.description}</p>
+                            )}
                           </div>
-                        ))}
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          {objectFields.length} fields
+                        </Badge>
                       </div>
-                    </div>
-                  )
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent>
+                      <div className="ml-8 mr-4 mb-2">
+                        {objectFields.length === 0 ? (
+                          <div className="py-4 text-center text-muted-foreground">
+                            <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No fields found for this object</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {objectFields.map((field, index) => (
+                              <div key={index} className="flex items-center justify-between p-3 rounded border-l-2 border-muted bg-muted/20">
+                                <div>
+                                  <p className="text-sm font-medium">{field.name}</p>
+                                  <p className="text-xs text-muted-foreground">{field.fieldKey}</p>
+                                  {field.description && (
+                                    <p className="text-xs text-muted-foreground mt-1">{field.description}</p>
+                                  )}
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {field.dataType}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
