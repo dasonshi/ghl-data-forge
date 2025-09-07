@@ -166,62 +166,43 @@ export function ImportObjectsTab() {
       {/* Object Parameters Help Section - Full Width */}
       <Card>
         <CardHeader>
+{/* Object Parameters Help Section - Simplified for User Fields */}
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5" />
-            Custom Object Parameters Guide
+            Custom Object CSV Format
           </CardTitle>
           <CardDescription>
-            Required and optional parameters for each custom object in your CSV
+            Fill in these fields for each custom object you want to create
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-6 text-sm">
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-primary mb-2">Required Fields</h4>
-                <div className="space-y-2">
-                  <div className="border-l-2 border-primary pl-3">
-                    <p className="font-medium">labels_singular</p>
-                    <p className="text-muted-foreground">Singular name of the custom object (e.g., "Pet")</p>
-                  </div>
-                  <div className="border-l-2 border-primary pl-3">
-                    <p className="font-medium">labels_plural</p>
-                    <p className="text-muted-foreground">Plural name of the custom object (e.g., "Pets")</p>
-                  </div>
-                  <div className="border-l-2 border-primary pl-3">
-                    <p className="font-medium">key</p>
-                    <p className="text-muted-foreground">Internal identifier (lowercase + underscore_separated). 'custom_objects.' prefix added automatically (e.g., "pet" becomes "custom_objects.pet")</p>
-                  </div>
-                  <div className="border-l-2 border-primary pl-3">
-                    <p className="font-medium">primary_display_key</p>
-                    <p className="text-muted-foreground">Key for the primary display field (lowercase + underscore_separated). 'custom_objects.[object_key].' prefix added automatically</p>
-                  </div>
+          <div className="space-y-4 text-sm">
+            <div>
+              <h4 className="font-semibold text-primary mb-3">Required Fields</h4>
+              <div className="space-y-3">
+                <div className="border-l-2 border-primary pl-3">
+                  <p className="font-medium">name</p>
+                  <p className="text-muted-foreground">What to call one item (e.g., "Product", "Service", "Pet")</p>
+                </div>
+                <div className="border-l-2 border-primary pl-3">
+                  <p className="font-medium">plural</p>
+                  <p className="text-muted-foreground">What to call multiple items (e.g., "Products", "Services", "Pets")</p>
+                </div>
+                <div className="border-l-2 border-primary pl-3">
+                  <p className="font-medium">primary_field_name</p>
+                  <p className="text-muted-foreground">The main field that identifies each record (e.g., "Product Name", "Service Title", "Pet Name")</p>
                 </div>
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-primary mb-2">Required Fields (continued)</h4>
-                <div className="space-y-2">
-                  <div className="border-l-2 border-primary pl-3">
-                    <p className="font-medium">primary_display_name</p>
-                    <p className="text-muted-foreground">Display name for the primary property (e.g., "Pet Name")</p>
-                  </div>
-                  <div className="border-l-2 border-primary pl-3">
-                    <p className="font-medium">primary_display_dataType</p>
-                    <p className="text-muted-foreground">Primary property data type: TEXT or NUMERICAL</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-secondary mb-2">Optional Fields</h4>
-                <div className="space-y-2">
-                  <div className="border-l-2 border-muted pl-3">
-                    <p className="font-medium">description</p>
-                    <p className="text-muted-foreground">Description of the custom object (e.g., "These are non vaccinated pets")</p>
-                  </div>
+            <div>
+              <h4 className="font-semibold text-secondary mb-3">Optional Fields</h4>
+              <div className="space-y-3">
+                <div className="border-l-2 border-muted pl-3">
+                  <p className="font-medium">description</p>
+                  <p className="text-muted-foreground">Brief description of what this object represents</p>
                 </div>
               </div>
             </div>
@@ -230,7 +211,7 @@ export function ImportObjectsTab() {
           <Alert className="mt-4">
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              <strong>Primary Display Property:</strong> This is the main field that will be displayed on the record page for your custom object. It serves as the identifier for each record.
+              <strong>Example:</strong> For a product catalog, you'd enter "Product" as name, "Products" as plural, and "Product Name" as the primary field.
             </AlertDescription>
           </Alert>
         </CardContent>
