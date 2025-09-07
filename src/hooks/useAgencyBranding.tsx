@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
-import { useLocationId } from '@/hooks/useLocationId';
+import { useAppContext } from '@/hooks/useAppContext';
 
 interface AgencyBranding {
   companyName?: string;
@@ -16,48 +16,68 @@ interface AgencyBranding {
 export function useAgencyBranding() {
   const [branding, setBranding] = useState<AgencyBranding | null>(null);
   const [loading, setLoading] = useState(true);
-  const { locationId, refresh } = useLocationId();
+  
+  // Use the AppContext instead of useLocationId
+  const { currentLocationId, location } = useAppContext();
 
   useEffect(() => {
     const fetchBranding = async () => {
+      // Don't fetch if we don't have a location yet
+      if (!currentLocationId) {
+        setLoading(false);
+        return;
+      }
+      
       try {
         setLoading(true);
         
-        // Always pass the current locationId, even if null
-        const response = await apiFetch('/api/agency-branding', {}, locationId);
+        const response = await apiFetch('/api/agency-branding', {}, currentLocationId);
         
         if (response.ok) {
           const data = await response.json();
           setBranding(data);
         } else {
-          setBranding(null);
+          // Use fallback branding from location context if available
+          if (location) {
+            setBranding({
+              companyName: location.companyName || 'HighLevel',
+              logoUrl: location.logoUrl,
+              website: location.website,
+              locationName: location.name,
+              primaryColor: '#6366f1',
+              secondaryColor: '#f3f4f6'
+            });
+          } else {
+            setBranding(null);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch agency branding:', error);
-        setBranding(null);
+        // Use fallback branding from location context if available
+        if (location) {
+          setBranding({
+            companyName: location.companyName || 'HighLevel',
+            logoUrl: location.logoUrl,
+            website: location.website,
+            locationName: location.name,
+            primaryColor: '#6366f1',
+            secondaryColor: '#f3f4f6'
+          });
+        } else {
+          setBranding(null);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    // Listen for location switches and refetch
-    const handleLocationSwitch = () => {
-      console.log('🔄 useAgencyBranding: Location switch detected, refetching...');
+    // Fetch branding when location changes
+    if (currentLocationId) {
       fetchBranding();
-    };
-
-    window.addEventListener('location-switch', handleLocationSwitch);
-
-    // Initial fetch
-    (async () => {
-      const id = await refresh();
-      await fetchBranding();
-    })();
-
-    return () => {
-      window.removeEventListener('location-switch', handleLocationSwitch);
-    };
-  }, [locationId]); // Re-run when locationId changes
+    } else {
+      setLoading(false);
+    }
+  }, [currentLocationId, location]); // Only re-run when these change
 
   return { branding, loading };
 }
