@@ -16,21 +16,28 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
   const { toast } = useToast();
   
   // Use ref to track if we're currently fetching to prevent duplicate calls
-  const fetchingRef = useRef(false);
+  const loadAppContextRef = useRef<Promise<void> | null>(null);
   // Add a ref to prevent duplicate initialization
   const isInitialized = useRef(false);
 
-  const fetchAppContext = useCallback(async () => {
-    // Prevent concurrent fetches
-    if (fetchingRef.current) {
-      console.log('🚫 Fetch already in progress, skipping...');
-      return;
-    }
-    
-    fetchingRef.current = true;
-    
+  const performLoadAppContext = async () => {
     try {
+      setLoading(true);
       console.log('🔄 Fetching app context...');
+      
+      // Get locationId from URL params first
+      const params = new URLSearchParams(window.location.search);
+      const urlLocationId = params.get('locationId');
+      
+      // Get stored locationId as fallback
+      const storedLocationId = localStorage.getItem('currentLocationId');
+      const currentLocationId = urlLocationId || storedLocationId;
+      
+      if (!currentLocationId) {
+        console.error('No locationId available');
+        setError('missing_location');
+        return;
+      }
       
       // Get encrypted data from HighLevel (with timeout)
       const encryptedData = await new Promise<any>((resolve, reject) => {
@@ -53,11 +60,14 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
         window.addEventListener('message', messageHandler);
       });
 
-      // Call app-context endpoint (must be POST)
-      const response = await apiFetch('/api/app-context', {
+      // Always include locationId in the URL
+      const response = await apiFetch(`/api/app-context?locationId=${currentLocationId}`, {
         method: 'POST',
-        body: JSON.stringify({ encryptedData: encryptedData || {} })
-      }, currentLocationId);
+        body: JSON.stringify({ 
+          encryptedData: encryptedData || {},
+          locationId: currentLocationId // Also include in body
+        })
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -99,16 +109,30 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
       setError('Failed to load app context');
     } finally {
       setLoading(false);
-      fetchingRef.current = false;
     }
-  }, [currentLocationId]);
+  };
+
+  const loadAppContext = async () => {
+    // If already loading, return the existing promise
+    if (loadAppContextRef.current) {
+      return loadAppContextRef.current;
+    }
+    
+    loadAppContextRef.current = performLoadAppContext();
+    
+    try {
+      await loadAppContextRef.current;
+    } finally {
+      loadAppContextRef.current = null;
+    }
+  };
 
   const refreshContext = useCallback(async () => {
-    // Reset fetch lock to ensure refresh works even if there's a pending fetch
-    fetchingRef.current = false;
+    // Reset singleton to ensure refresh works
+    loadAppContextRef.current = null;
     setLoading(true);
-    await fetchAppContext();
-  }, [fetchAppContext]);
+    await loadAppContext();
+  }, []);
 
   const applyPersonalization = (userData: User | null, locationData: Location | null) => {
     // Apply document title
@@ -149,14 +173,14 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
       });
       
       // Refresh app context for new location
-      await fetchAppContext();
+      await loadAppContext();
       
       toast({
         title: "Location Updated",
         description: "Successfully switched to new location.",
       });
     }
-  }, [fetchAppContext, user, location, toast]);
+  }, [user, location, toast]);
 
   useEffect(() => {
     if (!isInitialized.current) {
@@ -172,7 +196,7 @@ export function AppContextProvider({ children }: AppContextProviderProps) {
       }
       
       console.log('🔄 AppContextProvider: Initial load only...');
-      fetchAppContext();
+      loadAppContext();
     }
 
     // Listen for location changes from HighLevel
