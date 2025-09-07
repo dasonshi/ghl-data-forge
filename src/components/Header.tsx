@@ -91,7 +91,7 @@ export function Header() {
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div className="text-right">
-                  <p className="text-sm font-medium leading-tight">{user.userName}</p>
+                  <p className="text-sm font-medium leading-tight">{user.name}</p>
                   <Badge variant="secondary" className="text-xs mt-1">
                     {user.role}
                   </Badge>
