@@ -1,3 +1,4 @@
+// AppContextProvider.tsx - Complete fixed version
 import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
 
@@ -37,9 +38,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Use refs to prevent duplicate calls
+  // Prevent duplicate calls
   const loadingRef = useRef(false);
-  const hasLoadedRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
   const loadAppContext = useCallback(async () => {
     // Prevent duplicate calls
@@ -50,116 +51,132 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     
     loadingRef.current = true;
     setLoading(true);
+    setError(null);
     
     try {
-      // Get locationId from URL params first
+      // Get locationId from URL params or localStorage
       const params = new URLSearchParams(window.location.search);
       const urlLocationId = params.get('locationId');
-      
-      // Get stored locationId as fallback
       const storedLocationId = localStorage.getItem('currentLocationId');
       const currentLocationId = urlLocationId || storedLocationId;
       
       console.log('Loading context with locationId:', currentLocationId);
       
-      // Get encrypted user data via postMessage
+      // First check if we have a valid auth cookie
+      const authCheckResponse = await apiFetch(
+        `/api/auth/status${currentLocationId ? `?locationId=${currentLocationId}` : ''}`,
+        { method: 'GET' }
+      );
+      
+      if (!authCheckResponse.ok || !(await authCheckResponse.json()).authenticated) {
+        console.log('Not authenticated, showing install prompt');
+        setError('app_not_installed');
+        return;
+      }
+      
+      // Try to get encrypted user data, but don't fail if we can't
       let encryptedData = '';
       try {
-        encryptedData = await new Promise((resolve, reject) => {
+        encryptedData = await new Promise((resolve) => {
           const timeout = setTimeout(() => {
-            // Don't reject, just resolve with empty string
+            console.log('No encrypted data received from parent, continuing without it');
             resolve('');
-          }, 2000); // Shorter timeout
-
-          window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+          }, 1000); // Very short timeout
           
-          const messageHandler = (event: MessageEvent) => {
-            if (event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
-              clearTimeout(timeout);
-              window.removeEventListener('message', messageHandler);
-              console.log('Received encrypted data');
-              resolve(event.data.payload || '');
-            }
-          };
-          
-          window.addEventListener('message', messageHandler);
+          // Only try to get encrypted data if we're in an iframe
+          if (window.parent !== window) {
+            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+            
+            const messageHandler = (event: MessageEvent) => {
+              if (event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
+                clearTimeout(timeout);
+                window.removeEventListener('message', messageHandler);
+                resolve(event.data.payload || '');
+              }
+            };
+            
+            window.addEventListener('message', messageHandler);
+          } else {
+            // Not in iframe, resolve immediately
+            clearTimeout(timeout);
+            resolve('');
+          }
         });
       } catch (e) {
-        console.log('Could not get encrypted data, continuing without it');
+        console.log('Could not get encrypted data:', e);
       }
-
-      // Call app-context endpoint with locationId
+      
+      // Call app-context with whatever we have
       const response = await apiFetch(
         `/api/app-context${currentLocationId ? `?locationId=${currentLocationId}` : ''}`,
         {
           method: 'POST',
           body: JSON.stringify({ 
-            encryptedData: encryptedData,
+            encryptedData: encryptedData || '',
             locationId: currentLocationId
           })
         }
       );
-
+      
       if (response.ok) {
         const data = await response.json();
         console.log('✅ App context loaded successfully');
         
-        // Extract location info
-        const newLocationId = data.location?.id || data.locationId || currentLocationId;
+        const newLocationId = data.location?.id || currentLocationId;
         
         setUser(data.user || null);
         setLocation(data.location || null);
         setCurrentLocationId(newLocationId);
         setError(null);
-        hasLoadedRef.current = true;
         
-        // Store location for future API calls
         if (newLocationId) {
           localStorage.setItem('currentLocationId', newLocationId);
         }
+      } else {
+        const status = response.status;
+        const errorData = await response.json().catch(() => ({}));
         
-        // Apply personalization if needed
-        if (data.user && data.location) {
-          applyPersonalization(data.user, data.location);
-        }
-      } else if (response.status === 422) {
-        const errorData = await response.json();
-        console.log('422 error:', errorData);
+        console.log('App context error:', status, errorData);
         
-        if (errorData.error === 'app_not_installed') {
+        if (status === 422 && errorData.error === 'app_not_installed') {
           setError('app_not_installed');
-          hasLoadedRef.current = true;
-        } else {
-          // Try without location ID if we got a different 422 error
-          console.log('Retrying without locationId...');
-          const fallbackResponse = await apiFetch('/api/app-context', {
-            method: 'POST',
-            body: JSON.stringify({ 
-              encryptedData: encryptedData || ''
-            })
-          });
+        } else if (status === 422) {
+          // 422 but not app_not_installed - try without encrypted data
+          console.log('Retrying without encrypted data...');
+          
+          const fallbackResponse = await apiFetch(
+            `/api/app-context${currentLocationId ? `?locationId=${currentLocationId}` : ''}`,
+            {
+              method: 'POST',
+              body: JSON.stringify({ 
+                encryptedData: '',
+                locationId: currentLocationId
+              })
+            }
+          );
           
           if (fallbackResponse.ok) {
             const data = await fallbackResponse.json();
             setUser(data.user || null);
             setLocation(data.location || null);
-            setCurrentLocationId(data.location?.id || null);
+            setCurrentLocationId(data.location?.id || currentLocationId);
             setError(null);
-            hasLoadedRef.current = true;
           } else {
-            setError('app_not_installed');
-            hasLoadedRef.current = true;
+            // Still failing, check if it's an auth issue
+            const authCheck = await apiFetch('/api/auth/status', { method: 'GET' });
+            if (!authCheck.ok || !(await authCheck.json()).authenticated) {
+              setError('app_not_installed');
+            } else {
+              setError('Failed to load app context');
+            }
           }
+        } else {
+          setError('Failed to load app context');
         }
-      } else {
-        console.error('Failed to load app context:', response.status);
-        setError('Failed to load app context');
-        hasLoadedRef.current = true;
       }
     } catch (err) {
       console.error('❌ App context failed:', err);
       setError('Failed to load app context');
-      hasLoadedRef.current = true;
     } finally {
       setLoading(false);
       loadingRef.current = false;
@@ -168,22 +185,16 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const refreshContext = useCallback(async () => {
     console.log('Refreshing context...');
-    hasLoadedRef.current = false;
     await loadAppContext();
   }, [loadAppContext]);
 
-  // Load context only once on mount
+  // Initialize only once on mount
   useEffect(() => {
-    if (!hasLoadedRef.current) {
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       loadAppContext();
     }
-  }, []); // Empty dependency array - only run once
-
-  // Apply personalization function
-  const applyPersonalization = (user: UserContext, location: LocationContext) => {
-    // Apply any custom theming or personalization based on user/location
-    console.log('Applying personalization for:', user.email, location.name);
-  };
+  }, []); // Empty deps - only run once
 
   const value: AppContextValue = {
     user,
