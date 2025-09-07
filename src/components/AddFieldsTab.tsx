@@ -78,18 +78,26 @@ export function AddFieldsTab() {
     }
   };
 
-  const downloadTemplate = async () => {
-    try {
-      const response = await apiFetch('/templates/fields', {}, location?.id ?? undefined);
-      
+const downloadTemplate = async () => {
+  if (!selectedObject) {
+    toast({
+      title: "No Object Selected",
+      description: "Please select an object first.",
+      variant: "destructive",
+    });
+    return;
+  }
+  
+  try {
+    const response = await apiFetch(`/templates/fields/${selectedObject}`, {}, location?.id ?? undefined);      
       if (response.ok) {
         const csvText = await response.text();
         const blob = new Blob([csvText], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'fields-template.csv';
-        document.body.appendChild(a);
+        const cleanKey = selectedObject.replace(/^custom_objects\./, '');
+        a.download = `${cleanKey}-fields-template.csv`;        document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
