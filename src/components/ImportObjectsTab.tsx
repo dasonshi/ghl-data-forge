@@ -206,7 +206,7 @@ export function ImportObjectsTab() {
             </div>
             
             <div>
-              <h4 className="font-semibold text-secondary mb-3">Optional Fields</h4>
+              <h4 className="font-semibold text-primary mb-3">Optional Fields</h4>
               <div className="space-y-3">
                 <div className="border-l-2 border-muted pl-3">
                   <p className="font-medium">description</p>
