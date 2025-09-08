@@ -62,7 +62,7 @@ export function ImportRecordsTab() {
   const [selectedObject, setSelectedObject] = useState<string>("");
   const [availableFields, setAvailableFields] = useState<string[]>([]);
   const [fieldsData, setFieldsData] = useState<CustomField[]>([]);
-  const [associations, setAssociations] = useState<Association[]>([]);
+  
   const [recordsFile, setRecordsFile] = useState<File | null>(null);
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
@@ -79,7 +79,6 @@ useLocationSwitch(async () => {
   setSelectedObject("");
   setAvailableFields([]);
   setFieldsData([]);
-  setAssociations([]);
   setRecordsFile(null);
   setRecordsData([]);
   setProgress(0);
@@ -124,37 +123,6 @@ const fetchObjects = async () => {
   }
 };
 
-const fetchAssociations = async (objectKey: string) => {
-  try {
-    console.log('🔍 Fetching associations for object:', objectKey);
-    const res = await apiFetch(`/api/objects/${objectKey}/associations`, {}, location?.id ?? undefined);
-    if (res.ok) {
-      const data = await res.json();
-      console.log('📊 Associations response:', data);
-      // Map the API response to our interface structure
-      const mappedAssociations = (data.associations || []).map((assoc: any) => ({
-        id: assoc.id,
-        key: assoc.key,
-        description: assoc.description,
-        relationTo: assoc.relationTo,
-        isFirst: assoc.isFirst,
-        firstObjectLabel: assoc.firstObjectLabel || assoc.firstObject?.label,
-        firstObjectKey: assoc.firstObjectKey || assoc.firstObject?.key,
-        secondObjectLabel: assoc.secondObjectLabel || assoc.secondObject?.label,
-        secondObjectKey: assoc.secondObjectKey || assoc.secondObject?.key,
-        associationType: assoc.associationType || assoc.type
-      }));
-      console.log('🗂️ Mapped associations:', mappedAssociations);
-      setAssociations(mappedAssociations);
-    } else {
-      console.log('❌ Failed to fetch associations, status:', res.status);
-      setAssociations([]);
-    }
-  } catch (error) {
-    console.error('💥 Error fetching associations:', error);
-    setAssociations([]);
-  }
-};
 
 
   const downloadTemplate = async () => {
@@ -266,7 +234,6 @@ const fetchAssociations = async (objectKey: string) => {
   const handleObjectSelect = (objectKey: string) => {
     setSelectedObject(objectKey);
     fetchFields(objectKey);
-    fetchAssociations(objectKey);
   };
 
   const handleContinueToUpload = () => {
@@ -372,7 +339,6 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
     setMode('new');
     setSelectedObject("");
     setAvailableFields([]);
-    setAssociations([]);
     setRecordsFile(null);
     setRecordsData([]);
     setProgress(0);
@@ -485,39 +451,6 @@ useEffect(() => {
             </p>
           )}
 
-          {selectedObject && associations.length > 0 && (
-            <div className="mt-6">
-              <h4 className="text-sm font-medium mb-3">Available Associations</h4>
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                {associations.map((association) => (
-                  <div key={association.id} className="p-4 border rounded-lg bg-card">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Association ID</span>
-                        <span className="font-mono text-sm">{association.id}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Type</span>
-                        <span className="text-sm">{association.associationType || 'N/A'}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground block mb-1">First Object</span>
-                          <div className="text-sm">{association.firstObjectLabel || 'N/A'}</div>
-                          <div className="font-mono text-xs text-muted-foreground">{association.firstObjectKey || 'N/A'}</div>
-                        </div>
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground block mb-1">Second Object</span>
-                          <div className="text-sm">{association.secondObjectLabel || 'N/A'}</div>
-                          <div className="font-mono text-xs text-muted-foreground">{association.secondObjectKey || 'N/A'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {selectedObject && (
             <Button 

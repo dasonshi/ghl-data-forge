@@ -6,6 +6,7 @@ import { ImportObjectsTab } from "@/components/ImportObjectsTab";
 import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
+import { UploadAssociationsTab } from "@/components/UploadAssociationsTab";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
@@ -132,11 +133,12 @@ const Index = () => {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
               <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
               <TabsTrigger value="import-records">Import Records</TabsTrigger>
+              <TabsTrigger value="upload-associations">Upload Associations</TabsTrigger>
               <TabsTrigger value="import-custom-values">Import Custom Values</TabsTrigger>
             </TabsList>
             
@@ -155,6 +157,10 @@ const Index = () => {
               
               <TabsContent value="import-records" className="mt-0">
                 <ImportRecordsTab />
+              </TabsContent>
+              
+              <TabsContent value="upload-associations" className="mt-0">
+                <UploadAssociationsTab />
               </TabsContent>
               
               <TabsContent value="import-custom-values" className="mt-0">
