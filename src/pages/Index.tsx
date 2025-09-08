@@ -165,15 +165,6 @@ const Index = () => {
         </div>
       </div>
       
-      {/* Feedback Button - Fixed Position */}
-      <Button
-        onClick={() => setFeedbackModalOpen(true)}
-        className="fixed right-6 top-1/2 -translate-y-1/2 z-50 shadow-lg"
-        size="lg"
-      >
-        <MessageCircle className="h-4 w-4 mr-2" />
-        Questions?
-      </Button>
 
       {/* Feedback Modal */}
       <FeedbackModal 

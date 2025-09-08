@@ -231,18 +231,24 @@ const downloadTemplate = async () => {
       setProgress(100);
 
       const result = await response.json();
+      setResult(result);
       
       if (response.ok && result.success) {
-        setResult(result);
         setCurrentStep("success");
         toast({
           title: "Fields Imported Successfully",
           description: `${result.summary.created} fields created, ${result.summary.skipped} skipped, ${result.summary.failed} failed.`,
         });
       } else {
-        throw new Error(result.message || 'Import failed');
+        setCurrentStep("success"); // Still go to success page to show detailed errors
+        toast({
+          title: "Import Failed",
+          description: result.message || "Import completed with errors. Check details below.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
+      // For network errors or unexpected failures, stay on preview
       toast({
         title: "Import Failed",
         description: error instanceof Error ? error.message : "Failed to import fields. Please try again.",

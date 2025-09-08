@@ -13,13 +13,39 @@ interface FolderMappingCardProps {
 export function FolderMappingCard({ folders }: FolderMappingCardProps) {
   const { toast } = useToast();
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
       toast({
         title: "Copied to clipboard",
         description: `${label} copied successfully.`,
       });
-    });
+    } catch (error) {
+      // Fallback for older browsers or when clipboard API fails
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({
+          title: "Copied to clipboard",
+          description: `${label} copied successfully.`,
+        });
+      } catch (err) {
+        toast({
+          title: "Copy failed",
+          description: "Please copy the text manually.",
+          variant: "destructive",
+        });
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
   };
 
   if (!folders || folders.length === 0) {

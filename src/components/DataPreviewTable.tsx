@@ -20,14 +20,13 @@ export function DataPreviewTable({ data, errorRows = [] }: DataPreviewTableProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="border rounded-md">
-          <ScrollArea className="h-96 w-full">
-            <div className="w-full min-w-max">
-              <Table>
+        <ScrollArea className="h-96 w-full border rounded-md">
+          <div className="min-w-max">
+            <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
                   {columns.map((column) => (
-                    <TableHead key={column} className="whitespace-nowrap">
+                    <TableHead key={column} className="whitespace-nowrap min-w-[150px]">
                       {column}
                     </TableHead>
                   ))}
@@ -40,7 +39,7 @@ export function DataPreviewTable({ data, errorRows = [] }: DataPreviewTableProps
                     className={errorRows.includes(index) ? 'bg-destructive/10 hover:bg-destructive/20' : ''}
                   >
                     {columns.map((column) => (
-                      <TableCell key={column} className="max-w-[200px] truncate">
+                      <TableCell key={column} className="min-w-[150px] whitespace-nowrap">
                         {row[column]}
                       </TableCell>
                     ))}
@@ -48,9 +47,8 @@ export function DataPreviewTable({ data, errorRows = [] }: DataPreviewTableProps
                 ))}
               </TableBody>
             </Table>
-            </div>
-          </ScrollArea>
-        </div>
+          </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
