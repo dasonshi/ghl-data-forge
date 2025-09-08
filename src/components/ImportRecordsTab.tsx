@@ -517,10 +517,13 @@ useEffect(() => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {availableFields.length > 0 ? (
-                availableFields.map((field, index) => (
-                  <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded">
-                    {field}
+              {fieldsData.length > 0 ? (
+                fieldsData.map((field, index) => (
+                  <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded flex justify-between items-center">
+                    <span>{field.fieldKey || field.name}</span>
+                    <span className="text-xs text-muted-foreground font-mono bg-background px-1 rounded">
+                      {field.dataType}
+                    </span>
                   </div>
                 ))
               ) : (
