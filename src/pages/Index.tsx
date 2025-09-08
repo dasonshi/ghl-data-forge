@@ -138,7 +138,7 @@ const Index = () => {
               <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
               <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
               <TabsTrigger value="import-records">Import Records</TabsTrigger>
-              <TabsTrigger value="upload-associations">Upload Associations</TabsTrigger>
+              <TabsTrigger value="upload-associations">Update Record Relations</TabsTrigger>
               <TabsTrigger value="import-custom-values">Import Custom Values</TabsTrigger>
             </TabsList>
             
