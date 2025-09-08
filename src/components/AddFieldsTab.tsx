@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
 import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft, HelpCircle } from "lucide-react";
+import { FolderMappingCard } from "@/components/FolderMappingCard";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
@@ -26,10 +27,18 @@ interface CustomObject {
 type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
 
 interface ImportResult {
-  ok: boolean;
+  success: boolean;
   message: string;
-  stats: {
-    fieldsProcessed: number;
+  objectKey: string;
+  objectId: string;
+  created: Array<{ fieldKey: string; id: string; label: string }>;
+  skipped: Array<{ fieldName: string; reason: string }>;
+  errors: Array<{ fieldName: string; error: string }>;
+  summary: {
+    total: number;
+    created: number;
+    skipped: number;
+    failed: number;
   };
 }
 
@@ -38,6 +47,7 @@ export function AddFieldsTab() {
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
   const [availableFields, setAvailableFields] = useState<string[]>([]);
+  const [folders, setFolders] = useState<Array<{parentId: string; name: string}>>([]);
   const [fieldsFile, setFieldsFile] = useState<File | null>(null);
   const [fieldsData, setFieldsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
@@ -52,6 +62,7 @@ export function AddFieldsTab() {
     setObjects([]);
     setSelectedObject("");
     setAvailableFields([]);
+    setFolders([]);
     setFieldsFile(null);
     setFieldsData([]);
     setProgress(0);
@@ -123,13 +134,28 @@ const downloadTemplate = async () => {
         const data = await res.json();
         const fields = data.fields || [];
         setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
+        
+        // Extract folder information if available
+        const folderData = fields.filter((field: any) => field.parentId).map((field: any) => ({
+          parentId: field.parentId,
+          name: field.name || field.label || `Folder ${field.parentId}`
+        }));
+        
+        // Remove duplicates based on parentId
+        const uniqueFolders = folderData.filter((folder: any, index: number, self: any[]) => 
+          index === self.findIndex((f) => f.parentId === folder.parentId)
+        );
+        
+        setFolders(uniqueFolders);
       } else {
         // Default fields if none exist
         setAvailableFields(["name", "email", "phone", "company", "notes"]);
+        setFolders([]);
       }
     } catch {
       // Default fields on error
       setAvailableFields(["name", "email", "phone", "company", "notes"]);
+      setFolders([]);
     }
   };
 
@@ -204,21 +230,22 @@ const downloadTemplate = async () => {
       clearInterval(progressInterval);
       setProgress(100);
 
-      if (response.ok) {
-        const result = await response.json();
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
         setResult(result);
         setCurrentStep("success");
         toast({
-          title: "Fields Imported",
-          description: "Your fields have been imported successfully.",
+          title: "Fields Imported Successfully",
+          description: `${result.summary.created} fields created, ${result.summary.skipped} skipped, ${result.summary.failed} failed.`,
         });
       } else {
-        throw new Error('Import failed');
+        throw new Error(result.message || 'Import failed');
       }
     } catch (error) {
       toast({
         title: "Import Failed",
-        description: "Failed to import fields. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to import fields. Please try again.",
         variant: "destructive",
       });
       setCurrentStep("preview");
@@ -228,6 +255,7 @@ const downloadTemplate = async () => {
   const handleStartOver = () => {
     setCurrentStep("select");
     setSelectedObject("");
+    setFolders([]);
     setFieldsFile(null);
     setFieldsData([]);
     setProgress(0);
@@ -377,6 +405,9 @@ const downloadTemplate = async () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Folder Mapping Card */}
+      <FolderMappingCard folders={folders} />
 
       {/* Template Download and Upload Section - Side by Side */}
       <div className="grid md:grid-cols-2 gap-6">
@@ -596,9 +627,14 @@ const downloadTemplate = async () => {
     <div className="space-y-6 text-center">
       <div className="space-y-4">
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
-        <h3 className="text-2xl font-bold">Fields Imported Successfully!</h3>
+        <h3 className="text-2xl font-bold">
+          {result?.success ? 'Fields Import Complete!' : 'Import Completed with Issues'}
+        </h3>
         <p className="text-muted-foreground">
-          {result?.stats?.fieldsProcessed || fieldsData.length} field{(result?.stats?.fieldsProcessed || fieldsData.length) !== 1 ? 's' : ''} imported to {selectedObjectData?.labels.singular}
+          {result?.summary ? 
+            `${result.summary.created} created, ${result.summary.skipped} skipped, ${result.summary.failed} failed` :
+            `${fieldsData.length} field${fieldsData.length !== 1 ? 's' : ''} processed`
+          } for {selectedObjectData?.labels.singular}
         </p>
       </div>
 
@@ -611,14 +647,35 @@ const downloadTemplate = async () => {
             <span>Object:</span>
             <span className="font-medium">{selectedObjectData?.labels.singular}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Fields Imported:</span>
-            <span className="font-medium">{result?.stats?.fieldsProcessed || fieldsData.length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>CSV Columns:</span>
-            <span className="font-medium">{fieldsData.length > 0 ? Object.keys(fieldsData[0]).length : 0}</span>
-          </div>
+          {result?.summary ? (
+            <>
+              <div className="flex justify-between">
+                <span>Total Fields:</span>
+                <span className="font-medium">{result.summary.total}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-success">Created:</span>
+                <span className="font-medium text-success">{result.summary.created}</span>
+              </div>
+              {result.summary.skipped > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-warning">Skipped:</span>
+                  <span className="font-medium text-warning">{result.summary.skipped}</span>
+                </div>
+              )}
+              {result.summary.failed > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-destructive">Failed:</span>
+                  <span className="font-medium text-destructive">{result.summary.failed}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex justify-between">
+              <span>Fields Processed:</span>
+              <span className="font-medium">{fieldsData.length}</span>
+            </div>
+          )}
         </CardContent>
       </Card>
 

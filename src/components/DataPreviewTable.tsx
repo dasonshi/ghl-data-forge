@@ -21,8 +21,9 @@ export function DataPreviewTable({ data, errorRows = [] }: DataPreviewTableProps
       </CardHeader>
       <CardContent>
         <div className="border rounded-md">
-          <ScrollArea className="h-96">
-            <Table>
+          <ScrollArea className="h-96 w-full">
+            <div className="w-full min-w-max">
+              <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
                   {columns.map((column) => (
@@ -47,6 +48,7 @@ export function DataPreviewTable({ data, errorRows = [] }: DataPreviewTableProps
                 ))}
               </TableBody>
             </Table>
+            </div>
           </ScrollArea>
         </div>
       </CardContent>
