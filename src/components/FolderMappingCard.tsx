@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy, Folder } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface FolderMappingCardProps {
   folders: Array<{
@@ -11,61 +11,6 @@ interface FolderMappingCardProps {
 }
 
 export function FolderMappingCard({ folders }: FolderMappingCardProps) {
-  const { toast } = useToast();
-
-  const copyToClipboard = async (text: string, label: string) => {
-    try {
-      // Try the modern clipboard API first
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        toast({
-          title: "Copied to clipboard",
-          description: `${label} copied successfully.`,
-        });
-      } else {
-        // Fallback for iframe/insecure contexts
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-999999px';
-        textArea.style.top = '-999999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        
-        try {
-          const successful = document.execCommand('copy');
-          if (successful) {
-            toast({
-              title: "Copied to clipboard",
-              description: `${label} copied successfully.`,
-            });
-          } else {
-            // If even the fallback fails, show the text for manual copying
-            toast({
-              title: "Copy this manually",
-              description: `${label}: ${text}`,
-            });
-          }
-        } catch (err) {
-          toast({
-            title: "Copy manually",
-            description: `${label}: ${text}`,
-            variant: "destructive",
-          });
-        } finally {
-          document.body.removeChild(textArea);
-        }
-      }
-    } catch (err) {
-      // Final fallback - show the text
-      toast({
-        title: "Copy this manually",
-        description: `${label}: ${text}`,
-      });
-      console.error('Clipboard copy failed:', err);
-    }
-  };
 
   if (!folders || folders.length === 0) {
     return null;

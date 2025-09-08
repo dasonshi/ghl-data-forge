@@ -8,6 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch, API_BASE } from "@/lib/api";
 import { useAppContext } from "@/hooks/useAppContext";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface CustomObject {
   id: string;
@@ -259,53 +260,7 @@ export function Dashboard() {
                               className="text-sm text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
                               onClick={async (e) => {
                                 e.stopPropagation();
-                                try {
-                                  if (navigator.clipboard && window.isSecureContext) {
-                                    await navigator.clipboard.writeText(object.key);
-                                    toast({
-                                      title: "Copied!",
-                                      description: `Object key "${object.key}" copied to clipboard`,
-                                    });
-                                  } else {
-                                    const textArea = document.createElement('textarea');
-                                    textArea.value = object.key;
-                                    textArea.style.position = 'fixed';
-                                    textArea.style.left = '-999999px';
-                                    textArea.style.top = '-999999px';
-                                    document.body.appendChild(textArea);
-                                    textArea.focus();
-                                    textArea.select();
-                                    
-                                    try {
-                                      const successful = document.execCommand('copy');
-                                      if (successful) {
-                                        toast({
-                                          title: "Copied!",
-                                          description: `Object key "${object.key}" copied to clipboard`,
-                                        });
-                                      } else {
-                                        toast({
-                                          title: "Copy this manually",
-                                          description: `Object key: ${object.key}`,
-                                        });
-                                      }
-                                    } catch (err) {
-                                      toast({
-                                        title: "Copy manually",
-                                        description: `Object key: ${object.key}`,
-                                        variant: "destructive",
-                                      });
-                                    } finally {
-                                      document.body.removeChild(textArea);
-                                    }
-                                  }
-                                } catch (err) {
-                                  toast({
-                                    title: "Copy this manually",
-                                    description: `Object key: ${object.key}`,
-                                  });
-                                  console.error('Clipboard copy failed:', err);
-                                }
+                                await copyToClipboard(object.key, `Object key "${object.key}"`);
                               }}
                               title="Click to copy"
                             >
@@ -339,53 +294,7 @@ export function Dashboard() {
                                       className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
                                       onClick={async (e) => {
                                         e.stopPropagation();
-                                        try {
-                                          if (navigator.clipboard && window.isSecureContext) {
-                                            await navigator.clipboard.writeText(field.fieldKey);
-                                            toast({
-                                              title: "Copied!",
-                                              description: `Field key "${field.fieldKey}" copied to clipboard`,
-                                            });
-                                          } else {
-                                            const textArea = document.createElement('textarea');
-                                            textArea.value = field.fieldKey;
-                                            textArea.style.position = 'fixed';
-                                            textArea.style.left = '-999999px';
-                                            textArea.style.top = '-999999px';
-                                            document.body.appendChild(textArea);
-                                            textArea.focus();
-                                            textArea.select();
-                                            
-                                            try {
-                                              const successful = document.execCommand('copy');
-                                              if (successful) {
-                                                toast({
-                                                  title: "Copied!",
-                                                  description: `Field key "${field.fieldKey}" copied to clipboard`,
-                                                });
-                                              } else {
-                                                toast({
-                                                  title: "Copy this manually",
-                                                  description: `Field key: ${field.fieldKey}`,
-                                                });
-                                              }
-                                            } catch (err) {
-                                              toast({
-                                                title: "Copy manually",
-                                                description: `Field key: ${field.fieldKey}`,
-                                                variant: "destructive",
-                                              });
-                                            } finally {
-                                              document.body.removeChild(textArea);
-                                            }
-                                          }
-                                        } catch (err) {
-                                          toast({
-                                            title: "Copy this manually",
-                                            description: `Field key: ${field.fieldKey}`,
-                                          });
-                                          console.error('Clipboard copy failed:', err);
-                                        }
+                                        await copyToClipboard(field.fieldKey, `Field key "${field.fieldKey}"`);
                                       }}
                                       title="Click to copy"
                                     >
