@@ -257,13 +257,55 @@ export function Dashboard() {
                             <h3 className="font-medium">{object.labels.singular}</h3>
                             <p 
                               className="text-sm text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                navigator.clipboard.writeText(object.key);
-                                toast({
-                                  title: "Copied!",
-                                  description: `Object key "${object.key}" copied to clipboard`,
-                                });
+                                try {
+                                  if (navigator.clipboard && window.isSecureContext) {
+                                    await navigator.clipboard.writeText(object.key);
+                                    toast({
+                                      title: "Copied!",
+                                      description: `Object key "${object.key}" copied to clipboard`,
+                                    });
+                                  } else {
+                                    const textArea = document.createElement('textarea');
+                                    textArea.value = object.key;
+                                    textArea.style.position = 'fixed';
+                                    textArea.style.left = '-999999px';
+                                    textArea.style.top = '-999999px';
+                                    document.body.appendChild(textArea);
+                                    textArea.focus();
+                                    textArea.select();
+                                    
+                                    try {
+                                      const successful = document.execCommand('copy');
+                                      if (successful) {
+                                        toast({
+                                          title: "Copied!",
+                                          description: `Object key "${object.key}" copied to clipboard`,
+                                        });
+                                      } else {
+                                        toast({
+                                          title: "Copy this manually",
+                                          description: `Object key: ${object.key}`,
+                                        });
+                                      }
+                                    } catch (err) {
+                                      toast({
+                                        title: "Copy manually",
+                                        description: `Object key: ${object.key}`,
+                                        variant: "destructive",
+                                      });
+                                    } finally {
+                                      document.body.removeChild(textArea);
+                                    }
+                                  }
+                                } catch (err) {
+                                  toast({
+                                    title: "Copy this manually",
+                                    description: `Object key: ${object.key}`,
+                                  });
+                                  console.error('Clipboard copy failed:', err);
+                                }
                               }}
                               title="Click to copy"
                             >
@@ -293,20 +335,62 @@ export function Dashboard() {
                               <div key={index} className="flex items-center justify-between p-3 rounded border-l-2 border-muted bg-muted/20">
                                 <div>
                                    <p className="text-sm font-medium">{field.name}</p>
-                                   <p 
-                                     className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       navigator.clipboard.writeText(field.fieldKey);
-                                       toast({
-                                         title: "Copied!",
-                                         description: `Field key "${field.fieldKey}" copied to clipboard`,
-                                       });
-                                     }}
-                                     title="Click to copy"
-                                   >
-                                     {field.fieldKey}
-                                   </p>
+                                    <p 
+                                      className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors" 
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        try {
+                                          if (navigator.clipboard && window.isSecureContext) {
+                                            await navigator.clipboard.writeText(field.fieldKey);
+                                            toast({
+                                              title: "Copied!",
+                                              description: `Field key "${field.fieldKey}" copied to clipboard`,
+                                            });
+                                          } else {
+                                            const textArea = document.createElement('textarea');
+                                            textArea.value = field.fieldKey;
+                                            textArea.style.position = 'fixed';
+                                            textArea.style.left = '-999999px';
+                                            textArea.style.top = '-999999px';
+                                            document.body.appendChild(textArea);
+                                            textArea.focus();
+                                            textArea.select();
+                                            
+                                            try {
+                                              const successful = document.execCommand('copy');
+                                              if (successful) {
+                                                toast({
+                                                  title: "Copied!",
+                                                  description: `Field key "${field.fieldKey}" copied to clipboard`,
+                                                });
+                                              } else {
+                                                toast({
+                                                  title: "Copy this manually",
+                                                  description: `Field key: ${field.fieldKey}`,
+                                                });
+                                              }
+                                            } catch (err) {
+                                              toast({
+                                                title: "Copy manually",
+                                                description: `Field key: ${field.fieldKey}`,
+                                                variant: "destructive",
+                                              });
+                                            } finally {
+                                              document.body.removeChild(textArea);
+                                            }
+                                          }
+                                        } catch (err) {
+                                          toast({
+                                            title: "Copy this manually",
+                                            description: `Field key: ${field.fieldKey}`,
+                                          });
+                                          console.error('Clipboard copy failed:', err);
+                                        }
+                                      }}
+                                      title="Click to copy"
+                                    >
+                                      {field.fieldKey}
+                                    </p>
                                   {field.description && (
                                     <p className="text-xs text-muted-foreground mt-1">{field.description}</p>
                                   )}
