@@ -8,7 +8,7 @@ interface DataPreviewTableProps {
 
 export function DataPreviewTable({ data, errorRows = [] }: DataPreviewTableProps) {
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
-  const previewData = data.slice(0, 5); // Show first 5 rows
+  const previewData = data.slice(0, 50); // Show first 50 rows
 
   return (
     <Card>
