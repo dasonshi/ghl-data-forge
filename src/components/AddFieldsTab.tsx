@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
 import { useAppContext } from "@/hooks/useAppContext";
+import { copyToClipboard } from "@/lib/clipboard";
 import Papa from "papaparse";
 
 interface CustomObject {
@@ -421,42 +422,34 @@ const downloadTemplate = async () => {
               Folder Information
             </CardTitle>
             <CardDescription>
-              Copy folder names and IDs for use in your CSV. Click to select text.
+              Click on folder names or IDs to copy them to your clipboard.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {folders.map((folder, index) => (
-                <div key={index} className="p-3 border rounded-lg space-y-2">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Folder Name</label>
-                    <div 
-                      className="font-mono text-sm p-2 bg-muted rounded cursor-text select-text" 
-                      onClick={(e) => {
-                        const range = document.createRange();
-                        range.selectNodeContents(e.currentTarget);
-                        const selection = window.getSelection();
-                        selection?.removeAllRanges();
-                        selection?.addRange(range);
-                      }}
+                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="space-y-1">
+                    <p className="font-medium">{folder.name}</p>
+                    <p className="text-sm text-muted-foreground font-mono">{folder.parentId}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="font-mono text-sm"
+                      onClick={() => copyToClipboard(folder.name, "Folder name")}
                     >
                       {folder.name}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground">Parent ID</label>
-                    <div 
-                      className="font-mono text-sm p-2 bg-muted rounded cursor-text select-text" 
-                      onClick={(e) => {
-                        const range = document.createRange();
-                        range.selectNodeContents(e.currentTarget);
-                        const selection = window.getSelection();
-                        selection?.removeAllRanges();
-                        selection?.addRange(range);
-                      }}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="font-mono text-sm"
+                      onClick={() => copyToClipboard(folder.parentId, "Parent ID")}
                     >
                       {folder.parentId}
-                    </div>
+                    </Button>
                   </div>
                 </div>
               ))}

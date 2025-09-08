@@ -126,9 +126,11 @@ const fetchObjects = async () => {
 
 const fetchAssociations = async (objectKey: string) => {
   try {
+    console.log('🔍 Fetching associations for object:', objectKey);
     const res = await apiFetch(`/api/objects/${objectKey}/associations`, {}, location?.id ?? undefined);
     if (res.ok) {
       const data = await res.json();
+      console.log('📊 Associations response:', data);
       // Map the API response to our interface structure
       const mappedAssociations = (data.associations || []).map((assoc: any) => ({
         id: assoc.id,
@@ -142,11 +144,14 @@ const fetchAssociations = async (objectKey: string) => {
         secondObjectKey: assoc.secondObjectKey || assoc.secondObject?.key,
         associationType: assoc.associationType || assoc.type
       }));
+      console.log('🗂️ Mapped associations:', mappedAssociations);
       setAssociations(mappedAssociations);
     } else {
+      console.log('❌ Failed to fetch associations, status:', res.status);
       setAssociations([]);
     }
-  } catch {
+  } catch (error) {
+    console.error('💥 Error fetching associations:', error);
     setAssociations([]);
   }
 };
