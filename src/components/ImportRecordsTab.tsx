@@ -32,6 +32,19 @@ interface CustomField {
   picklistValues?: Array<{ value: string; label: string }>;
 }
 
+interface Association {
+  id: string;
+  key: string;
+  description: string;
+  relationTo: string;
+  isFirst: boolean;
+  firstObjectLabel?: string;
+  firstObjectKey?: string;
+  secondObjectLabel?: string;
+  secondObjectKey?: string;
+  associationType?: string;
+}
+
 type ImportStep = "mode" | "select" | "upload" | "preview" | "importing" | "success";
 
 interface ImportResult {
@@ -49,6 +62,7 @@ export function ImportRecordsTab() {
   const [selectedObject, setSelectedObject] = useState<string>("");
   const [availableFields, setAvailableFields] = useState<string[]>([]);
   const [fieldsData, setFieldsData] = useState<CustomField[]>([]);
+  const [associations, setAssociations] = useState<Association[]>([]);
   const [recordsFile, setRecordsFile] = useState<File | null>(null);
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
@@ -65,6 +79,7 @@ useLocationSwitch(async () => {
   setSelectedObject("");
   setAvailableFields([]);
   setFieldsData([]);
+  setAssociations([]);
   setRecordsFile(null);
   setRecordsData([]);
   setProgress(0);
@@ -106,6 +121,20 @@ const fetchObjects = async () => {
   } catch {
     setAvailableFields(["name", "email", "phone", "company", "notes"]);
     setFieldsData([]);
+  }
+};
+
+const fetchAssociations = async (objectKey: string) => {
+  try {
+    const res = await apiFetch(`/api/objects/${objectKey}/associations`, {}, location?.id ?? undefined);
+    if (res.ok) {
+      const data = await res.json();
+      setAssociations(data.associations || []);
+    } else {
+      setAssociations([]);
+    }
+  } catch {
+    setAssociations([]);
   }
 };
 
@@ -219,6 +248,7 @@ const fetchObjects = async () => {
   const handleObjectSelect = (objectKey: string) => {
     setSelectedObject(objectKey);
     fetchFields(objectKey);
+    fetchAssociations(objectKey);
   };
 
   const handleContinueToUpload = () => {
@@ -324,6 +354,7 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
     setMode('new');
     setSelectedObject("");
     setAvailableFields([]);
+    setAssociations([]);
     setRecordsFile(null);
     setRecordsData([]);
     setProgress(0);
@@ -434,6 +465,32 @@ useEffect(() => {
             <p className="text-sm text-muted-foreground text-center py-4">
               No custom objects found. Create custom objects first before importing records.
             </p>
+          )}
+
+          {selectedObject && associations.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-sm font-medium mb-3">Available Associations</h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {associations.map((association) => (
+                  <div key={association.id} className="p-3 border rounded-md bg-muted/30 text-xs">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="font-medium">ID:</span> {association.id}
+                      </div>
+                      <div>
+                        <span className="font-medium">Type:</span> {association.associationType || 'N/A'}
+                      </div>
+                      <div>
+                        <span className="font-medium">First Object:</span> {association.firstObjectLabel || 'N/A'} ({association.firstObjectKey || 'N/A'})
+                      </div>
+                      <div>
+                        <span className="font-medium">Second Object:</span> {association.secondObjectLabel || 'N/A'} ({association.secondObjectKey || 'N/A'})
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {selectedObject && (
