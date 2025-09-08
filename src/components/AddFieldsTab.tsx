@@ -412,8 +412,58 @@ const downloadTemplate = async () => {
         </CardContent>
       </Card>
 
-      {/* Folder Mapping Card */}
-      <FolderMappingCard folders={folders} />
+      {/* Folder Mapping - Copy-and-paste friendly */}
+      {folders.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Folder Information
+            </CardTitle>
+            <CardDescription>
+              Copy folder names and IDs for use in your CSV. Click to select text.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {folders.map((folder, index) => (
+                <div key={index} className="p-3 border rounded-lg space-y-2">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Folder Name</label>
+                    <div 
+                      className="font-mono text-sm p-2 bg-muted rounded cursor-text select-text" 
+                      onClick={(e) => {
+                        const range = document.createRange();
+                        range.selectNodeContents(e.currentTarget);
+                        const selection = window.getSelection();
+                        selection?.removeAllRanges();
+                        selection?.addRange(range);
+                      }}
+                    >
+                      {folder.name}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Parent ID</label>
+                    <div 
+                      className="font-mono text-sm p-2 bg-muted rounded cursor-text select-text" 
+                      onClick={(e) => {
+                        const range = document.createRange();
+                        range.selectNodeContents(e.currentTarget);
+                        const selection = window.getSelection();
+                        selection?.removeAllRanges();
+                        selection?.addRange(range);
+                      }}
+                    >
+                      {folder.parentId}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Template Download and Upload Section - Side by Side */}
       <div className="grid md:grid-cols-2 gap-6">
