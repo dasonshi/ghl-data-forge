@@ -77,7 +77,7 @@ export function AssociationsTable({ associations, loading }: AssociationsTablePr
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Association Key</TableHead>
+              <TableHead>Association ID</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>From Object</TableHead>
               <TableHead>To Object</TableHead>
@@ -87,8 +87,11 @@ export function AssociationsTable({ associations, loading }: AssociationsTablePr
           <TableBody>
             {associations.map((association) => (
               <TableRow key={association.id}>
-                <TableCell className="font-mono text-sm">
-                  {association.key}
+                <TableCell 
+                  className="font-mono text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => copyToClipboard(association.id, "Association ID")}
+                >
+                  {association.id}
                 </TableCell>
                 <TableCell>{association.description}</TableCell>
                 <TableCell>
