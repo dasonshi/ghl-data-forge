@@ -41,10 +41,11 @@ type ImportStep = "select" | "selectAssociation" | "upload" | "preview" | "impor
 
 interface ImportResult {
   ok: boolean;
+  success: boolean;
   message: string;
-  stats: {
-    recordsProcessed: number;
-  };
+  created?: any[];
+  skipped?: any[];
+  errors?: any[];
 }
 
 export function UploadAssociationsTab() {
@@ -484,9 +485,27 @@ export function UploadAssociationsTab() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-between">
-                  <span>Relations Processed:</span>
-                  <span className="font-semibold">{result.stats.recordsProcessed}</span>
+                  <span>Status:</span>
+                  <span className="font-semibold">{result.message}</span>
                 </div>
+                {result.created && (
+                  <div className="flex justify-between">
+                    <span>Created:</span>
+                    <span className="font-semibold">{Array.isArray(result.created) ? result.created.length : 0}</span>
+                  </div>
+                )}
+                {result.skipped && (
+                  <div className="flex justify-between">
+                    <span>Skipped:</span>
+                    <span className="font-semibold">{Array.isArray(result.skipped) ? result.skipped.length : 0}</span>
+                  </div>
+                )}
+                {result.errors && (
+                  <div className="flex justify-between">
+                    <span>Errors:</span>
+                    <span className="font-semibold">{Array.isArray(result.errors) ? result.errors.length : 0}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
