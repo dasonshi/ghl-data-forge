@@ -462,7 +462,7 @@ export function UploadAssociationsTab() {
     <div className="space-y-6">
       <div className="text-center space-y-6">
         <div className="flex justify-center">
-          <div className="h-16 w-16 bg-success/20 rounded-full flex items-center justify-center">
+          <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
             <CheckCircle2 className="h-8 w-8 text-success" />
           </div>
         </div>
