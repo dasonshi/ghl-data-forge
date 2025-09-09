@@ -214,12 +214,8 @@ export function UploadAssociationsTab() {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Import successful, result:', result);
-        console.log('Setting result:', result);
         setResult(result);
-        console.log('Setting currentStep to success');
         setCurrentStep("success");
-        console.log('Current step should now be success');
         toast({
           title: "Relations Updated",
           description: "Your record relations have been updated successfully.",
@@ -499,8 +495,6 @@ export function UploadAssociationsTab() {
     </div>
   );
 
-  console.log('UploadAssociationsTab render - currentStep:', currentStep, 'result:', result);
-  
   return (
     <div className="space-y-6">
       <StepIndicator 
@@ -520,11 +514,6 @@ export function UploadAssociationsTab() {
       {currentStep === "preview" && renderPreview()}
       {currentStep === "importing" && renderImporting()}
       {currentStep === "success" && renderSuccess()}
-      
-      {/* Debug info */}
-      <div className="text-xs text-muted-foreground">
-        Debug: Current step is "{currentStep}"
-      </div>
     </div>
   );
 }

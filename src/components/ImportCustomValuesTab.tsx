@@ -96,39 +96,42 @@ export function ImportCustomValuesTab() {
   };
 
   // Generate CSV template
-  const generateTemplate = () => {
-    let csvContent = '';
-    
-    if (mode === 'new') {
-      csvContent = 'name,value\nSample Field,Sample Value\nAnother Field,Another Value\n';
-    } else {
-      // Include existing custom values for update template
-      csvContent = 'id,name,value\n';
-      if (customValues.length > 0) {
-        customValues.slice(0, 3).forEach(cv => {
-          csvContent += `${cv.id},"${cv.name}","${cv.value}"\n`;
+  const generateTemplate = async () => {
+    try {
+      const endpoint = mode === 'new' 
+        ? '/templates/custom-values'
+        : '/templates/custom-values/update';
+      
+      const response = await apiFetch(endpoint, {}, location?.id);
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = mode === 'new' 
+          ? 'custom-values-template.csv' 
+          : 'custom-values-update-template.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Template Downloaded",
+          description: `${mode === 'new' ? 'Create' : 'Update'} template downloaded successfully.`,
         });
       } else {
-        csvContent += 'sample_id,Sample Field,Sample Value\n';
+        throw new Error('Failed to download template');
       }
+    } catch (error) {
+      console.error('Failed to download template:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download template. Please try again.",
+        variant: "destructive",
+      });
     }
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = mode === 'new' 
-      ? 'custom-values-new-template.csv' 
-      : 'custom-values-update-template.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Template Downloaded",
-      description: `${mode === 'new' ? 'New import' : 'Update'} template downloaded successfully.`,
-    });
   };
 
   const handleValuesFile = (file: File) => {
