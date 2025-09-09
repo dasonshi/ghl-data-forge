@@ -136,16 +136,24 @@ const downloadTemplate = async () => {
         const fields = data.fields || [];
         setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
         
-        // Extract folder information if available
-        const folderData = fields.filter((field: any) => field.parentId).map((field: any) => ({
-          parentId: field.parentId,
-          name: field.name || field.label || `Folder ${field.parentId}`
-        }));
+        // Extract unique folders from fields with parentId
+        const folderMap = new Map<string, string>();
+        fields.forEach((field: any) => {
+          if (field.parentId) {
+            // Use the parentId as the key and create a proper folder name
+            if (!folderMap.has(field.parentId)) {
+              // Try to find a better name from fields that might represent the folder
+              const folderName = field.folderName || field.parentName || `Folder ${field.parentId}`;
+              folderMap.set(field.parentId, folderName);
+            }
+          }
+        });
         
-        // Remove duplicates based on parentId
-        const uniqueFolders = folderData.filter((folder: any, index: number, self: any[]) => 
-          index === self.findIndex((f) => f.parentId === folder.parentId)
-        );
+        // Convert map to array format
+        const uniqueFolders = Array.from(folderMap.entries()).map(([parentId, name]) => ({
+          parentId,
+          name
+        }));
         
         setFolders(uniqueFolders);
       } else {

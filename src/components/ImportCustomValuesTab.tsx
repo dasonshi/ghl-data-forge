@@ -222,6 +222,39 @@ export function ImportCustomValuesTab() {
 
   const renderUpload = () => (
     <div className="space-y-6">
+      {/* Import Mode Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Import Mode</CardTitle>
+          <CardDescription>
+            Choose whether to import new custom values or update existing ones
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Button
+              onClick={() => setMode('new')}
+              variant={mode === 'new' ? 'default' : 'outline'}
+              className="h-20 flex flex-col gap-2"
+            >
+              <Upload className="h-6 w-6" />
+              <span>Import New Values</span>
+              <span className="text-xs opacity-75">Create new custom values</span>
+            </Button>
+            
+            <Button
+              onClick={() => setMode('update')}
+              variant={mode === 'update' ? 'default' : 'outline'}
+              className="h-20 flex flex-col gap-2"
+            >
+              <RefreshCw className="h-6 w-6" />
+              <span>Update Existing Values</span>
+              <span className="text-xs opacity-75">Modify existing custom values</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Existing Custom Values Display */}
       <Card>
         <CardHeader>
@@ -283,39 +316,6 @@ export function ImportCustomValuesTab() {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Import Mode Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Import Mode</CardTitle>
-          <CardDescription>
-            Choose whether to import new custom values or update existing ones
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Button
-              onClick={() => setMode('new')}
-              variant={mode === 'new' ? 'default' : 'outline'}
-              className="h-20 flex flex-col gap-2"
-            >
-              <Upload className="h-6 w-6" />
-              <span>Import New Values</span>
-              <span className="text-xs opacity-75">Create new custom values</span>
-            </Button>
-            
-            <Button
-              onClick={() => setMode('update')}
-              variant={mode === 'update' ? 'default' : 'outline'}
-              className="h-20 flex flex-col gap-2"
-            >
-              <RefreshCw className="h-6 w-6" />
-              <span>Update Existing Values</span>
-              <span className="text-xs opacity-75">Modify existing custom values</span>
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
