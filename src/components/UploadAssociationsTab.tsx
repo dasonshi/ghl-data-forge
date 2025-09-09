@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { DataPreviewTable } from "@/components/DataPreviewTable";
+import { AssociationsTable } from "@/components/AssociationsTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
@@ -36,7 +37,7 @@ interface Association {
   associationType?: string;
 }
 
-type ImportStep = "upload" | "preview" | "importing" | "success";
+type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
 
 interface ImportResult {
   ok: boolean;
@@ -47,27 +48,86 @@ interface ImportResult {
 }
 
 export function UploadAssociationsTab() {
-  const [currentStep, setCurrentStep] = useState<ImportStep>("upload");
+  const [currentStep, setCurrentStep] = useState<ImportStep>("select");
+  const [objects, setObjects] = useState<CustomObject[]>([]);
+  const [selectedObject, setSelectedObject] = useState<string>("");
   const [relationsFile, setRelationsFile] = useState<File | null>(null);
   const [relationsData, setRelationsData] = useState<Record<string, string>[]>([]);
+  const [associations, setAssociations] = useState<Association[]>([]);
+  const [associationsLoading, setAssociationsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
   const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
+  // Fetch objects
+  const fetchObjects = async () => {
+    try {
+      const res = await apiFetch('/api/objects', {}, location?.id ?? undefined);
+      if (res.ok) {
+        const data = await res.json();
+        setObjects(data.objects || data || []);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load custom objects. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Fetch associations for the selected object
+  const fetchAssociations = async () => {
+    if (!selectedObject || !location?.id) return;
+    
+    setAssociationsLoading(true);
+    try {
+      const response = await apiFetch(`/api/objects/${selectedObject}/associations`, {}, location.id);
+      if (response.ok) {
+        const data = await response.json();
+        setAssociations(data.associations || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch associations:', error);
+    } finally {
+      setAssociationsLoading(false);
+    }
+  };
+
+  // Fetch objects when component mounts
+  useEffect(() => {
+    if (location?.id) {
+      fetchObjects();
+    }
+  }, [location?.id]);
+
+  // Fetch associations when selected object changes
+  useEffect(() => {
+    if (selectedObject) {
+      fetchAssociations();
+    }
+  }, [selectedObject, location?.id]);
+
   // Clear all data when location switches
   useLocationSwitch(async () => {
     console.log('🔄 UploadAssociationsTab: Clearing data for location switch');
-    setCurrentStep("upload");
+    setCurrentStep("select");
+    setObjects([]);
+    setSelectedObject("");
     setRelationsFile(null);
     setRelationsData([]);
+    setAssociations([]);
     setProgress(0);
     setResult(null);
     
     await refreshContext();
+    await fetchObjects();
   });
 
   const downloadTemplate = async () => {
+    if (!selectedObject) return;
+    
     try {
       const response = await apiFetch('/templates/relations', {}, location?.id ?? undefined);
       
@@ -172,20 +232,71 @@ export function UploadAssociationsTab() {
   };
 
   const handleStartOver = () => {
-    setCurrentStep("upload");
+    setCurrentStep("select");
+    setSelectedObject("");
     setRelationsFile(null);
     setRelationsData([]);
+    setAssociations([]);
     setProgress(0);
     setResult(null);
   };
 
-  const renderUpload = () => (
+  const renderSelect = () => (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Import Record Relations</h2>
         <p className="text-muted-foreground">
-          Upload a CSV file to import relationships between records
+          Select a custom object to import relationships for its records
         </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Custom Object</CardTitle>
+          <CardDescription>
+            Choose the object you want to import record relations for
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedObject} onValueChange={setSelectedObject}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a custom object..." />
+            </SelectTrigger>
+            <SelectContent>
+              {objects.map((obj) => (
+                <SelectItem key={obj.key} value={obj.key}>
+                  {obj.labels.plural}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {selectedObject && (
+            <Button 
+              className="w-full mt-4" 
+              onClick={() => setCurrentStep("upload")}
+            >
+              Continue with {objects.find(obj => obj.key === selectedObject)?.labels.plural}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderUpload = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Import Record Relations</h2>
+          <p className="text-muted-foreground">
+            Upload a CSV file to import relationships for {objects.find(obj => obj.key === selectedObject)?.labels.plural}
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setCurrentStep("select")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Change Object
+        </Button>
       </div>
 
       <Alert>
@@ -194,6 +305,11 @@ export function UploadAssociationsTab() {
           Download the CSV template, fill it with your relation data, and upload it to import record relationships.
         </AlertDescription>
       </Alert>
+
+      <AssociationsTable 
+        associations={associations} 
+        loading={associationsLoading} 
+      />
 
       <Card>
         <CardHeader>
@@ -314,10 +430,11 @@ export function UploadAssociationsTab() {
   return (
     <div className="space-y-6">
       <StepIndicator 
-        steps={["Upload", "Preview", "Importing", "Complete"]}
-        currentStep={currentStep === "upload" ? 0 : currentStep === "preview" ? 1 : currentStep === "importing" ? 2 : 3}
+        steps={["Select Object", "Upload", "Preview", "Importing", "Complete"]}
+        currentStep={currentStep === "select" ? 0 : currentStep === "upload" ? 1 : currentStep === "preview" ? 2 : currentStep === "importing" ? 3 : 4}
       />
 
+      {currentStep === "select" && renderSelect()}
       {currentStep === "upload" && renderUpload()}
       {currentStep === "preview" && renderPreview()}
       {currentStep === "importing" && renderImporting()}
