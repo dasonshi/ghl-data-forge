@@ -251,9 +251,10 @@ const fetchObjects = async () => {
       skipEmptyLines: true,
       complete: (results) => {
         if (results.errors.length > 0) {
+          console.log('CSV Parse Errors:', results.errors);
           toast({
             title: "CSV Parse Error",
-            description: "There was an error parsing your CSV file. Please check the format.",
+            description: `Parse error: ${results.errors[0].message || 'Please check the format.'}`,
             variant: "destructive",
           });
           return;
