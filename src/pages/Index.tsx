@@ -135,15 +135,11 @@ const Index = () => {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
-              <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
-              <TabsTrigger value="import-records">Import Records</TabsTrigger>
-              <TabsTrigger value="update-records">Update Records</TabsTrigger>
-              <TabsTrigger value="export-records">Export Records</TabsTrigger>
-              <TabsTrigger value="upload-associations">Import Record Relations</TabsTrigger>
-              <TabsTrigger value="import-custom-values">Import Custom Values</TabsTrigger>
+              <TabsTrigger value="objects-fields">Objects & Fields</TabsTrigger>
+              <TabsTrigger value="records">Records</TabsTrigger>
+              <TabsTrigger value="custom-values">Custom Values</TabsTrigger>
             </TabsList>
             
             <div className="mt-8">
@@ -151,31 +147,55 @@ const Index = () => {
                 <Dashboard />
               </TabsContent>
               
-              <TabsContent value="import-objects" className="mt-0">
-                <ImportObjectsTab />
+              <TabsContent value="objects-fields" className="mt-0">
+                <Tabs defaultValue="import-objects" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
+                    <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
+                  </TabsList>
+                  
+                  <div className="mt-6">
+                    <TabsContent value="import-objects" className="mt-0">
+                      <ImportObjectsTab />
+                    </TabsContent>
+                    
+                    <TabsContent value="add-fields" className="mt-0">
+                      <AddFieldsTab />
+                    </TabsContent>
+                  </div>
+                </Tabs>
               </TabsContent>
               
-              <TabsContent value="add-fields" className="mt-0">
-                <AddFieldsTab />
+              <TabsContent value="records" className="mt-0">
+                <Tabs defaultValue="import-records" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="import-records">Import Records</TabsTrigger>
+                    <TabsTrigger value="update-records">Update Records</TabsTrigger>
+                    <TabsTrigger value="export-records">Export Records</TabsTrigger>
+                    <TabsTrigger value="upload-associations">Import Record Relations</TabsTrigger>
+                  </TabsList>
+                  
+                  <div className="mt-6">
+                    <TabsContent value="import-records" className="mt-0">
+                      <ImportRecordsTab />
+                    </TabsContent>
+                    
+                    <TabsContent value="update-records" className="mt-0">
+                      <UpdateRecordsTab />
+                    </TabsContent>
+                    
+                    <TabsContent value="export-records" className="mt-0">
+                      <ExportRecordsTab />
+                    </TabsContent>
+                    
+                    <TabsContent value="upload-associations" className="mt-0">
+                      <UploadAssociationsTab />
+                    </TabsContent>
+                  </div>
+                </Tabs>
               </TabsContent>
               
-              <TabsContent value="import-records" className="mt-0">
-                <ImportRecordsTab />
-              </TabsContent>
-              
-              <TabsContent value="update-records" className="mt-0">
-                <UpdateRecordsTab />
-              </TabsContent>
-              
-              <TabsContent value="export-records" className="mt-0">
-                <ExportRecordsTab />
-              </TabsContent>
-              
-              <TabsContent value="upload-associations" className="mt-0">
-                <UploadAssociationsTab />
-              </TabsContent>
-              
-              <TabsContent value="import-custom-values" className="mt-0">
+              <TabsContent value="custom-values" className="mt-0">
                 <ImportCustomValuesTab />
               </TabsContent>
             </div>
