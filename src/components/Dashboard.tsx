@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiFetch, API_BASE } from "@/lib/api";
 import { useAppContext } from "@/hooks/useAppContext";
 import { copyToClipboard } from "@/lib/clipboard";
+import { HelpDocumentation } from "@/components/HelpDocumentation";
 
 interface CustomObject {
   id: string;
@@ -320,6 +321,9 @@ export function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Help Documentation Section */}
+      <HelpDocumentation />
     </div>
   );
 }

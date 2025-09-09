@@ -188,21 +188,39 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
           </div>
 
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-between items-center pt-4">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
+              variant="link"
+              onClick={() => {
+                onOpenChange(false);
+                // Scroll to help documentation
+                const helpSection = document.getElementById('help-documentation');
+                if (helpSection) {
+                  helpSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="text-blue-600 hover:text-blue-700 p-0 h-auto font-normal"
             >
-              Cancel
+              Help
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-            >
-              <Send className="h-4 w-4 mr-2" />
-              {isSubmitting ? 'Sending...' : 'Send Feedback'}
-            </Button>
+            
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {isSubmitting ? 'Sending...' : 'Send Feedback'}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
