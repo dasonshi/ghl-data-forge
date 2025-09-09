@@ -191,10 +191,6 @@ export function ImportObjectsTab() {
               <h4 className="font-semibold text-primary mb-3 mt-6">Primary Display Property (Required)</h4>
               <div className="space-y-3">
                 <div className="border-l-2 border-primary pl-3">
-                  <p className="font-medium">key</p>
-                  <p className="text-muted-foreground text-sm">Internal reference key (lowercase + underscore_separated)</p>
-                </div>
-                <div className="border-l-2 border-primary pl-3">
                   <p className="font-medium">name</p>
                   <p className="text-muted-foreground text-sm">Display name for the primary property (e.g., "Pet Name")</p>
                 </div>
@@ -214,11 +210,11 @@ export function ImportObjectsTab() {
                 </div>
               </div>
               
-              <Alert className="mt-4">
+                <Alert className="mt-4">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   <strong>Example Row:</strong><br/>
-                  singular: "Pet", plural: "Pets", key: "pet_name", name: "Pet Name", dataType: "TEXT", description: "Animal companions"
+                  singular: "Pet", plural: "Pets", name: "Pet Name", dataType: "TEXT", description: "Animal companions"
                 </AlertDescription>
               </Alert>
             </div>
@@ -226,50 +222,45 @@ export function ImportObjectsTab() {
         </CardContent>
       </Card>
 
-      {/* Template Download and Upload Section - Side by Side */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              CSV Template
-            </CardTitle>
-            <CardDescription>
-              Download the template and fill it with your object definitions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      {/* Template Download and Upload Section - Combined */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Template & Upload
+          </CardTitle>
+          <CardDescription>
+            Download the template, fill it with your object definitions, then upload
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-4">
             <Button 
               onClick={downloadTemplate}
               variant="outline"
               className="w-full"
             >
-              <Database className="h-4 w-4 mr-2" />
-              Download Objects Template
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload CSV
-            </CardTitle>
-            <CardDescription>
-              Upload your completed CSV file with object definitions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            <div className="flex items-center text-sm text-muted-foreground">
+              <span>1. Download template first</span>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <span>2. Upload your completed CSV</span>
+            </div>
             <FileUploadZone
               onFileSelect={handleObjectsFile}
               acceptedTypes=".csv"
               maxSize={10}
               selectedFile={objectsFile}
             />
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 

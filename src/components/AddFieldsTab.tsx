@@ -406,6 +406,10 @@ const downloadTemplate = async () => {
                     <p className="font-medium">options</p>
                     <p className="text-muted-foreground">Pipe-separated values for select/radio fields (e.g., "Red|Blue|Green")</p>
                   </div>
+                  <div className="border-l-2 border-muted pl-3">
+                    <p className="font-medium">existingFolderId</p>
+                    <p className="text-muted-foreground">Destination folder ID for custom fields</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -413,46 +417,54 @@ const downloadTemplate = async () => {
         </CardContent>
       </Card>
 
-      {/* Folder Mapping - Copy-and-paste friendly */}
+      {/* Folder Information - Simple Table */}
       {folders.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Database className="h-5 w-5" />
-              Folder Information
+              Available Folders
             </CardTitle>
             <CardDescription>
-              Click on folder names or IDs to copy them to your clipboard.
+              Click to copy folder names or keys to your clipboard
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {folders.map((folder, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="space-y-1">
-                    <p className="font-medium">{folder.name}</p>
-                    <p className="text-sm text-muted-foreground font-mono">{folder.parentId}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="font-mono text-sm"
-                      onClick={() => copyToClipboard(folder.name, "Folder name")}
-                    >
-                      {folder.name}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="font-mono text-sm"
-                      onClick={() => copyToClipboard(folder.parentId, "Parent ID")}
-                    >
-                      {folder.parentId}
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 font-medium">Folder Name</th>
+                    <th className="text-left py-2 font-medium">Folder Key</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {folders.map((folder, index) => (
+                    <tr key={index} className="border-b last:border-b-0">
+                      <td className="py-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-1 text-left justify-start"
+                          onClick={() => copyToClipboard(folder.name, "Folder name")}
+                        >
+                          {folder.name}
+                        </Button>
+                      </td>
+                      <td className="py-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-1 font-mono text-left justify-start"
+                          onClick={() => copyToClipboard(folder.parentId, "Folder key")}
+                        >
+                          {folder.parentId}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
