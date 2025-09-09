@@ -113,7 +113,7 @@ export function Header() {
                 size="sm"
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
-                Questions?
+                Support
               </Button>
             </div>
           </div>

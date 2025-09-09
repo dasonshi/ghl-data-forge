@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Upload, X, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface FeedbackModalProps {
@@ -20,7 +19,6 @@ interface FeedbackForm {
   component: string;
   otherComponent: string;
   message: string;
-  screenshots: File[];
 }
 
 const COMPONENT_OPTIONS = [
@@ -38,7 +36,6 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     component: "",
     otherComponent: "",
     message: "",
-    screenshots: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -50,25 +47,6 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     }));
   };
 
-  const handleFileUpload = (files: FileList | null) => {
-    if (!files) return;
-    
-    const newFiles = Array.from(files).filter(file => 
-      file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024 // 10MB limit
-    );
-    
-    setForm(prev => ({
-      ...prev,
-      screenshots: [...prev.screenshots, ...newFiles].slice(0, 5), // Max 5 files
-    }));
-  };
-
-  const removeFile = (index: number) => {
-    setForm(prev => ({
-      ...prev,
-      screenshots: prev.screenshots.filter((_, i) => i !== index),
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,23 +63,21 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
     setIsSubmitting(true);
 
     try {
-      const formData = new FormData();
-      formData.append('name', form.name);
-      formData.append('email', form.email);
-      formData.append('component', form.component === 'other' ? form.otherComponent : form.component);
-      formData.append('message', form.message);
-      
-      // Add screenshots
-      form.screenshots.forEach((file, index) => {
-        formData.append(`screenshot_${index}`, file);
-      });
+      const payload = {
+        name: form.name,
+        email: form.email,
+        component: form.component === 'other' ? form.otherComponent : form.component,
+        message: form.message,
+      };
 
-      console.log('🚀 Sending feedback to webhook...');
+      console.log('🚀 Sending feedback...');
       
-      const response = await fetch('https://services.leadconnectorhq.com/hooks/gdzneuvA9mUJoRroCv4O/webhook-trigger/8ec895cf-7784-4ca4-8856-a891acaa1e6d', {
+      const response = await fetch('/api/feedback/submit', {
         method: 'POST',
-        mode: 'no-cors', // This bypasses CORS but we won't get response details
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
 
       console.log('✅ Feedback sent successfully');
@@ -118,7 +94,6 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
         component: "",
         otherComponent: "",
         message: "",
-        screenshots: [],
       });
       
       onOpenChange(false);
@@ -212,58 +187,6 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
             />
           </div>
 
-          <div className="space-y-3">
-            <Label>Screenshots (optional)</Label>
-            <div className="space-y-3">
-              <Card className="border-dashed border-2 border-muted-foreground/25">
-                <CardContent className="p-6">
-                  <div className="text-center">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Upload screenshots to help us understand your issue
-                    </p>
-                    <Input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => handleFileUpload(e.target.files)}
-                      className="hidden"
-                      id="screenshot-upload"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('screenshot-upload')?.click()}
-                    >
-                      Choose Files
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Max 5 files, 10MB each
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {form.screenshots.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Uploaded Files:</p>
-                  {form.screenshots.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded">
-                      <span className="text-sm truncate">{file.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button
