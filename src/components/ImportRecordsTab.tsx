@@ -489,69 +489,67 @@ useEffect(() => {
         </Button>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              CSV Template
-            </CardTitle>
-            <CardDescription>
-              Download the {mode === 'new' ? 'new records' : 'update records'} template and fill it with your data
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Template & Upload
+          </CardTitle>
+          <CardDescription>
+            Download the {mode === 'new' ? 'new records' : 'update records'} template, fill it with your data, then upload
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-4">
             <Button 
-              variant="outline" 
-              className="w-full"
               onClick={downloadTemplate}
+              variant="outline"
+              className="w-full"
             >
-              <Database className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 mr-2" />
               Download {mode === 'new' ? 'New Records' : 'Update Records'} Template
             </Button>
-            {mode === 'update' && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Template includes ID column for updating existing records
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Fields</CardTitle>
-            <CardDescription>
-              Fields available for mapping in this object
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
             <div className="space-y-2">
-              {fieldsData.length > 0 ? (
-                fieldsData.map((field, index) => (
-                  <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded flex justify-between items-center">
-                    <span>{field.fieldKey || field.name}</span>
-                    <span className="text-xs text-muted-foreground font-mono bg-background px-1 rounded">
-                      {field.dataType}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">Loading fields...</p>
+              <FileUploadZone
+                onFileSelect={handleRecordsFile}
+                acceptedTypes=".csv"
+                maxSize={10}
+                selectedFile={recordsFile}
+              />
+              {mode === 'update' && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Template includes ID column for updating existing records
+                </p>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="space-y-3">
-        <h3 className="font-medium">Upload Records CSV</h3>
-        <FileUploadZone
-          onFileSelect={handleRecordsFile}
-          acceptedTypes=".csv"
-          maxSize={10}
-          selectedFile={recordsFile}
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Available Fields</CardTitle>
+          <CardDescription>
+            Fields available for mapping in this object
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {fieldsData.length > 0 ? (
+              fieldsData.map((field, index) => (
+                <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded flex justify-between items-center">
+                  <span>{field.fieldKey || field.name}</span>
+                  <span className="text-xs text-muted-foreground font-mono bg-background px-1 rounded">
+                    {field.dataType}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Loading fields...</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 

@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Upload, RefreshCw, Eye, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Download, Upload, RefreshCw, Eye, CheckCircle2, AlertTriangle, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
@@ -320,18 +320,18 @@ export function ImportCustomValuesTab() {
       </Card>
 
       {/* Template Download and Upload */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              CSV Template
-            </CardTitle>
-            <CardDescription>
-              Download the {mode === 'new' ? 'new import' : 'update'} template and fill it with your data
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Template & Upload
+          </CardTitle>
+          <CardDescription>
+            Download the {mode === 'new' ? 'new import' : 'update'} template, fill it with your data, then upload
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-4">
             <Button 
               onClick={generateTemplate} 
               variant="outline"
@@ -340,31 +340,22 @@ export function ImportCustomValuesTab() {
               <Download className="h-4 w-4 mr-2" />
               Download {mode === 'new' ? 'New Import' : 'Update'} Template
             </Button>
-            {mode === 'update' && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Template includes existing values with IDs for updating
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload Custom Values CSV</CardTitle>
-            <CardDescription>
-              Upload your completed CSV file to {mode === 'new' ? 'import new' : 'update existing'} custom values
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FileUploadZone 
-              onFileSelect={handleValuesFile} 
-              acceptedTypes=".csv"
-              maxSize={10}
-              selectedFile={valuesFile}
-            />
-          </CardContent>
-        </Card>
-      </div>
+            <div className="space-y-2">
+              <FileUploadZone 
+                onFileSelect={handleValuesFile} 
+                acceptedTypes=".csv"
+                maxSize={10}
+                selectedFile={valuesFile}
+              />
+              {mode === 'update' && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Template includes existing values with IDs for updating
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 

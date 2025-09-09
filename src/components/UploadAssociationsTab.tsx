@@ -182,31 +182,31 @@ export function UploadAssociationsTab() {
   const renderUpload = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Update Record Relations</h2>
+        <h2 className="text-2xl font-bold">Import Record Relations</h2>
         <p className="text-muted-foreground">
-          Upload a CSV file to update relationships between records
+          Upload a CSV file to import relationships between records
         </p>
       </div>
 
       <Alert>
         <Database className="h-4 w-4" />
         <AlertDescription>
-          Download the CSV template, fill it with your relation data, and upload it to update record relationships.
+          Download the CSV template, fill it with your relation data, and upload it to import record relationships.
         </AlertDescription>
       </Alert>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              CSV Template
-            </CardTitle>
-            <CardDescription>
-              Download the relations template and fill it with your data
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Template & Upload
+          </CardTitle>
+          <CardDescription>
+            Download the relations template, fill it with your data, then upload
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-4">
             <Button 
               variant="outline" 
               className="w-full"
@@ -215,29 +215,17 @@ export function UploadAssociationsTab() {
               <Database className="h-4 w-4 mr-2" />
               Download Relations Template
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload CSV
-            </CardTitle>
-            <CardDescription>
-              Upload your completed CSV file with relation data
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FileUploadZone
-              onFileSelect={handleRelationsFile}
-              acceptedTypes=".csv,text/csv"
-              maxSize={10 * 1024 * 1024} // 10MB
-              selectedFile={relationsFile}
-            />
-          </CardContent>
-        </Card>
-      </div>
+            <div className="space-y-2">
+              <FileUploadZone
+                onFileSelect={handleRelationsFile}
+                acceptedTypes=".csv,text/csv"
+                maxSize={10 * 1024 * 1024} // 10MB
+                selectedFile={relationsFile}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 

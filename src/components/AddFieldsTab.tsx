@@ -470,50 +470,38 @@ const downloadTemplate = async () => {
         </Card>
       )}
 
-      {/* Template Download and Upload Section - Side by Side */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
-              CSV Template
-            </CardTitle>
-            <CardDescription>
-              Download the template and fill it with your field definitions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      {/* Template Download and Upload Section - Combined */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Template & Upload
+          </CardTitle>
+          <CardDescription>
+            Download the template, fill it with your field definitions, then upload
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-4">
             <Button 
-              variant="outline" 
-              className="w-full"
               onClick={downloadTemplate}
+              variant="outline"
+              className="w-full"
             >
-              <Database className="h-4 w-4 mr-2" />
-              Download Fields Template
+              <Download className="h-4 w-4 mr-2" />
+              Download Template
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload CSV
-            </CardTitle>
-            <CardDescription>
-              Upload your completed CSV file with field definitions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FileUploadZone
-              onFileSelect={handleFieldsFile}
-              acceptedTypes=".csv"
-              maxSize={10}
-              selectedFile={fieldsFile}
-            />
-          </CardContent>
-        </Card>
-      </div>
+            <div className="space-y-2">
+              <FileUploadZone
+                onFileSelect={handleFieldsFile}
+                acceptedTypes=".csv"
+                maxSize={10}
+                selectedFile={fieldsFile}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 

@@ -243,21 +243,14 @@ export function ImportObjectsTab() {
               <Download className="h-4 w-4 mr-2" />
               Download Template
             </Button>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <span>1. Download template first</span>
+            <div className="space-y-2">
+              <FileUploadZone
+                onFileSelect={handleObjectsFile}
+                acceptedTypes=".csv"
+                maxSize={10}
+                selectedFile={objectsFile}
+              />
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center text-sm text-muted-foreground">
-              <span>2. Upload your completed CSV</span>
-            </div>
-            <FileUploadZone
-              onFileSelect={handleObjectsFile}
-              acceptedTypes=".csv"
-              maxSize={10}
-              selectedFile={objectsFile}
-            />
           </div>
         </CardContent>
       </Card>
