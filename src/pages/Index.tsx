@@ -5,6 +5,8 @@ import { Dashboard } from "@/components/Dashboard";
 import { ImportObjectsTab } from "@/components/ImportObjectsTab";
 import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
+import { UpdateRecordsTab } from "@/components/UpdateRecordsTab";
+import { ExportRecordsTab } from "@/components/ExportRecordsTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { UploadAssociationsTab } from "@/components/UploadAssociationsTab";
 import { FeedbackModal } from "@/components/FeedbackModal";
@@ -133,12 +135,14 @@ const Index = () => {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="import-objects">Import Objects</TabsTrigger>
               <TabsTrigger value="add-fields">Import Fields</TabsTrigger>
               <TabsTrigger value="import-records">Import Records</TabsTrigger>
-              <TabsTrigger value="upload-associations">Update Record Relations</TabsTrigger>
+              <TabsTrigger value="update-records">Update Records</TabsTrigger>
+              <TabsTrigger value="export-records">Export Records</TabsTrigger>
+              <TabsTrigger value="upload-associations">Import Record Relations</TabsTrigger>
               <TabsTrigger value="import-custom-values">Import Custom Values</TabsTrigger>
             </TabsList>
             
@@ -157,6 +161,14 @@ const Index = () => {
               
               <TabsContent value="import-records" className="mt-0">
                 <ImportRecordsTab />
+              </TabsContent>
+              
+              <TabsContent value="update-records" className="mt-0">
+                <UpdateRecordsTab />
+              </TabsContent>
+              
+              <TabsContent value="export-records" className="mt-0">
+                <ExportRecordsTab />
               </TabsContent>
               
               <TabsContent value="upload-associations" className="mt-0">

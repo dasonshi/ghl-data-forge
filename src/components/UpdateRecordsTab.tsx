@@ -7,7 +7,7 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } from "lucide-react";
+import { Download, Database, CheckCircle2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
@@ -32,22 +32,9 @@ interface CustomField {
   picklistValues?: Array<{ value: string; label: string }>;
 }
 
-interface Association {
-  id: string;
-  key: string;
-  description: string;
-  relationTo: string;
-  isFirst: boolean;
-  firstObjectLabel?: string;
-  firstObjectKey?: string;
-  secondObjectLabel?: string;
-  secondObjectKey?: string;
-  associationType?: string;
-}
+type UpdateStep = "select" | "upload" | "preview" | "updating" | "success";
 
-type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
-
-interface ImportResult {
+interface UpdateResult {
   ok: boolean;
   success?: boolean;
   message: string;
@@ -64,9 +51,8 @@ interface ImportResult {
   };
 }
 
-export function ImportRecordsTab() {
-  const [currentStep, setCurrentStep] = useState<ImportStep>("select");
-  
+export function UpdateRecordsTab() {
+  const [currentStep, setCurrentStep] = useState<UpdateStep>("select");
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
   const [availableFields, setAvailableFields] = useState<string[]>([]);
@@ -75,63 +61,60 @@ export function ImportRecordsTab() {
   const [recordsFile, setRecordsFile] = useState<File | null>(null);
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<ImportResult | null>(null);
+  const [result, setResult] = useState<UpdateResult | null>(null);
   const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
-// Clear all data when location switches
-useLocationSwitch(async () => {
-  console.log('🔄 ImportRecordsTab: Clearing data for location switch');
-  setCurrentStep("select");
-  setObjects([]);
-  setSelectedObject("");
-  setAvailableFields([]);
-  setFieldsData([]);
-  setRecordsFile(null);
-  setRecordsData([]);
-  setProgress(0);
-  setResult(null);
+  // Clear all data when location switches
+  useLocationSwitch(async () => {
+    console.log('🔄 UpdateRecordsTab: Clearing data for location switch');
+    setCurrentStep("select");
+    setObjects([]);
+    setSelectedObject("");
+    setAvailableFields([]);
+    setFieldsData([]);
+    setRecordsFile(null);
+    setRecordsData([]);
+    setProgress(0);
+    setResult(null);
 
-  await refreshContext();
-  await fetchObjects();
-});
+    await refreshContext();
+    await fetchObjects();
+  });
 
-const fetchObjects = async () => {
-  try {
-    const res = await apiFetch('/api/objects', {}, location?.id ?? undefined);
-    if (res.ok) {
-      const data = await res.json();
-      setObjects(data.objects || data || []);
+  const fetchObjects = async () => {
+    try {
+      const res = await apiFetch('/api/objects', {}, location?.id ?? undefined);
+      if (res.ok) {
+        const data = await res.json();
+        setObjects(data.objects || data || []);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load custom objects. Please try again.",
+        variant: "destructive",
+      });
     }
-  } catch (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load custom objects. Please try again.",
-      variant: "destructive",
-    });
-  }
-};
+  };
 
-
- const fetchFields = async (objectKey: string) => {
-  try {
-    const res = await apiFetch(`/api/objects/${objectKey}/fields`, {}, location?.id ?? undefined);
-    if (res.ok) {
-      const data = await res.json();
-      const fields = data.fields || [];
-      setFieldsData(fields);
-      setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
-    } else {
-      setAvailableFields(["name", "email", "phone", "company", "notes"]);
+  const fetchFields = async (objectKey: string) => {
+    try {
+      const res = await apiFetch(`/api/objects/${objectKey}/fields`, {}, location?.id ?? undefined);
+      if (res.ok) {
+        const data = await res.json();
+        const fields = data.fields || [];
+        setFieldsData(fields);
+        setAvailableFields(fields.map((field: any) => field.fieldKey || field.key));
+      } else {
+        setAvailableFields(["id", "name", "email", "phone", "company", "notes"]);
+        setFieldsData([]);
+      }
+    } catch {
+      setAvailableFields(["id", "name", "email", "phone", "company", "notes"]);
       setFieldsData([]);
     }
-  } catch {
-    setAvailableFields(["name", "email", "phone", "company", "notes"]);
-    setFieldsData([]);
-  }
-};
-
-
+  };
 
   const downloadTemplate = async () => {
     if (!selectedObject) {
@@ -144,22 +127,28 @@ const fetchObjects = async () => {
     }
 
     try {
-          // Only fetch template since we already have fields data
-          const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, location?.id ?? undefined);
+      const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, location?.id ?? undefined);
 
-          if (templateResponse.ok) {
-            const csvText = await templateResponse.text();
-            
-              // Parse CSV and filter out external_id and object_key columns
-              const lines = csvText.split('\n');
-              if (lines.length > 0) {
-                const headers = lines[0].split(',');
-                const filteredHeaders = headers.filter(header => 
-                  header.trim() !== 'external_id' && header.trim() !== 'object_key'
-                );
+      if (templateResponse.ok) {
+        const csvText = await templateResponse.text();
+        
+        // Parse CSV and filter out external_id and object_key columns, add id column
+        const lines = csvText.split('\n');
+        if (lines.length > 0) {
+          const headers = lines[0].split(',');
+          let filteredHeaders = headers.filter(header => 
+            header.trim() !== 'external_id' && header.trim() !== 'object_key'
+          );
           
+          // Add id column at the beginning for update mode
+          filteredHeaders = ['id', ...filteredHeaders];
+        
           // Generate sample data based on field types
           const generateSampleValue = (fieldName: string) => {
+            if (fieldName.trim() === 'id') {
+              return 'record_id_123';
+            }
+            
             const field = fieldsData.find((f: any) => f.fieldKey.endsWith(`.${fieldName.trim()}`));
             if (!field) return 'sample_value';
             
@@ -193,24 +182,24 @@ const fetchObjects = async () => {
               default:
                 return 'sample_value';
             }
-            };
-            
-            const sampleRow = filteredHeaders.map(header => {
-              return generateSampleValue(header.trim());
-            });
-            
-            // Reconstruct CSV with filtered headers and sample row
-            const csvLines = [
-              filteredHeaders.join(','),
-              sampleRow.join(',')
-            ];
+          };
+          
+          const sampleRow = filteredHeaders.map(header => {
+            return generateSampleValue(header.trim());
+          });
+          
+          // Reconstruct CSV with filtered headers and sample row
+          const csvLines = [
+            filteredHeaders.join(','),
+            sampleRow.join(',')
+          ];
           const filteredCsv = csvLines.join('\n');
           
           const blob = new Blob([filteredCsv], { type: 'text/csv' });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `${selectedObject}-new-template.csv`;
+          a.download = `${selectedObject}-update-template.csv`;
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
@@ -218,7 +207,7 @@ const fetchObjects = async () => {
           
           toast({
             title: "Template Downloaded",
-            description: `CSV template for importing new ${selectedObjectData?.labels.singular} records downloaded.`,
+            description: `CSV template for updating existing ${selectedObjectData?.labels.singular} records downloaded.`,
           });
         }
       }
@@ -241,7 +230,6 @@ const fetchObjects = async () => {
       setCurrentStep("upload");
     }
   };
-
 
   const handleRecordsFile = (file: File) => {
     setRecordsFile(file);
@@ -273,18 +261,17 @@ const fetchObjects = async () => {
     });
   };
 
-
-  const handleImport = async () => {
+  const handleUpdate = async () => {
     if (!recordsFile || !selectedObject) return;
 
-    setCurrentStep("importing");
+    setCurrentStep("updating");
     setProgress(0);
 
     try {
       // Add object_key to each record in the CSV data
       const modifiedData = recordsData.map(record => ({
         ...record,
-        object_key: selectedObject.split('.').pop() // Extract just the object name from the full key
+        object_key: selectedObject.split('.').pop()
       }));
 
       // Convert modified data back to CSV
@@ -305,10 +292,10 @@ const fetchObjects = async () => {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-const response = await apiFetch(`/api/objects/${selectedObject}/records/import`, {
-  method: 'POST',
-  body: formData,
-}, location?.id ?? undefined);
+      const response = await apiFetch(`/api/objects/${selectedObject}/records/update`, {
+        method: 'POST',
+        body: formData,
+      }, location?.id ?? undefined);
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -318,16 +305,16 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
         setResult(result);
         setCurrentStep("success");
         toast({
-          title: "Records Imported",
-          description: "Your records have been imported successfully.",
+          title: "Records Updated",
+          description: "Your records have been updated successfully.",
         });
       } else {
-        throw new Error('Import failed');
+        throw new Error('Update failed');
       }
     } catch (error) {
       toast({
-        title: "Import Failed",
-        description: "Failed to import records. Please try again.",
+        title: "Update Failed",
+        description: "Failed to update records. Please try again.",
         variant: "destructive",
       });
       setCurrentStep("preview");
@@ -344,27 +331,26 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
     setResult(null);
   };
 
-useEffect(() => {
-  fetchObjects();
-}, [location?.id]);
+  useEffect(() => {
+    fetchObjects();
+  }, [location?.id]);
 
   const selectedObjectData = objects.find(obj => obj.key === selectedObject);
 
-
   const renderSelect = () => (
     <div className="space-y-6">
-        <Alert>
-          <Database className="h-4 w-4" />
-          <AlertDescription>
-            Select a custom object to import records into. The object must already exist and have custom fields defined.
-          </AlertDescription>
-        </Alert>
+      <Alert>
+        <Database className="h-4 w-4" />
+        <AlertDescription>
+          Select a custom object to update records in. Your CSV must include an 'id' column with the record IDs to update.
+        </AlertDescription>
+      </Alert>
 
       <Card>
         <CardHeader>
           <CardTitle>Select Custom Object</CardTitle>
           <CardDescription>
-            Choose the custom object you want to import records into
+            Choose the custom object you want to update records in
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -383,10 +369,9 @@ useEffect(() => {
 
           {objects.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No custom objects found. Create custom objects first before importing records.
+              No custom objects found. Create custom objects first before updating records.
             </p>
           )}
-
 
           {selectedObject && (
             <Button 
@@ -406,7 +391,7 @@ useEffect(() => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">
-            Import Records for: {selectedObjectData?.labels.singular}
+            Update Records for: {selectedObjectData?.labels.singular}
           </h3>
           <p className="text-sm text-muted-foreground">Object Key: {selectedObject}</p>
         </div>
@@ -420,11 +405,17 @@ useEffect(() => {
         <CardHeader>
           <CardTitle>Available Fields</CardTitle>
           <CardDescription>
-            Fields available for mapping in this object
+            Fields available for mapping in this object (id column required for updates)
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
+            <div className="text-sm bg-primary/10 px-2 py-1 rounded flex justify-between items-center border border-primary/20">
+              <span className="font-semibold">id</span>
+              <span className="text-xs text-muted-foreground font-mono bg-background px-1 rounded">
+                REQUIRED
+              </span>
+            </div>
             {fieldsData.length > 0 ? (
               fieldsData.map((field, index) => (
                 <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded flex justify-between items-center">
@@ -448,7 +439,7 @@ useEffect(() => {
             Template & Upload
           </CardTitle>
           <CardDescription>
-            Download the template, fill it with your data, then upload
+            Download the update template (includes ID column), fill it with your data, then upload
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -459,7 +450,7 @@ useEffect(() => {
               className="w-full"
             >
               <Download className="h-4 w-4 mr-2" />
-              Download Template
+              Download Update Template
             </Button>
             <FileUploadZone
               onFileSelect={handleRecordsFile}
@@ -468,6 +459,12 @@ useEffect(() => {
               selectedFile={recordsFile}
             />
           </div>
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Your CSV must include an 'id' column with valid record IDs to update existing records.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     </div>
@@ -478,10 +475,10 @@ useEffect(() => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">
-            Preview Records for: {selectedObjectData?.labels.singular}
+            Preview Updates for: {selectedObjectData?.labels.singular}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {recordsData.length} record{recordsData.length !== 1 ? 's' : ''} will be imported
+            {recordsData.length} record{recordsData.length !== 1 ? 's' : ''} will be updated
           </p>
         </div>
       </div>
@@ -489,7 +486,7 @@ useEffect(() => {
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Review your data before importing. All CSV columns will be imported as-is.
+          Review your data before updating. Only records with valid IDs will be updated.
         </AlertDescription>
       </Alert>
 
@@ -500,20 +497,20 @@ useEffect(() => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <Button variant="gradient" onClick={handleImport}>
-          Import Records
+        <Button variant="gradient" onClick={handleUpdate}>
+          Update Records
         </Button>
       </div>
     </div>
   );
 
-  const renderImporting = () => (
+  const renderUpdating = () => (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
-        <Upload className="h-16 w-16 mx-auto text-primary animate-pulse" />
-        <h3 className="text-xl font-semibold">Importing Records...</h3>
+        <Database className="h-16 w-16 mx-auto text-primary animate-pulse" />
+        <h3 className="text-xl font-semibold">Updating Records...</h3>
         <p className="text-muted-foreground">
-          Please wait while we import your records into {selectedObjectData?.labels.singular}
+          Please wait while we update your records in {selectedObjectData?.labels.singular}
         </p>
       </div>
       
@@ -529,19 +526,19 @@ useEffect(() => {
       <div className="space-y-4">
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
         <h3 className="text-2xl font-bold">
-          {result?.success ? 'Records Imported Successfully!' : 'Import Completed with Issues'}
+          {result?.success ? 'Records Updated Successfully!' : 'Update Completed with Issues'}
         </h3>
         <p className="text-muted-foreground">
           {result?.summary ? 
-            `${result.summary.created + result.summary.updated} imported, ${result.summary.skipped} skipped, ${result.summary.failed} failed` :
-            `${result?.stats?.recordsProcessed || recordsData.length} record${(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} imported to`
+            `${result.summary.updated} updated, ${result.summary.skipped} skipped, ${result.summary.failed} failed` :
+            `${result?.stats?.recordsProcessed || recordsData.length} record${(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} updated in`
           } {selectedObjectData?.labels.singular}
         </p>
       </div>
 
       <Card className="max-w-md mx-auto">
         <CardHeader>
-          <CardTitle>Import Summary</CardTitle>
+          <CardTitle>Update Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
@@ -554,12 +551,6 @@ useEffect(() => {
                 <span>Total Records:</span>
                 <span className="font-medium">{result.summary.total}</span>
               </div>
-              {result.summary.created > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-success">Created:</span>
-                  <span className="font-medium text-success">{result.summary.created}</span>
-                </div>
-              )}
               {result.summary.updated > 0 && (
                 <div className="flex justify-between">
                   <span className="text-success">Updated:</span>
@@ -582,7 +573,7 @@ useEffect(() => {
           ) : (
             <>
               <div className="flex justify-between">
-                <span>Records Imported:</span>
+                <span>Records Updated:</span>
                 <span className="font-medium">{result?.stats?.recordsProcessed || recordsData.length}</span>
               </div>
               <div className="flex justify-between">
@@ -600,10 +591,10 @@ useEffect(() => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              Import Errors ({result.errors.length})
+              Update Errors ({result.errors.length})
             </CardTitle>
             <CardDescription>
-              Issues encountered during the import process
+              Issues encountered during the update process
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -626,20 +617,20 @@ useEffect(() => {
       )}
 
       <Button variant="gradient" onClick={handleStartOver}>
-        Import More Records
+        Update More Records
       </Button>
     </div>
   );
 
-  const steps = ["Choose Object", "Download & Upload", "Preview Data", "Import Progress", "Review Results"];
-  const stepMap = { select: 0, upload: 1, preview: 2, importing: 3, success: 4 };
+  const steps = ["Choose Object", "Download & Upload", "Preview Data", "Update Progress", "Review Results"];
+  const stepMap = { select: 0, upload: 1, preview: 2, updating: 3, success: 4 };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Import Records</h2>
+        <h2 className="text-2xl font-bold">Update Records</h2>
         <p className="text-muted-foreground">
-          Import new records into existing custom objects
+          Update existing records in custom objects using their IDs
         </p>
       </div>
 
@@ -652,7 +643,7 @@ useEffect(() => {
       {currentStep === "select" && renderSelect()}
       {currentStep === "upload" && renderUpload()}
       {currentStep === "preview" && renderPreview()}
-      {currentStep === "importing" && renderImporting()}
+      {currentStep === "updating" && renderUpdating()}
       {currentStep === "success" && renderSuccess()}
     </div>
   );
