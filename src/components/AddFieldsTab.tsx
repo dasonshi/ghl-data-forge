@@ -683,7 +683,7 @@ const downloadTemplate = async () => {
   const renderSuccess = () => (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
-        <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
+        <CheckCircle2 className="h-16 w-16 mx-auto text-green-600" />
         <h3 className="text-2xl font-bold">
           {result?.success ? 'Fields Import Complete!' : 'Import Completed with Issues'}
         </h3>
@@ -711,19 +711,19 @@ const downloadTemplate = async () => {
                 <span className="font-medium">{result.summary.total}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-success">Created:</span>
-                <span className="font-medium text-success">{result.summary.created}</span>
+                <span className="text-green-600">Created:</span>
+                <span className="font-medium text-green-600">{result.summary.created}</span>
               </div>
               {result.summary.skipped > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-warning">Skipped:</span>
-                  <span className="font-medium text-warning">{result.summary.skipped}</span>
+                  <span className="text-yellow-600">Skipped:</span>
+                  <span className="font-medium text-yellow-600">{result.summary.skipped}</span>
                 </div>
               )}
               {result.summary.failed > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-destructive">Failed:</span>
-                  <span className="font-medium text-destructive">{result.summary.failed}</span>
+                  <span className="text-red-600">Failed:</span>
+                  <span className="font-medium text-red-600">{result.summary.failed}</span>
                 </div>
               )}
             </>
@@ -735,6 +735,97 @@ const downloadTemplate = async () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Detailed Results */}
+      {result && (result.created || result.skipped || result.errors) && (
+        <div className="space-y-4 max-w-4xl mx-auto">
+          {/* Created Fields */}
+          {result.created && result.created.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Created Fields ({result.created.length})
+                </CardTitle>
+                <CardDescription>Fields that were successfully created</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.created.map((field: any, index: number) => (
+                    <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-green-800">
+                          {field.label || field.name || `Field ${index + 1}`}
+                        </span>
+                        <span className="text-green-600 text-xs">Created</span>
+                      </div>
+                      {field.fieldKey && (
+                        <p className="text-green-600 text-xs mt-1 font-mono">{field.fieldKey}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Skipped Fields */}
+          {result.skipped && result.skipped.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Skipped Fields ({result.skipped.length})
+                </CardTitle>
+                <CardDescription>Fields that were skipped during the import</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.skipped.map((field: any, index: number) => (
+                    <div key={index} className="text-sm bg-yellow-50 border border-yellow-200 rounded p-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-medium text-yellow-800">
+                          {field.fieldName || field.name || `Field ${index + 1}`}
+                        </span>
+                        <span className="text-yellow-600 text-xs">Skipped</span>
+                      </div>
+                      <p className="text-yellow-700 text-xs mt-1">{field.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Failed Fields */}
+          {result.errors && result.errors.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Failed Fields ({result.errors.length})
+                </CardTitle>
+                <CardDescription>Fields that failed to import</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.errors.map((error: any, index: number) => (
+                    <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-medium text-red-800">
+                          {error.fieldName || error.name || `Field ${index + 1}`}
+                        </span>
+                        <span className="text-red-600 text-xs">Failed</span>
+                      </div>
+                      <p className="text-red-700 text-xs mt-1">{error.error}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       <Button variant="gradient" onClick={handleStartOver}>
         Import More Fields

@@ -479,35 +479,137 @@ export function UploadAssociationsTab() {
           </div>
 
           {result && (
-            <Card>
+            <Card className="max-w-md mx-auto">
               <CardHeader>
                 <CardTitle>Import Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Status:</span>
                   <span className="font-semibold">{result.message}</span>
                 </div>
                 {result.created && (
                   <div className="flex justify-between">
-                    <span>Created:</span>
-                    <span className="font-semibold">{Array.isArray(result.created) ? result.created.length : 0}</span>
+                    <span className="text-green-600">Created:</span>
+                    <span className="font-semibold text-green-600">{Array.isArray(result.created) ? result.created.length : 0}</span>
                   </div>
                 )}
                 {result.skipped && (
                   <div className="flex justify-between">
-                    <span>Skipped:</span>
-                    <span className="font-semibold">{Array.isArray(result.skipped) ? result.skipped.length : 0}</span>
+                    <span className="text-yellow-600">Skipped:</span>
+                    <span className="font-semibold text-yellow-600">{Array.isArray(result.skipped) ? result.skipped.length : 0}</span>
                   </div>
                 )}
                 {result.errors && (
                   <div className="flex justify-between">
-                    <span>Errors:</span>
-                    <span className="font-semibold">{Array.isArray(result.errors) ? result.errors.length : 0}</span>
+                    <span className="text-red-600">Errors:</span>
+                    <span className="font-semibold text-red-600">{Array.isArray(result.errors) ? result.errors.length : 0}</span>
                   </div>
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Detailed Results */}
+          {result && (result.created || result.skipped || result.errors) && (
+            <div className="space-y-4 max-w-4xl mx-auto">
+              {/* Created Relations */}
+              {result.created && result.created.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-green-600">
+                      <CheckCircle2 className="h-5 w-5" />
+                      Created Relations ({result.created.length})
+                    </CardTitle>
+                    <CardDescription>Relations that were successfully created</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {result.created.map((relation: any, index: number) => (
+                        <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-green-800">
+                              {relation.fromId && relation.toId 
+                                ? `${relation.fromId} → ${relation.toId}`
+                                : `Relation ${index + 1}`
+                              }
+                            </span>
+                            <span className="text-green-600 text-xs">Created</span>
+                          </div>
+                          {relation.details && (
+                            <p className="text-green-700 text-xs mt-1">{relation.details}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Skipped Relations */}
+              {result.skipped && result.skipped.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-yellow-600">
+                      <AlertTriangle className="h-5 w-5" />
+                      Skipped Relations ({result.skipped.length})
+                    </CardTitle>
+                    <CardDescription>Relations that were skipped during the import</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {result.skipped.map((relation: any, index: number) => (
+                        <div key={index} className="text-sm bg-yellow-50 border border-yellow-200 rounded p-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="font-medium text-yellow-800">
+                              {relation.fromId && relation.toId 
+                                ? `${relation.fromId} → ${relation.toId}`
+                                : `Relation ${index + 1}`
+                              }
+                            </span>
+                            <span className="text-yellow-600 text-xs">Skipped</span>
+                          </div>
+                          {relation.reason && (
+                            <p className="text-yellow-700 text-xs mt-1">{relation.reason}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Failed Relations */}
+              {result.errors && result.errors.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-red-600">
+                      <AlertTriangle className="h-5 w-5" />
+                      Failed Relations ({result.errors.length})
+                    </CardTitle>
+                    <CardDescription>Relations that failed to import</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {result.errors.map((error: any, index: number) => (
+                        <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="font-medium text-red-800">
+                              {error.fromId && error.toId 
+                                ? `${error.fromId} → ${error.toId}`
+                                : `Relation ${index + 1}`
+                              }
+                            </span>
+                            <span className="text-red-600 text-xs">Failed</span>
+                          </div>
+                          <p className="text-red-700 text-xs mt-1">{error.error || error.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           <Button onClick={handleStartOver} className="w-full max-w-sm">

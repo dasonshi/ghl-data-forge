@@ -62,6 +62,10 @@ interface ImportResult {
     skipped: number;
     failed: number;
   };
+  // Additional properties for detailed results
+  created?: Array<any>;
+  updated?: Array<any>;
+  skipped?: Array<any>;
 }
 
 export function ImportRecordsTab() {
@@ -528,7 +532,7 @@ useEffect(() => {
   const renderSuccess = () => (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
-        <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
+        <CheckCircle2 className="h-16 w-16 mx-auto text-green-600" />
         <h3 className="text-2xl font-bold">
           {result?.success ? 'Records Imported Successfully!' : 'Import Completed with Issues'}
         </h3>
@@ -557,26 +561,26 @@ useEffect(() => {
               </div>
               {result.summary.created > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-success">Created:</span>
-                  <span className="font-medium text-success">{result.summary.created}</span>
+                  <span className="text-green-600">Created:</span>
+                  <span className="font-medium text-green-600">{result.summary.created}</span>
                 </div>
               )}
               {result.summary.updated > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-success">Updated:</span>
-                  <span className="font-medium text-success">{result.summary.updated}</span>
+                  <span className="text-green-600">Updated:</span>
+                  <span className="font-medium text-green-600">{result.summary.updated}</span>
                 </div>
               )}
               {result.summary.skipped > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-warning">Skipped:</span>
-                  <span className="font-medium text-warning">{result.summary.skipped}</span>
+                  <span className="text-yellow-600">Skipped:</span>
+                  <span className="font-medium text-yellow-600">{result.summary.skipped}</span>
                 </div>
               )}
               {result.summary.failed > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-destructive">Failed:</span>
-                  <span className="font-medium text-destructive">{result.summary.failed}</span>
+                  <span className="text-red-600">Failed:</span>
+                  <span className="font-medium text-red-600">{result.summary.failed}</span>
                 </div>
               )}
             </>
@@ -595,35 +599,127 @@ useEffect(() => {
         </CardContent>
       </Card>
 
-      {/* Error Details Section */}
-      {result?.errors && result.errors.length > 0 && (
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Import Errors ({result.errors.length})
-            </CardTitle>
-            <CardDescription>
-              Issues encountered during the import process
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {result.errors.map((error, index) => (
-                <div key={index} className="text-sm bg-destructive/5 border border-destructive/20 rounded p-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="font-medium text-destructive">
-                      Record {error.recordIndex + 1}:
-                    </span>
-                    <span className="text-destructive/80 text-xs">
-                      {error.error}
-                    </span>
-                  </div>
+      {/* Detailed Results */}
+      {result && (result.created || result.updated || result.skipped || result.errors) && (
+        <div className="space-y-4 max-w-4xl mx-auto">
+          {/* Created Records */}
+          {result.created && result.created.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Created Records ({result.created.length})
+                </CardTitle>
+                <CardDescription>Records that were successfully created</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.created.map((record: any, index: number) => (
+                    <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-green-800">
+                          {record.id || record.name || `Record ${index + 1}`}
+                        </span>
+                        <span className="text-green-600 text-xs">Created</span>
+                      </div>
+                      {record.details && (
+                        <p className="text-green-700 text-xs mt-1">{record.details}</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Updated Records */}
+          {result.updated && result.updated.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-600">
+                  <CheckCircle2 className="h-5 w-5" />
+                  Updated Records ({result.updated.length})
+                </CardTitle>
+                <CardDescription>Records that were successfully updated</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.updated.map((record: any, index: number) => (
+                    <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-green-800">
+                          {record.id || record.name || `Record ${index + 1}`}
+                        </span>
+                        <span className="text-green-600 text-xs">Updated</span>
+                      </div>
+                      {record.details && (
+                        <p className="text-green-700 text-xs mt-1">{record.details}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Skipped Records */}
+          {result.skipped && result.skipped.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Skipped Records ({result.skipped.length})
+                </CardTitle>
+                <CardDescription>Records that were skipped during the import</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.skipped.map((record: any, index: number) => (
+                    <div key={index} className="text-sm bg-yellow-50 border border-yellow-200 rounded p-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-medium text-yellow-800">
+                          {record.id || record.name || `Record ${index + 1}`}
+                        </span>
+                        <span className="text-yellow-600 text-xs">Skipped</span>
+                      </div>
+                      {record.reason && (
+                        <p className="text-yellow-700 text-xs mt-1">{record.reason}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Failed Records */}
+          {result.errors && result.errors.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Failed Records ({result.errors.length})
+                </CardTitle>
+                <CardDescription>Records that failed to import</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.errors.map((error: any, index: number) => (
+                    <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-medium text-red-800">
+                          {error.id || error.name || `Record ${error.recordIndex ? error.recordIndex + 1 : index + 1}`}
+                        </span>
+                        <span className="text-red-600 text-xs">Failed</span>
+                      </div>
+                      <p className="text-red-700 text-xs mt-1">{error.error || error.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       <Button variant="gradient" onClick={handleStartOver}>

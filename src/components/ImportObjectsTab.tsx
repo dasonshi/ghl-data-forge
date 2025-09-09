@@ -21,6 +21,8 @@ interface ImportResult {
   stats: {
     objectsProcessed: number;
   };
+  // Additional properties for detailed results
+  created?: Array<any>;
 }
 
 export function ImportObjectsTab() {
@@ -309,7 +311,7 @@ export function ImportObjectsTab() {
   const renderSuccess = () => (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
-        <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
+        <CheckCircle2 className="h-16 w-16 mx-auto text-green-600" />
         <h3 className="text-2xl font-bold">Objects Imported Successfully!</h3>
         <p className="text-muted-foreground">
           {result?.stats?.objectsProcessed || objectsData.length} custom object{(result?.stats?.objectsProcessed || objectsData.length) !== 1 ? 's' : ''} created
@@ -323,7 +325,7 @@ export function ImportObjectsTab() {
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span>Objects Created:</span>
-            <span className="font-medium">{result?.stats?.objectsProcessed || objectsData.length}</span>
+            <span className="font-medium text-green-600">{result?.stats?.objectsProcessed || objectsData.length}</span>
           </div>
           <div className="flex justify-between">
             <span>CSV Rows Processed:</span>
@@ -331,6 +333,41 @@ export function ImportObjectsTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Detailed Results - Show created objects */}
+      {result && (result.created || objectsData.length > 0) && (
+        <div className="space-y-4 max-w-4xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-600">
+                <CheckCircle2 className="h-5 w-5" />
+                Created Objects ({result?.created?.length || objectsData.length})
+              </CardTitle>
+              <CardDescription>Custom objects that were successfully created</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {(result?.created || objectsData).map((object: any, index: number) => (
+                  <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-green-800">
+                        {object.singular || object.name || `Object ${index + 1}`}
+                      </span>
+                      <span className="text-green-600 text-xs">Created</span>
+                    </div>
+                    {object.description && (
+                      <p className="text-green-700 text-xs mt-1">{object.description}</p>
+                    )}
+                    {object.key && (
+                      <p className="text-green-600 text-xs mt-1 font-mono">{object.key}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Button variant="gradient" onClick={handleStartOver}>
         Import More Objects
