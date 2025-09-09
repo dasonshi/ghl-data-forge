@@ -37,7 +37,7 @@ interface Association {
   associationType?: string;
 }
 
-type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
+type ImportStep = "select" | "selectAssociation" | "upload" | "preview" | "importing" | "success";
 
 interface ImportResult {
   ok: boolean;
@@ -51,6 +51,7 @@ export function UploadAssociationsTab() {
   const [currentStep, setCurrentStep] = useState<ImportStep>("select");
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
+  const [selectedAssociation, setSelectedAssociation] = useState<Association | null>(null);
   const [relationsFile, setRelationsFile] = useState<File | null>(null);
   const [relationsData, setRelationsData] = useState<Record<string, string>[]>([]);
   const [associations, setAssociations] = useState<Association[]>([]);
@@ -115,6 +116,7 @@ export function UploadAssociationsTab() {
     setCurrentStep("select");
     setObjects([]);
     setSelectedObject("");
+    setSelectedAssociation(null);
     setRelationsFile(null);
     setRelationsData([]);
     setAssociations([]);
@@ -126,10 +128,10 @@ export function UploadAssociationsTab() {
   });
 
   const downloadTemplate = async () => {
-    if (!selectedObject) return;
+    if (!selectedAssociation) return;
     
     try {
-      const response = await apiFetch('/templates/relations', {}, location?.id ?? undefined);
+      const response = await apiFetch(`/templates/relations/${selectedAssociation.id}`, {}, location?.id ?? undefined);
       
       if (response.ok) {
         const csvText = await response.text();
@@ -137,7 +139,7 @@ export function UploadAssociationsTab() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'relations-template.csv';
+        a.download = `${selectedAssociation.firstObjectLabel?.toLowerCase()}-${selectedAssociation.secondObjectLabel?.toLowerCase()}-relations-template.csv`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -145,7 +147,7 @@ export function UploadAssociationsTab() {
         
         toast({
           title: "Template Downloaded",
-          description: "CSV template for updating record relations downloaded.",
+          description: `CSV template for ${selectedAssociation.firstObjectLabel} - ${selectedAssociation.secondObjectLabel} relations downloaded.`,
         });
       }
     } catch (error) {
@@ -212,6 +214,7 @@ export function UploadAssociationsTab() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Import successful, result:', result);
         setResult(result);
         setCurrentStep("success");
         toast({
@@ -219,7 +222,9 @@ export function UploadAssociationsTab() {
           description: "Your record relations have been updated successfully.",
         });
       } else {
-        throw new Error('Import failed');
+        const errorText = await response.text();
+        console.error('Import failed:', response.status, errorText);
+        throw new Error(`Import failed: ${response.status}`);
       }
     } catch (error) {
       toast({
@@ -234,6 +239,7 @@ export function UploadAssociationsTab() {
   const handleStartOver = () => {
     setCurrentStep("select");
     setSelectedObject("");
+    setSelectedAssociation(null);
     setRelationsFile(null);
     setRelationsData([]);
     setAssociations([]);
@@ -274,7 +280,7 @@ export function UploadAssociationsTab() {
           {selectedObject && (
             <Button 
               className="w-full mt-4" 
-              onClick={() => setCurrentStep("upload")}
+              onClick={() => setCurrentStep("selectAssociation")}
             >
               Continue with {objects.find(obj => obj.key === selectedObject)?.labels.plural}
             </Button>
@@ -284,13 +290,13 @@ export function UploadAssociationsTab() {
     </div>
   );
 
-  const renderUpload = () => (
+  const renderSelectAssociation = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Import Record Relations</h2>
+          <h2 className="text-2xl font-bold">Select Association</h2>
           <p className="text-muted-foreground">
-            Upload a CSV file to import relationships for {objects.find(obj => obj.key === selectedObject)?.labels.plural}
+            Choose which association type to import relations for
           </p>
         </div>
         <Button variant="outline" onClick={() => setCurrentStep("select")}>
@@ -299,17 +305,79 @@ export function UploadAssociationsTab() {
         </Button>
       </div>
 
-      <Alert>
-        <Database className="h-4 w-4" />
-        <AlertDescription>
-          Download the CSV template, fill it with your relation data, and upload it to import record relationships.
-        </AlertDescription>
-      </Alert>
-
       <AssociationsTable 
         associations={associations} 
         loading={associationsLoading} 
       />
+
+      {associations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Association Type</CardTitle>
+            <CardDescription>
+              Choose the specific association you want to import relations for
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select 
+              value={selectedAssociation?.id || ""} 
+              onValueChange={(value) => {
+                const association = associations.find(a => a.id === value);
+                setSelectedAssociation(association || null);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an association..." />
+              </SelectTrigger>
+              <SelectContent>
+                {associations.map((association) => (
+                  <SelectItem key={association.id} value={association.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{association.description}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {association.firstObjectLabel} → {association.secondObjectLabel}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {selectedAssociation && (
+              <Button 
+                className="w-full mt-4" 
+                onClick={() => setCurrentStep("upload")}
+              >
+                Continue with {selectedAssociation.firstObjectLabel} → {selectedAssociation.secondObjectLabel}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+
+  const renderUpload = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Import Record Relations</h2>
+          <p className="text-muted-foreground">
+            Upload a CSV file to import {selectedAssociation?.firstObjectLabel} → {selectedAssociation?.secondObjectLabel} relations
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setCurrentStep("selectAssociation")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Change Association
+        </Button>
+      </div>
+
+      <Alert>
+        <Database className="h-4 w-4" />
+        <AlertDescription>
+          Download the CSV template for {selectedAssociation?.firstObjectLabel} → {selectedAssociation?.secondObjectLabel} relations, fill it with your data, and upload it.
+        </AlertDescription>
+      </Alert>
 
       <Card>
         <CardHeader>
@@ -327,9 +395,10 @@ export function UploadAssociationsTab() {
               variant="outline" 
               className="w-full"
               onClick={downloadTemplate}
+              disabled={!selectedAssociation}
             >
-              <Database className="h-4 w-4 mr-2" />
-              Download Relations Template
+              <Download className="h-4 w-4 mr-2" />
+              Download {selectedAssociation?.firstObjectLabel}-{selectedAssociation?.secondObjectLabel} Template
             </Button>
             <div className="space-y-2">
               <FileUploadZone
@@ -430,11 +499,18 @@ export function UploadAssociationsTab() {
   return (
     <div className="space-y-6">
       <StepIndicator 
-        steps={["Select Object", "Upload", "Preview", "Importing", "Complete"]}
-        currentStep={currentStep === "select" ? 0 : currentStep === "upload" ? 1 : currentStep === "preview" ? 2 : currentStep === "importing" ? 3 : 4}
+        steps={["Select Object", "Select Association", "Upload", "Preview", "Importing", "Complete"]}
+        currentStep={
+          currentStep === "select" ? 0 : 
+          currentStep === "selectAssociation" ? 1 : 
+          currentStep === "upload" ? 2 : 
+          currentStep === "preview" ? 3 : 
+          currentStep === "importing" ? 4 : 5
+        }
       />
 
       {currentStep === "select" && renderSelect()}
+      {currentStep === "selectAssociation" && renderSelectAssociation()}
       {currentStep === "upload" && renderUpload()}
       {currentStep === "preview" && renderPreview()}
       {currentStep === "importing" && renderImporting()}
