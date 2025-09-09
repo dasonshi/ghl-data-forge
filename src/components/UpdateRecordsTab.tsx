@@ -127,7 +127,7 @@ export function UpdateRecordsTab() {
     }
 
     try {
-      const templateResponse = await apiFetch(`/api/objects/${selectedObject}/template`, {}, location?.id ?? undefined);
+      const templateResponse = await apiFetch(`/templates/records/${selectedObject}`, {}, location?.id ?? undefined);
 
       if (templateResponse.ok) {
         const csvText = await templateResponse.text();
