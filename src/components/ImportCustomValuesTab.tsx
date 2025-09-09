@@ -413,38 +413,122 @@ export function ImportCustomValuesTab() {
   const renderSuccess = () => (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
-        <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
+        <CheckCircle2 className="h-16 w-16 mx-auto text-green-600" />
         <h3 className="text-2xl font-bold">Custom Values {mode === 'new' ? 'Imported' : 'Updated'} Successfully!</h3>
         <p className="text-muted-foreground">
           {importResult?.summary?.created || 0} created, {importResult?.summary?.updated || 0} updated
         </p>
       </div>
 
-      <Card className="max-w-md mx-auto">
+      <Card className="max-w-2xl mx-auto text-left">
         <CardHeader>
           <CardTitle>Import Summary</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span>Total Processed:</span>
-            <span className="font-medium">{importResult?.summary?.total || 0}</span>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="text-center p-3 bg-muted rounded-lg">
+              <div className="font-bold text-lg">{importResult?.summary?.total || 0}</div>
+              <div className="text-muted-foreground">Total Processed</div>
+            </div>
+            <div className="text-center p-3 bg-green-100 rounded-lg">
+              <div className="font-bold text-lg text-green-600">{importResult?.summary?.created || 0}</div>
+              <div className="text-muted-foreground">Created</div>
+            </div>
+            <div className="text-center p-3 bg-blue-100 rounded-lg">
+              <div className="font-bold text-lg text-blue-600">{importResult?.summary?.updated || 0}</div>
+              <div className="text-muted-foreground">Updated</div>
+            </div>
+            <div className="text-center p-3 bg-red-100 rounded-lg">
+              <div className="font-bold text-lg text-red-600">{importResult?.summary?.failed || 0}</div>
+              <div className="text-muted-foreground">Failed</div>
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span>Created:</span>
-            <span className="font-medium text-success">{importResult?.summary?.created || 0}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Updated:</span>
-            <span className="font-medium text-primary">{importResult?.summary?.updated || 0}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Failed:</span>
-            <span className="font-medium text-destructive">{importResult?.summary?.failed || 0}</span>
-          </div>
+
+          {/* Show detailed results */}
+          {importResult?.created && importResult.created.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-green-600 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Created Custom Values ({importResult.created.length})
+              </h4>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Value</TableHead>
+                      <TableHead>ID</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importResult.created.map((cv, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{cv.name}</TableCell>
+                        <TableCell className="max-w-xs truncate" title={cv.value}>{cv.value}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{cv.id}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {importResult?.updated && importResult.updated.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-blue-600 flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Updated Custom Values ({importResult.updated.length})
+              </h4>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Value</TableHead>
+                      <TableHead>ID</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {importResult.updated.map((cv, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{cv.name}</TableCell>
+                        <TableCell className="max-w-xs truncate" title={cv.value}>{cv.value}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{cv.id}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {importResult?.errors && importResult.errors.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-semibold text-red-600 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Failed Imports ({importResult.errors.length})
+              </h4>
+              <div className="space-y-2">
+                {importResult.errors.map((error, index) => (
+                  <Alert key={index} variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>{error.name || error.value || `Row ${index + 1}`}:</strong> {error.error || error.message || 'Unknown error'}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Button variant="gradient" onClick={handleStartOver}>
+      <Button variant="default" onClick={handleStartOver}>
         Import More Values
       </Button>
     </div>
