@@ -458,42 +458,46 @@ export function UploadAssociationsTab() {
     </div>
   );
 
-  const renderSuccess = () => (
-    <div className="space-y-6">
-      <div className="text-center space-y-6">
-        <div className="flex justify-center">
-          <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center">
-            <CheckCircle2 className="h-8 w-8 text-success" />
+  const renderSuccess = () => {
+    console.log('renderSuccess called, currentStep:', currentStep, 'result:', result);
+    
+    return (
+      <div className="space-y-6">
+        <div className="text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </div>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="text-xl font-semibold">Relations Updated Successfully!</h3>
-          <p className="text-muted-foreground">
-            Your record relations have been processed successfully.
-          </p>
-        </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-foreground">Relations Updated Successfully!</h3>
+            <p className="text-muted-foreground">
+              Your record relations have been processed successfully.
+            </p>
+          </div>
 
-        {result && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Import Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span>Relations Processed:</span>
-                <span className="font-semibold">{result.stats.recordsProcessed}</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          {result && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Import Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Relations Processed:</span>
+                  <span className="font-semibold">{result.stats.recordsProcessed}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        <Button onClick={handleStartOver} className="w-full max-w-sm">
-          Import More Relations
-        </Button>
+          <Button onClick={handleStartOver} className="w-full max-w-sm">
+            Import More Relations
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
