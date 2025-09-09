@@ -49,9 +49,18 @@ type ImportStep = "mode" | "select" | "upload" | "preview" | "importing" | "succ
 
 interface ImportResult {
   ok: boolean;
+  success?: boolean;
   message: string;
   stats: {
     recordsProcessed: number;
+  };
+  errors?: Array<{ recordIndex: number; error: string }>;
+  summary?: {
+    total: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    failed: number;
   };
 }
 
@@ -601,9 +610,14 @@ useEffect(() => {
     <div className="space-y-6 text-center">
       <div className="space-y-4">
         <CheckCircle2 className="h-16 w-16 mx-auto text-success" />
-        <h3 className="text-2xl font-bold">Records {mode === 'new' ? 'Imported' : 'Updated'} Successfully!</h3>
+        <h3 className="text-2xl font-bold">
+          {result?.success ? `Records ${mode === 'new' ? 'Imported' : 'Updated'} Successfully!` : 'Import Completed with Issues'}
+        </h3>
         <p className="text-muted-foreground">
-          {result?.stats?.recordsProcessed || recordsData.length} record{(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} {mode === 'new' ? 'imported to' : 'updated in'} {selectedObjectData?.labels.singular}
+          {result?.summary ? 
+            `${result.summary.created + result.summary.updated} ${mode === 'new' ? 'imported' : 'updated'}, ${result.summary.skipped} skipped, ${result.summary.failed} failed` :
+            `${result?.stats?.recordsProcessed || recordsData.length} record${(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} ${mode === 'new' ? 'imported to' : 'updated in'}`
+          } {selectedObjectData?.labels.singular}
         </p>
       </div>
 
@@ -616,16 +630,82 @@ useEffect(() => {
             <span>Object:</span>
             <span className="font-medium">{selectedObjectData?.labels.singular}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Records {mode === 'new' ? 'Imported' : 'Updated'}:</span>
-            <span className="font-medium">{result?.stats?.recordsProcessed || recordsData.length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>CSV Columns:</span>
-            <span className="font-medium">{recordsData.length > 0 ? Object.keys(recordsData[0]).length : 0}</span>
-          </div>
+          {result?.summary ? (
+            <>
+              <div className="flex justify-between">
+                <span>Total Records:</span>
+                <span className="font-medium">{result.summary.total}</span>
+              </div>
+              {result.summary.created > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-success">Created:</span>
+                  <span className="font-medium text-success">{result.summary.created}</span>
+                </div>
+              )}
+              {result.summary.updated > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-success">Updated:</span>
+                  <span className="font-medium text-success">{result.summary.updated}</span>
+                </div>
+              )}
+              {result.summary.skipped > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-warning">Skipped:</span>
+                  <span className="font-medium text-warning">{result.summary.skipped}</span>
+                </div>
+              )}
+              {result.summary.failed > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-destructive">Failed:</span>
+                  <span className="font-medium text-destructive">{result.summary.failed}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="flex justify-between">
+                <span>Records {mode === 'new' ? 'Imported' : 'Updated'}:</span>
+                <span className="font-medium">{result?.stats?.recordsProcessed || recordsData.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>CSV Columns:</span>
+                <span className="font-medium">{recordsData.length > 0 ? Object.keys(recordsData[0]).length : 0}</span>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
+
+      {/* Error Details Section */}
+      {result?.errors && result.errors.length > 0 && (
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Import Errors ({result.errors.length})
+            </CardTitle>
+            <CardDescription>
+              Issues encountered during the import process
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {result.errors.map((error, index) => (
+                <div key={index} className="text-sm bg-destructive/5 border border-destructive/20 rounded p-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="font-medium text-destructive">
+                      Record {error.recordIndex + 1}:
+                    </span>
+                    <span className="text-destructive/80 text-xs">
+                      {error.error}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Button variant="gradient" onClick={handleStartOver}>
         Import More Records
