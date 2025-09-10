@@ -76,17 +76,14 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
             
             const messageHandler = (event: MessageEvent) => {
-              console.log('🔍 Received postMessage from:', event.origin, event.data);
-              
-              // Temporarily disable origin validation for debugging
-              // if (!isOriginAllowed(event.origin)) {
-              //   console.warn('Rejected postMessage from unauthorized origin:', event.origin);
-              //   return;
-              // }
+              // Validate origin using security utility
+              if (!isOriginAllowed(event.origin)) {
+                console.warn('Rejected postMessage from unauthorized origin:', event.origin);
+                return;
+              }
 
               // Validate message structure
-              if (event.data && event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
-                console.log('✅ Valid user data response received');
+              if (isMessageDataValid(event.data) && event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
                 clearTimeout(timeout);
                 window.removeEventListener('message', messageHandler);
                 resolve(event.data.payload || '');
