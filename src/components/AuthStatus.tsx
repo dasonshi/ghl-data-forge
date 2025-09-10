@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppContext } from "@/hooks/useAppContext";
 import { apiFetch, API_BASE } from "@/lib/api";
 import { useAgencyBranding } from "@/hooks/useAgencyBranding";
+import { isOriginAllowed } from "@/lib/security";
 
 export function AuthStatus() {
   const { user, location, loading, refreshContext } = useAppContext();
@@ -29,12 +30,13 @@ export function AuthStatus() {
     const handleMessage = (event: MessageEvent) => {
       console.log('📨 Received message:', event.origin, event.data);
       
-      if (event.origin !== 'https://importer.api.savvysales.ai') {
-        console.log('❌ Message from wrong origin:', event.origin);
+      // Use security utility for origin validation
+      if (!isOriginAllowed(event.origin)) {
+        console.log('❌ Message from unauthorized origin:', event.origin);
         return;
       }
       
-      if (event.data.type === 'oauth_success') {
+      if (event.data && typeof event.data === 'object' && event.data.type === 'oauth_success') {
         console.log('✅ OAuth success received, refreshing context...');
         popup?.close();
         refreshContext();

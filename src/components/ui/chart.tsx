@@ -74,27 +74,35 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
-  return (
-    <style
-      dangerouslySetInnerHTML={{
-        __html: Object.entries(THEMES)
-          .map(
-            ([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
-${colorConfig
-  .map(([key, itemConfig]) => {
-    const color =
-      itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
-      itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+  // Generate CSS custom properties safely using React's style object
+  const cssRules = Object.entries(THEMES).map(([theme, prefix]) => {
+    const selector = `${prefix} [data-chart="${id}"]`
+    const properties: Record<string, string> = {}
+    
+    colorConfig.forEach(([key, itemConfig]) => {
+      const color =
+        itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
+        itemConfig.color
+      if (color && typeof color === 'string') {
+        // Sanitize color value to prevent CSS injection
+        const sanitizedColor = color.replace(/[^a-zA-Z0-9#()%,.\s-]/g, '')
+        properties[`--color-${key}`] = sanitizedColor
+      }
+    })
+
+    return { selector, properties }
   })
-  .join("\n")}
-}
-`
-          )
-          .join("\n"),
-      }}
-    />
+
+  return (
+    <>
+      {cssRules.map(({ selector, properties }, index) => (
+        <style key={`${id}-${index}`}>
+          {`${selector} { ${Object.entries(properties)
+            .map(([prop, value]) => `${prop}: ${value};`)
+            .join(' ')} }`}
+        </style>
+      ))}
+    </>
   )
 }
 

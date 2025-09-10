@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
 import { Download, CheckCircle2, AlertTriangle, Upload, ArrowLeft, Database, Info, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useProgressInterval } from "@/hooks/useProgressInterval";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
 import { useLocationId } from "@/hooks/useLocationId";
@@ -33,6 +34,7 @@ export function ImportObjectsTab() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const { locationId, refresh } = useLocationId();
   const { toast } = useToast();
+  const { startProgress, stopProgress, completeProgress } = useProgressInterval(setProgress);
 
   // Clear all data when location switches
   useLocationSwitch(() => {
@@ -114,22 +116,18 @@ export function ImportObjectsTab() {
       const formData = new FormData();
       formData.append('objects', objectsFile);
 
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 15, 90));
-      }, 300);
+      // Start progress simulation
+      startProgress();
 
       const response = await apiFetch('/api/objects/import', {
         method: 'POST',
         body: formData,
       }, locationId ?? undefined);
 
-      clearInterval(progressInterval);
-      setProgress(100);
-
       if (response.ok) {
         const result = await response.json();
         setResult(result);
+        completeProgress();
         setCurrentStep("success");
         toast({
           title: "Objects Imported",
@@ -139,6 +137,7 @@ export function ImportObjectsTab() {
         throw new Error('Import failed');
       }
     } catch (error) {
+      stopProgress(); // Ensure interval is cleared on error
       toast({
         title: "Import Failed",
         description: "Failed to import objects. Please try again.",

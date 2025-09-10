@@ -1,6 +1,7 @@
 // AppContextProvider.tsx - Working version
 import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import { apiFetch } from '@/lib/api';
+import { ALLOWED_ORIGINS, isOriginAllowed, isMessageDataValid } from '@/lib/security';
 
 export interface UserContext {
   userId?: string;
@@ -71,10 +72,19 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               resolve('');
             }, 1500);
             
-            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+            // Send message to parent with targetOrigin restriction
+            const targetOrigin = ALLOWED_ORIGINS[0]; // Use primary origin
+            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, targetOrigin);
             
             const messageHandler = (event: MessageEvent) => {
-              if (event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
+              // Validate origin using security utility
+              if (!isOriginAllowed(event.origin)) {
+                console.warn('Rejected postMessage from unauthorized origin:', event.origin);
+                return;
+              }
+
+              // Validate message structure
+              if (isMessageDataValid(event.data) && event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
                 clearTimeout(timeout);
                 window.removeEventListener('message', messageHandler);
                 resolve(event.data.payload || '');
