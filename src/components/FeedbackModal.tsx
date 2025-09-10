@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 interface FeedbackModalProps {
   open: boolean;
@@ -72,13 +73,14 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
 
       console.log('🚀 Sending feedback...');
       
-      const response = await fetch('/api/feedback/submit', {
+      const response = await apiFetch('/api/feedback/submit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       console.log('✅ Feedback sent successfully');
       
