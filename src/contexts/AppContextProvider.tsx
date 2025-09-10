@@ -72,9 +72,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               resolve('');
             }, 1500);
             
-            // Send message to parent with targetOrigin restriction
-            const targetOrigin = ALLOWED_ORIGINS[0]; // Use primary origin
-            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, targetOrigin);
+            // Send message to parent - use '*' for compatibility with GHL iframe
+            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
             
             const messageHandler = (event: MessageEvent) => {
               // Validate origin using security utility
