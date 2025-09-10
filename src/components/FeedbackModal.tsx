@@ -67,7 +67,8 @@ export function FeedbackModal({ open, onOpenChange }: FeedbackModalProps) {
       const payload = {
         name: form.name,
         email: form.email,
-        component: form.component === 'other' ? form.otherComponent : form.component,
+        component: form.component,
+        otherComponent: form.component === 'other' ? form.otherComponent : undefined,
         message: form.message,
       };
 
