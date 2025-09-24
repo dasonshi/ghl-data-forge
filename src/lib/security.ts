@@ -7,13 +7,26 @@ export const ALLOWED_ORIGINS = [
   ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:8080'] : [])
 ];
 
+// Special handling for Lovable preview domains in development
+const LOVABLE_DOMAIN_PATTERN = /^https:\/\/[a-f0-9-]+\.lovableproject\.com$/;
+
 /**
  * Validates if a postMessage event origin is allowed
  * @param origin - The origin from the MessageEvent
  * @returns boolean indicating if the origin is trusted
  */
 export function isOriginAllowed(origin: string): boolean {
-  return ALLOWED_ORIGINS.includes(origin);
+  // Check explicit allowed origins first
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+
+  // In development, also allow Lovable preview domains
+  if (process.env.NODE_ENV === 'development' && LOVABLE_DOMAIN_PATTERN.test(origin)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
