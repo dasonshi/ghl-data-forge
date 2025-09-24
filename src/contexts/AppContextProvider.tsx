@@ -55,11 +55,20 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setLoading(true);
       setError(null);
       
-      // Get locationId from URL or localStorage
+      // Prioritize URL locationId over any cached values
       const params = new URLSearchParams(window.location.search);
       const urlLocationId = params.get('locationId');
-      const storedLocationId = localStorage.getItem('currentLocationId');
-      const locationId = urlLocationId || storedLocationId;
+
+      // Clear any old cached locationId when we have a new one from URL
+      if (urlLocationId) {
+        const storedLocationId = localStorage.getItem('currentLocationId');
+        if (storedLocationId && storedLocationId !== urlLocationId) {
+          console.log('Clearing old cached locationId:', storedLocationId);
+          localStorage.removeItem('currentLocationId');
+        }
+      }
+
+      const locationId = urlLocationId;
       
       console.log('Loading app context with locationId:', locationId);
       
@@ -125,7 +134,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setCurrentLocationId(newLocationId || null);
         setError(null);
         
-        if (newLocationId) {
+        // Only cache the locationId if it's confirmed valid by the API response
+        if (newLocationId && newLocationId === urlLocationId) {
           localStorage.setItem('currentLocationId', newLocationId);
         }
       } else if (response.status === 422) {
@@ -153,10 +163,17 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           
           if (retryResponse.ok) {
             const data = await retryResponse.json();
+            const retryLocationId = data.location?.id || locationId;
+
             setUser(data.user || null);
             setLocation(data.location || null);
-            setCurrentLocationId(data.location?.id || locationId || null);
+            setCurrentLocationId(retryLocationId || null);
             setError(null);
+
+            // Only cache if we have a valid locationId that matches the URL
+            if (retryLocationId && retryLocationId === urlLocationId) {
+              localStorage.setItem('currentLocationId', retryLocationId);
+            }
           } else {
             setError('app_not_installed');
           }
@@ -183,6 +200,16 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Load on mount
   useEffect(() => {
+    // Clear any stale locationId on app startup if no URL param is provided
+    const urlLocationId = new URLSearchParams(window.location.search).get('locationId');
+    if (!urlLocationId) {
+      const storedLocationId = localStorage.getItem('currentLocationId');
+      if (storedLocationId) {
+        console.log('Clearing stale locationId on startup:', storedLocationId);
+        localStorage.removeItem('currentLocationId');
+      }
+    }
+
     loadAppContext();
   }, []); // Only run once on mount
 
