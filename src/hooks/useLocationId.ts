@@ -7,12 +7,12 @@ export function useLocationId() {
 
   async function refresh() {
     try {
-      // Prioritize URL parameter over cached values
-      const locationIdParam = new URLSearchParams(window.location.search).get('locationId');
+      // Prioritize URL parameter, fall back to cached value from AppContextProvider
+      const urlLocationId = new URLSearchParams(window.location.search).get('locationId');
+      const cachedLocationId = localStorage.getItem('currentLocationId');
+      const locationIdParam = urlLocationId || cachedLocationId;
 
       if (!locationIdParam) {
-        // Clear any cached locationId since we don't have a current one from URL
-        localStorage.removeItem('currentLocationId');
         setLocationId(null);
         return null;
       }

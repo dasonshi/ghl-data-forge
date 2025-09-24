@@ -127,16 +127,23 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const data = await response.json();
         console.log('✅ App context loaded:', data);
         
-        const newLocationId = data.location?.id || locationId;
+        const newLocationId = data.location?.id || data.user?.activeLocation || locationId;
         
         setUser(data.user || null);
         setLocation(data.location || null);
         setCurrentLocationId(newLocationId || null);
         setError(null);
         
-        // Only cache the locationId if it's confirmed valid by the API response
-        if (newLocationId && newLocationId === urlLocationId) {
+        // Cache the locationId if we have a valid one from the API response
+        if (newLocationId) {
           localStorage.setItem('currentLocationId', newLocationId);
+
+          // Update URL if locationId came from encrypted data and not from URL
+          if (!urlLocationId && window.history.replaceState) {
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('locationId', newLocationId);
+            window.history.replaceState({}, '', newUrl.toString());
+          }
         }
       } else if (response.status === 422) {
         const errorData = await response.json().catch(() => ({ error: 'unknown' }));
@@ -163,16 +170,23 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           
           if (retryResponse.ok) {
             const data = await retryResponse.json();
-            const retryLocationId = data.location?.id || locationId;
+            const retryLocationId = data.location?.id || data.user?.activeLocation || locationId;
 
             setUser(data.user || null);
             setLocation(data.location || null);
             setCurrentLocationId(retryLocationId || null);
             setError(null);
 
-            // Only cache if we have a valid locationId that matches the URL
-            if (retryLocationId && retryLocationId === urlLocationId) {
+            // Cache the locationId if we have a valid one from the API response
+            if (retryLocationId) {
               localStorage.setItem('currentLocationId', retryLocationId);
+
+              // Update URL if locationId came from encrypted data and not from URL
+              if (!urlLocationId && window.history.replaceState) {
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('locationId', retryLocationId);
+                window.history.replaceState({}, '', newUrl.toString());
+              }
             }
           } else {
             setError('app_not_installed');
