@@ -237,7 +237,7 @@ export function Dashboard() {
             <div className="text-center py-8 text-muted-foreground">
               <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="font-medium">No custom objects found</p>
-              <p className="text-sm">Create custom objects in HighLevel first</p>
+              <p className="text-sm">Create custom objects in your CRM first</p>
             </div>
           ) : (
             <div className="space-y-2">

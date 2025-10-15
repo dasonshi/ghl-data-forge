@@ -289,7 +289,7 @@ export function ImportCustomValuesTab() {
             <div className="text-center py-8 text-muted-foreground">
               <RefreshCw className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p className="font-medium">No custom values found</p>
-              <p className="text-sm">Create custom values in HighLevel first, or import new ones below.</p>
+              <p className="text-sm">Create custom values in your CRM first, or import new ones below.</p>
             </div>
           ) : (
             <div className="rounded-md border max-h-96 overflow-y-auto">

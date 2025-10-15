@@ -16,7 +16,7 @@ const helpSections: HelpSection[] = [
     id: "getting-started",
     title: "Getting Started",
     content: `Before importing any data, make sure you have:
-• Your custom objects already created in GoHighLevel
+• Your custom objects already created in your CRM
 • The **Object Key** for each custom object you want to work with
 • Your CSV files formatted according to the templates provided
 
@@ -29,10 +29,10 @@ The **Object Key** is a unique identifier for your custom object, formatted like
     id: "custom-objects",
     title: "Custom Objects",
     content: `### What is a Custom Object?
-A custom object is a data structure you create in GoHighLevel to store specific information for your business (like Products, Services, Inventory, etc.).
+A custom object is a data structure you create in your CRM to store specific information for your business (like Products, Services, Inventory, etc.).
 
 ### Object Key
-The **Object Key** is a unique identifier for your custom object. In GoHighLevel, it's formatted like \`custom_objects.your_object_name\`. You can find this in your custom object settings.
+The **Object Key** is a unique identifier for your custom object. In your account, it's formatted like \`custom_objects.your_object_name\`. You can find this in your custom object settings.
 
 **Example:** If you created a "Products" object, the key might be \`custom_objects.products\``,
     searchableText: "custom objects data structure products services inventory object key unique identifier"
@@ -103,7 +103,7 @@ The system automatically detects whether you're creating new records or updating
     id: "custom-values",
     title: "Custom Values",
     content: `### What are Custom Values?
-Custom values are global key-value pairs you can use across your entire GoHighLevel account (like company settings, default values, etc.).
+Custom values are global key-value pairs you can use across your entire subaccount (like company settings, default values, etc.).
 
 ### Custom Values CSV Format:
 • **name** - Name/key of the custom value (Required) - Example: "Default Tax Rate"

@@ -40,7 +40,7 @@ export function useAgencyBranding() {
           // Use fallback branding from location context if available
           if (location) {
             setBranding({
-              companyName: location.companyName || 'HighLevel',
+              companyName: location.companyName || 'CRM',
               logoUrl: location.logoUrl,
               website: location.website,
               locationName: location.name,
@@ -56,7 +56,7 @@ export function useAgencyBranding() {
         // Use fallback branding from location context if available
         if (location) {
           setBranding({
-            companyName: location.companyName || 'HighLevel',
+            companyName: location.companyName || 'CRM',
             logoUrl: location.logoUrl,
             website: location.website,
             locationName: location.name,

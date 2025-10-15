@@ -46,7 +46,7 @@ export function AuthStatus() {
         
         toast({
           title: "Connected",
-          description: "Successfully connected to HighLevel.",
+          description: "Successfully connected to your CRM.",
         });
         window.removeEventListener('message', handleMessage);
       }
@@ -73,7 +73,7 @@ export function AuthStatus() {
       if (response.ok) {
         toast({
           title: "Disconnected",
-          description: "Successfully disconnected from HighLevel.",
+          description: "Successfully disconnected from your CRM.",
         });
         refreshContext();
       } else {
@@ -82,7 +82,7 @@ export function AuthStatus() {
     } catch (error) {
       toast({
         title: "Disconnect Failed",
-        description: "Failed to disconnect from HighLevel. Please try again.",
+        description: "Failed to disconnect from your CRM. Please try again.",
         variant: "destructive",
       });
     }
@@ -111,7 +111,7 @@ export function AuthStatus() {
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <div className="space-y-1">
                    <div className="flex items-center gap-2">
-                     <span className="font-medium">Connected to {branding?.companyName || 'HighLevel'}</span>
+                     <span className="font-medium">Connected to {branding?.companyName || 'CRM'}</span>
                      <Badge variant="outline" className="bg-success/10 text-success border-success/20">
                        Authenticated
                      </Badge>

@@ -28,7 +28,7 @@ const Index = () => {
 
   // Update document title when branding changes
   useEffect(() => {
-    const companyName = branding?.companyName || 'HighLevel';
+    const companyName = branding?.companyName || 'CRM';
     document.title = `${companyName} - Data Importer`;
   }, [branding]);
 
@@ -58,9 +58,9 @@ const Index = () => {
   // Handle different error types
   if (error === 'app_not_installed') {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
+      <div className="w-full h-full bg-gradient-subtle">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="container mx-auto px-4 py-8 max-w-7xl pb-16">
           <div className="flex justify-center items-center min-h-[400px]">
             <Card className="max-w-md w-full">
               <CardContent className="p-6 text-center space-y-4">
@@ -85,13 +85,13 @@ const Index = () => {
 
   if (error === 'missing_location') {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
+      <div className="w-full h-full bg-gradient-subtle">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="container mx-auto px-4 py-8 max-w-7xl pb-16">
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              No location ID found. Please access this app from within HighLevel.
+              No location ID found. Please access this app from within your CRM.
             </AlertDescription>
           </Alert>
         </div>
@@ -101,9 +101,9 @@ const Index = () => {
   // Show loading state while initializing
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-subtle">
+      <div className="w-full h-full bg-gradient-subtle">
         <Header />
-        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="container mx-auto px-4 py-8 max-w-7xl pb-16">
           <div className="text-center space-y-4">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
             <p className="text-muted-foreground">Loading application...</p>
@@ -114,11 +114,11 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="w-full h-full bg-gradient-subtle">
       {/* Header */}
       <Header />
-      
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+
+      <div className="container mx-auto px-4 py-8 max-w-7xl pb-16">
         <div className="space-y-6">
           {/* Page Title */}
           <div className="text-center space-y-4">
