@@ -66,16 +66,26 @@ export function AuthStatus() {
 
   const handleDisconnect = async () => {
     try {
-      const response = await apiFetch('/api/auth/disconnect', { 
+      const response = await apiFetch('/api/auth/disconnect', {
         method: 'POST'
       }, location?.id);
-      
+
       if (response.ok) {
         toast({
           title: "Disconnected",
           description: "Successfully disconnected from your CRM.",
         });
-        refreshContext();
+
+        // Clear locationId from URL and localStorage to prevent auto-reconnect
+        localStorage.removeItem('currentLocationId');
+        const url = new URL(window.location.href);
+        url.searchParams.delete('locationId');
+        window.history.replaceState({}, '', url.toString());
+
+        // Refresh to show disconnected state
+        // Note: Don't call refreshContext() as it will trigger agency token exchange
+        // and immediately reconnect the user
+        window.location.reload();
       } else {
         throw new Error('Disconnect failed');
       }
