@@ -148,8 +148,12 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       } else if (response.status === 422) {
         const errorData = await response.json().catch(() => ({ error: 'unknown' }));
         console.log('422 error:', errorData);
-        
+
         if (errorData.error === 'app_not_installed') {
+          // Clear user and location states to show disconnected UI
+          setUser(null);
+          setLocation(null);
+          setCurrentLocationId(null);
           setError('app_not_installed');
         } else if (errorData.error === 'invalid_payload' || errorData.error === 'decrypt_failed') {
           // Try without encrypted data
@@ -189,17 +193,33 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
               }
             }
           } else {
+            // Clear states on retry failure
+            setUser(null);
+            setLocation(null);
+            setCurrentLocationId(null);
             setError('app_not_installed');
           }
         } else {
+          // Clear states for other 422 errors
+          setUser(null);
+          setLocation(null);
+          setCurrentLocationId(null);
           setError('app_not_installed');
         }
       } else {
         console.error('Unexpected response:', response.status);
+        // Clear states on unexpected errors
+        setUser(null);
+        setLocation(null);
+        setCurrentLocationId(null);
         setError('Failed to load app context');
       }
     } catch (err) {
       console.error('❌ App context error:', err);
+      // Clear states on exception
+      setUser(null);
+      setLocation(null);
+      setCurrentLocationId(null);
       setError('Failed to load app context');
     } finally {
       setLoading(false);
