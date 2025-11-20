@@ -206,6 +206,22 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           setCurrentLocationId(null);
           setError('app_not_installed');
         }
+      } else if (response.status === 401) {
+        const errorData = await response.json().catch(() => ({ error: 'unknown' }));
+        console.log('401 error:', errorData);
+
+        // Handle Safari-specific cookie blocking
+        if (errorData.error === 'safari_cookie_blocked') {
+          setUser(null);
+          setLocation(null);
+          setCurrentLocationId(null);
+          setError('safari_blocked');
+        } else {
+          setUser(null);
+          setLocation(null);
+          setCurrentLocationId(null);
+          setError('authentication_required');
+        }
       } else {
         console.error('Unexpected response:', response.status);
         // Clear states on unexpected errors

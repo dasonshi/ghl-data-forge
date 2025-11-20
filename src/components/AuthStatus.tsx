@@ -11,12 +11,15 @@ import { useAgencyBranding } from "@/hooks/useAgencyBranding";
 import { isOriginAllowed } from "@/lib/security";
 
 export function AuthStatus() {
-  const { user, location, loading, refreshContext } = useAppContext();
+  const { user, location, loading, error, refreshContext } = useAppContext();
   const { branding } = useAgencyBranding();
   const { toast } = useToast();
 
   // Connected if we have both user and location data
   const isConnected = !!(user && location);
+
+  // Check if Safari is blocking cookies
+  const isSafariBlocked = error === 'safari_blocked';
 
   const handleConnect = () => {
     console.log('🔐 Opening OAuth popup...');
@@ -112,11 +115,26 @@ export function AuthStatus() {
   }
 
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isConnected ? (
+    <>
+      {/* Safari Cookie Blocking Warning */}
+      {isSafariBlocked && (
+        <Alert className="mb-4 border-warning bg-warning/10">
+          <AlertTriangle className="h-4 w-4 text-warning" />
+          <AlertDescription>
+            <strong>Safari Browser Detected:</strong> Safari's privacy settings are blocking authentication cookies required for this app.
+            <br />
+            <span className="text-sm mt-2 block">
+              Please use <strong>Chrome</strong>, <strong>Firefox</strong>, or <strong>Edge</strong> for the best experience.
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {isConnected ? (
               <>
                 <CheckCircle2 className="h-5 w-5 text-success" />
                 <div className="space-y-1">
@@ -167,5 +185,6 @@ export function AuthStatus() {
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }
