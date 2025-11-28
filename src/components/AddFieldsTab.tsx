@@ -7,7 +7,7 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft, HelpCircle } from "lucide-react";
+import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft, HelpCircle, User, DollarSign } from "lucide-react";
 import { FolderMappingCard } from "@/components/FolderMappingCard";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
@@ -23,6 +23,7 @@ interface CustomObject {
     singular: string;
     plural: string;
   };
+  isStandard?: boolean;
 }
 
 type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
@@ -288,34 +289,57 @@ const downloadTemplate = async () => {
       <Alert>
         <Database className="h-4 w-4" />
         <AlertDescription>
-          Select an existing custom object to import fields into it.
+          Select a standard object (Contact, Opportunity) or custom object to import fields into.
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle>Select Custom Object</CardTitle>
+          <CardTitle>Select Object</CardTitle>
           <CardDescription>
-            Choose the custom object you want to import fields into
+            Choose which object you want to import custom fields into
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Select value={selectedObject} onValueChange={handleObjectSelect}>
             <SelectTrigger>
-              <SelectValue placeholder="Select a custom object" />
+              <SelectValue placeholder="Select an object" />
             </SelectTrigger>
             <SelectContent>
-              {objects.map((object) => (
-                <SelectItem key={object.id} value={object.key}>
-                  {object.labels.singular} ({object.key})
-                </SelectItem>
-              ))}
+              {/* Standard Objects First */}
+              {objects.filter(obj => obj.isStandard).length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Standard Objects</div>
+                  {objects.filter(obj => obj.isStandard).map((object) => (
+                    <SelectItem key={object.id} value={object.key}>
+                      <div className="flex items-center gap-2">
+                        {object.key === 'contact' ? <User className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />}
+                        {object.labels.singular}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
+              {/* Custom Objects */}
+              {objects.filter(obj => !obj.isStandard).length > 0 && (
+                <>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Custom Objects</div>
+                  {objects.filter(obj => !obj.isStandard).map((object) => (
+                    <SelectItem key={object.id} value={object.key}>
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4" />
+                        {object.labels.singular} ({object.key.replace('custom_objects.', '')})
+                      </div>
+                    </SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
 
           {objects.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
-              No custom objects found. Create custom objects first before importing fields.
+              No objects found. Please ensure you have connected your account.
             </p>
           )}
 
@@ -346,6 +370,17 @@ const downloadTemplate = async () => {
           Back
         </Button>
       </div>
+
+      {/* Standard Object Info Alert */}
+      {selectedObjectData?.isStandard && (
+        <Alert>
+          <User className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Standard Object:</strong> Custom fields for {selectedObjectData.labels.singular} don't require folders.
+            Fields will be added directly to the object and available in forms, workflows, and reporting.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Field Parameters Help Section - Full Width */}
       <Card>
@@ -414,10 +449,18 @@ const downloadTemplate = async () => {
                     <p className="font-medium">options</p>
                     <p className="text-muted-foreground">Pipe-separated values for select/radio fields (e.g., "Red|Blue|Green")</p>
                   </div>
-                  <div className="border-l-2 border-muted pl-3">
-                    <p className="font-medium">existingFolderId</p>
-                    <p className="text-muted-foreground">Destination folder ID for custom fields</p>
-                  </div>
+                  {selectedObjectData?.isStandard && (
+                    <div className="border-l-2 border-muted pl-3">
+                      <p className="font-medium">position</p>
+                      <p className="text-muted-foreground">Display order position (number)</p>
+                    </div>
+                  )}
+                  {!selectedObjectData?.isStandard && (
+                    <div className="border-l-2 border-muted pl-3">
+                      <p className="font-medium">existingFolderId</p>
+                      <p className="text-muted-foreground">Destination folder ID for custom fields</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -425,8 +468,8 @@ const downloadTemplate = async () => {
         </CardContent>
       </Card>
 
-      {/* Folder Information - Simple Table */}
-      {folders.length > 0 && (
+      {/* Folder Information - Simple Table (only for custom objects) */}
+      {!selectedObjectData?.isStandard && folders.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
