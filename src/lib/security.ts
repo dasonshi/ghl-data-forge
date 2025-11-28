@@ -1,8 +1,9 @@
 // Security configuration for postMessage communications
 export const ALLOWED_ORIGINS = [
   'https://importer.api.savvysales.ai',
-  'https://app.savvysales.ai', // This was missing - where the encrypted data comes from
+  'https://app.savvysales.ai',
   'https://app.gohighlevel.com',
+  'https://app.leadconnectorhq.com', // GHL white-label domain - where encrypted data comes from
   'https://ghl.local',
   ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000', 'http://localhost:8080'] : [])
 ];
