@@ -15,8 +15,9 @@ export function AuthStatus() {
   const { branding } = useAgencyBranding();
   const { toast } = useToast();
 
-  // Connected if we have both user and location data
-  const isConnected = !!(user && location);
+  // Connected if we have location data (meaning valid tokens exist)
+  // User data may be null when accessed via GHL custom menu link without SSO context
+  const isConnected = !!location;
 
   // Check if Safari is blocking cookies
   const isSafariBlocked = error === 'safari_blocked';
