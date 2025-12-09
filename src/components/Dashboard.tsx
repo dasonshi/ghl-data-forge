@@ -76,33 +76,33 @@ export function Dashboard() {
         const fetchedObjects = data.objects || data || [];
         setObjects(fetchedObjects);
         
-        // Fetch schema for each object (includes all fields)
+        // Fetch fields for each object (works for both standard and custom objects)
         const fieldsMap: Record<string, CustomField[]> = {};
         for (const obj of fetchedObjects) {
           try {
             // Extract raw key (e.g., "test" from "custom_objects.test")
             const rawKey = obj.key.includes('.') ? obj.key.split('.').pop() : obj.key;
-            
-            // Fetch schema with locationId
-            const schemaResponse = await fetch(
-              `${API_BASE}/api/objects/${rawKey}/schema?fetchProperties=true&locationId=${currentLocationId}`,
+
+            // Fetch fields with locationId - this endpoint handles both standard and custom objects
+            const fieldsResponse = await fetch(
+              `${API_BASE}/api/objects/${rawKey}/fields?locationId=${currentLocationId}`,
               {
                 credentials: 'include',
                 cache: 'no-store'
               }
             );
-            
-            if (schemaResponse.ok) {
-              const schema = await schemaResponse.json();
-              // Extract fields from schema
-              const fields = schema.properties || schema.fields || [];
+
+            if (fieldsResponse.ok) {
+              const data = await fieldsResponse.json();
+              // Extract fields from response
+              const fields = data.fields || [];
               fieldsMap[obj.key] = Array.isArray(fields) ? fields : Object.values(fields);
             } else {
-              console.warn(`Failed to fetch schema for object ${obj.key}:`, schemaResponse.status);
+              console.warn(`Failed to fetch fields for object ${obj.key}:`, fieldsResponse.status);
               fieldsMap[obj.key] = [];
             }
           } catch (error) {
-            console.warn(`Failed to fetch schema for object ${obj.key}:`, error);
+            console.warn(`Failed to fetch fields for object ${obj.key}:`, error);
             fieldsMap[obj.key] = [];
           }
         }
