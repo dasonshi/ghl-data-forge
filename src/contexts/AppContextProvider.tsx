@@ -56,8 +56,19 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setError(null);
       
       // Prioritize URL locationId over any cached values
+      // Check query params first, then URL path (for GHL custom menu links)
       const params = new URLSearchParams(window.location.search);
-      const urlLocationId = params.get('locationId');
+      let urlLocationId = params.get('locationId');
+
+      // If not in query params, extract from GHL URL path format:
+      // /v2/location/{locationId}/custom-page-link/...
+      if (!urlLocationId) {
+        const pathMatch = window.location.pathname.match(/\/location\/([a-zA-Z0-9]+)\//);
+        if (pathMatch) {
+          urlLocationId = pathMatch[1];
+          console.log('Extracted locationId from URL path:', urlLocationId);
+        }
+      }
 
       // Clear any old cached locationId when we have a new one from URL
       if (urlLocationId) {
