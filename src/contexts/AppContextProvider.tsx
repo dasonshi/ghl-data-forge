@@ -56,19 +56,52 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setError(null);
       
       // Prioritize URL locationId over any cached values
-      // Check query params first, then URL path (for GHL custom menu links)
+      // Check query params first, then URL path, then referrer
       const params = new URLSearchParams(window.location.search);
       let urlLocationId = params.get('locationId');
 
-      // If not in query params, extract from GHL URL path format:
-      // /v2/location/{locationId}/custom-page-link/...
+      // Try to extract from URL path (GHL custom page links)
+      // Pattern: /v2/location/{locationId}/... or /location/{locationId}/...
       if (!urlLocationId) {
-        const pathMatch = window.location.pathname.match(/\/location\/([a-zA-Z0-9]+)\//);
-        if (pathMatch) {
-          urlLocationId = pathMatch[1];
-          console.log('Extracted locationId from URL path:', urlLocationId);
+        const pathPatterns = [
+          /\/v2\/location\/([a-zA-Z0-9]+)/,
+          /\/location\/([a-zA-Z0-9]+)/
+        ];
+        for (const pattern of pathPatterns) {
+          const match = window.location.pathname.match(pattern);
+          if (match) {
+            urlLocationId = match[1];
+            console.log('Extracted locationId from URL path:', urlLocationId);
+            break;
+          }
         }
       }
+
+      // Try document.referrer as fallback (contains parent URL when in iframe)
+      if (!urlLocationId && document.referrer) {
+        try {
+          const referrerUrl = new URL(document.referrer);
+          const referrerPatterns = [/\/v2\/location\/([a-zA-Z0-9]+)/, /\/location\/([a-zA-Z0-9]+)/];
+          for (const pattern of referrerPatterns) {
+            const match = referrerUrl.pathname.match(pattern);
+            if (match) {
+              urlLocationId = match[1];
+              console.log('Extracted locationId from referrer:', urlLocationId);
+              break;
+            }
+          }
+        } catch (e) {
+          // Ignore referrer parsing errors
+        }
+      }
+
+      // Debug logging for troubleshooting
+      console.log('🔍 LocationId extraction:', {
+        queryParam: params.get('locationId') || 'none',
+        pathname: window.location.pathname,
+        referrer: document.referrer || 'none',
+        extracted: urlLocationId || 'none'
+      });
 
       // Clear any old cached locationId when we have a new one from URL
       if (urlLocationId) {
@@ -84,36 +117,50 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       console.log('Loading app context with locationId:', locationId);
       
       // Try to get encrypted data from parent (if in iframe)
+      // Use retry logic with increasing timeouts for slower connections
       let encryptedData = '';
       if (window.parent !== window) {
         try {
-          encryptedData = await new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-              resolve('');
-            }, 1500);
-            
-            // Send message to parent - use '*' for compatibility with GHL iframe
-            window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
-            
-            const messageHandler = (event: MessageEvent) => {
-              // Validate origin using security utility
-              if (!isOriginAllowed(event.origin)) {
-                console.warn('Rejected postMessage from unauthorized origin:', event.origin);
-                return;
-              }
+          // Try up to 2 times with increasing timeout
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            const timeoutMs = 3000 * attempt; // 3s first, 6s second
 
-              // Validate message structure
-              if (isMessageDataValid(event.data) && event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
-                clearTimeout(timeout);
-                window.removeEventListener('message', messageHandler);
-                resolve(event.data.payload || '');
-              }
-            };
-            
-            window.addEventListener('message', messageHandler);
-          });
+            encryptedData = await new Promise<string>((resolve) => {
+              const timeout = setTimeout(() => {
+                console.warn(`⏱️ PostMessage attempt ${attempt} timed out after ${timeoutMs}ms`);
+                resolve('');
+              }, timeoutMs);
+
+              // Send message to parent - use '*' for compatibility with GHL iframe
+              console.log(`📤 Sending REQUEST_USER_DATA to parent (attempt ${attempt})...`);
+              window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+
+              const messageHandler = (event: MessageEvent) => {
+                // Validate origin using security utility
+                if (!isOriginAllowed(event.origin)) {
+                  console.warn('Rejected postMessage from unauthorized origin:', event.origin);
+                  return;
+                }
+
+                // Validate message structure
+                if (isMessageDataValid(event.data) && event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
+                  clearTimeout(timeout);
+                  window.removeEventListener('message', messageHandler);
+                  console.log('✅ Received encrypted data from GHL parent');
+                  resolve(event.data.payload || '');
+                }
+              };
+
+              window.addEventListener('message', messageHandler);
+            });
+
+            if (encryptedData) {
+              console.log(`✅ Got encrypted data on attempt ${attempt}`);
+              break; // Got data, stop retrying
+            }
+          }
         } catch (e) {
-          console.log('Could not get encrypted data');
+          console.warn('PostMessage failed:', e);
         }
       }
       
