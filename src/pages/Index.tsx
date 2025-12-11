@@ -121,8 +121,8 @@ const Index = () => {
   }
 
   // Handle authentication_required - show manual locationId entry
-  // DEBUG: Add ?test_auth_error=1 to URL to test this UI
-  const testAuthError = new URLSearchParams(window.location.search).get('test_auth_error') === '1';
+  // DEBUG: Run localStorage.setItem('test_auth_error', '1') in console to test this UI
+  const testAuthError = localStorage.getItem('test_auth_error') === '1';
   if (error === 'authentication_required' || testAuthError) {
     return (
       <div className="w-full h-full bg-gradient-subtle">
