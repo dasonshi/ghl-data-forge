@@ -54,11 +54,27 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       setLoading(true);
       setError(null);
-      
+
+      // ============ DEBUG: Environment Info ============
+      console.log('🔧 DEBUG: Environment Info', {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        isWindows: navigator.userAgent.includes('Windows'),
+        isMac: navigator.userAgent.includes('Mac'),
+        isInIframe: window.parent !== window,
+        windowLocation: window.location.href,
+        windowOrigin: window.location.origin,
+        windowPathname: window.location.pathname,
+        windowSearch: window.location.search,
+        documentReferrer: document.referrer || '(empty)',
+        localStorage_locationId: localStorage.getItem('currentLocationId') || '(not set)',
+      });
+
       // Prioritize URL locationId over any cached values
       // Check query params first, then URL path, then referrer
       const params = new URLSearchParams(window.location.search);
       let urlLocationId = params.get('locationId');
+      console.log('🔍 Step 1 - Query param locationId:', urlLocationId || '(not found)');
 
       // Try to extract from URL path (GHL custom page links)
       // Pattern: /v2/location/{locationId}/... or /location/{locationId}/...
@@ -69,9 +85,10 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         ];
         for (const pattern of pathPatterns) {
           const match = window.location.pathname.match(pattern);
+          console.log('🔍 Step 2 - Trying pattern on pathname:', { pattern: pattern.toString(), pathname: window.location.pathname, match: match ? match[1] : null });
           if (match) {
             urlLocationId = match[1];
-            console.log('Extracted locationId from URL path:', urlLocationId);
+            console.log('✅ Extracted locationId from URL path:', urlLocationId);
             break;
           }
         }
@@ -81,22 +98,26 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (!urlLocationId && document.referrer) {
         try {
           const referrerUrl = new URL(document.referrer);
+          console.log('🔍 Step 3 - Checking referrer:', { referrer: document.referrer, referrerPathname: referrerUrl.pathname });
           const referrerPatterns = [/\/v2\/location\/([a-zA-Z0-9]+)/, /\/location\/([a-zA-Z0-9]+)/];
           for (const pattern of referrerPatterns) {
             const match = referrerUrl.pathname.match(pattern);
+            console.log('🔍 Step 3 - Trying pattern on referrer:', { pattern: pattern.toString(), match: match ? match[1] : null });
             if (match) {
               urlLocationId = match[1];
-              console.log('Extracted locationId from referrer:', urlLocationId);
+              console.log('✅ Extracted locationId from referrer:', urlLocationId);
               break;
             }
           }
         } catch (e) {
-          // Ignore referrer parsing errors
+          console.warn('🔍 Step 3 - Referrer parsing failed:', e);
         }
+      } else if (!urlLocationId) {
+        console.log('🔍 Step 3 - No referrer available, skipping');
       }
 
-      // Debug logging for troubleshooting
-      console.log('🔍 LocationId extraction:', {
+      // Summary logging
+      console.log('🔍 LocationId extraction SUMMARY:', {
         queryParam: params.get('locationId') || 'none',
         pathname: window.location.pathname,
         referrer: document.referrer || 'none',
@@ -126,6 +147,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Try to get encrypted data from parent (if in iframe)
       // Use retry logic with increasing timeouts for slower connections
       let encryptedData = '';
+      console.log('🔍 Step 4 - PostMessage: isInIframe =', window.parent !== window);
+
       if (window.parent !== window) {
         try {
           // Try up to 2 times with increasing timeout
@@ -134,18 +157,27 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
             encryptedData = await new Promise<string>((resolve) => {
               const timeout = setTimeout(() => {
-                console.warn(`⏱️ PostMessage attempt ${attempt} timed out after ${timeoutMs}ms`);
+                console.warn(`⏱️ PostMessage attempt ${attempt} timed out after ${timeoutMs}ms - NO RESPONSE from parent`);
                 resolve('');
               }, timeoutMs);
 
               // Send message to parent - use '*' for compatibility with GHL iframe
-              console.log(`📤 Sending REQUEST_USER_DATA to parent (attempt ${attempt})...`);
+              console.log(`📤 Sending REQUEST_USER_DATA to parent (attempt ${attempt}, timeout ${timeoutMs}ms)...`);
               window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
 
               const messageHandler = (event: MessageEvent) => {
+                // Log ALL messages received for debugging
+                console.log('📩 Received postMessage:', {
+                  origin: event.origin,
+                  dataType: typeof event.data,
+                  dataMessage: event.data?.message || '(no message field)',
+                  hasPayload: !!event.data?.payload,
+                  fullData: event.data
+                });
+
                 // Validate origin using security utility
                 if (!isOriginAllowed(event.origin)) {
-                  console.warn('Rejected postMessage from unauthorized origin:', event.origin);
+                  console.warn('❌ Rejected postMessage from unauthorized origin:', event.origin);
                   return;
                 }
 
@@ -153,7 +185,11 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 if (isMessageDataValid(event.data) && event.data.message === 'REQUEST_USER_DATA_RESPONSE') {
                   clearTimeout(timeout);
                   window.removeEventListener('message', messageHandler);
-                  console.log('✅ Received encrypted data from GHL parent');
+                  console.log('✅ Received REQUEST_USER_DATA_RESPONSE from GHL parent:', {
+                    origin: event.origin,
+                    payloadLength: event.data.payload?.length || 0,
+                    payloadPreview: event.data.payload?.substring(0, 50) || '(empty)'
+                  });
                   resolve(event.data.payload || '');
                 }
               };
