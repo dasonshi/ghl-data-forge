@@ -76,6 +76,74 @@ const Index = () => {
     window.addEventListener('message', handleMessage);
   };
 
+  // DEBUG: Run localStorage.setItem('test_auth_error', '1') in console, then refresh
+  // This check is FIRST so it overrides everything for testing
+  const testAuthError = localStorage.getItem('test_auth_error') === '1';
+  if (testAuthError && !loading) {
+    return (
+      <div className="w-full h-full bg-gradient-subtle">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-7xl pb-16">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <Card className="max-w-lg w-full">
+              <CardContent className="p-6 space-y-6">
+                <div className="text-center space-y-2">
+                  <KeyRound className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <h3 className="text-lg font-semibold">Unable to Detect Location</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We couldn't automatically detect your location. This can happen due to browser privacy settings.
+                  </p>
+                  <p className="text-xs text-yellow-600 font-mono">(DEBUG MODE - remove test_auth_error from localStorage)</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Enter Your Location ID</label>
+                    <p className="text-xs text-muted-foreground">
+                      You can find this in your browser's address bar. Look for the ID after "/location/" in the URL.
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono bg-muted p-2 rounded">
+                      Example: app.example.com/v2/location/<span className="text-primary font-bold">abc123XYZ</span>/...
+                    </p>
+                    <Input
+                      placeholder="Enter location ID (e.g., abc123XYZ)"
+                      value={manualLocationId}
+                      onChange={(e) => setManualLocationId(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualLocationSubmit()}
+                      disabled={isSubmittingLocation}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleManualLocationSubmit}
+                    variant="gradient"
+                    className="w-full"
+                    disabled={!manualLocationId.trim() || isSubmittingLocation}
+                  >
+                    {isSubmittingLocation ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect'
+                    )}
+                  </Button>
+                </div>
+
+                <div className="text-center pt-4 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    If you continue to have issues, please contact support.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Handle different error types
   if (error === 'app_not_installed') {
     return (
@@ -121,9 +189,7 @@ const Index = () => {
   }
 
   // Handle authentication_required - show manual locationId entry
-  // DEBUG: Run localStorage.setItem('test_auth_error', '1') in console to test this UI
-  const testAuthError = localStorage.getItem('test_auth_error') === '1';
-  if (error === 'authentication_required' || testAuthError) {
+  if (error === 'authentication_required') {
     return (
       <div className="w-full h-full bg-gradient-subtle">
         <Header />
