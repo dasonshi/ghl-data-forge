@@ -55,6 +55,13 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setLoading(true);
       setError(null);
 
+      // OPTION A: Send postMessage IMMEDIATELY on load (before any other initialization)
+      // This gives GHL more time to respond while we do other work
+      if (window.parent !== window) {
+        console.log('📤 [EARLY] Sending REQUEST_USER_DATA immediately on load...');
+        window.parent.postMessage({ message: 'REQUEST_USER_DATA' }, '*');
+      }
+
       // ============ DEBUG: Environment Info ============
       console.log('🔧 DEBUG: Environment Info', {
         userAgent: navigator.userAgent,
@@ -95,13 +102,19 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       // Try document.referrer as fallback (contains parent URL when in iframe)
+      // OPTION B: Enhanced referrer parsing with more patterns
       if (!urlLocationId && document.referrer) {
         try {
           const referrerUrl = new URL(document.referrer);
           console.log('🔍 Step 3 - Checking referrer:', { referrer: document.referrer, referrerPathname: referrerUrl.pathname });
-          const referrerPatterns = [/\/v2\/location\/([a-zA-Z0-9]+)/, /\/location\/([a-zA-Z0-9]+)/];
+          const referrerPatterns = [
+            /\/v2\/location\/([a-zA-Z0-9]+)/,
+            /\/location\/([a-zA-Z0-9]+)/,
+            /locationId=([a-zA-Z0-9]+)/,
+            /location[_-]?id[=:]([a-zA-Z0-9]+)/i
+          ];
           for (const pattern of referrerPatterns) {
-            const match = referrerUrl.pathname.match(pattern);
+            const match = document.referrer.match(pattern);
             console.log('🔍 Step 3 - Trying pattern on referrer:', { pattern: pattern.toString(), match: match ? match[1] : null });
             if (match) {
               urlLocationId = match[1];
@@ -116,11 +129,72 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         console.log('🔍 Step 3 - No referrer available, skipping');
       }
 
+      // OPTION B: Try window.name (some iframes receive context via name attribute)
+      if (!urlLocationId && window.name) {
+        console.log('🔍 Step 4 - Checking window.name:', window.name);
+        try {
+          const nameData = JSON.parse(window.name);
+          if (nameData.locationId) {
+            urlLocationId = nameData.locationId;
+            console.log('✅ Got locationId from window.name (JSON):', urlLocationId);
+          } else if (nameData.location) {
+            urlLocationId = nameData.location;
+            console.log('✅ Got locationId from window.name.location:', urlLocationId);
+          }
+        } catch (e) {
+          // Not JSON - check if it looks like a locationId (alphanumeric, 10-30 chars)
+          if (/^[a-zA-Z0-9]{10,30}$/.test(window.name)) {
+            urlLocationId = window.name;
+            console.log('✅ Got locationId from window.name (raw):', urlLocationId);
+          }
+        }
+      }
+
+      // OPTION B: Check for GHL globals that might expose location
+      if (!urlLocationId) {
+        const ghlGlobals = ['__GHL__', 'GHL', 'HighLevel', 'leadConnector', 'ghl'];
+        for (const globalName of ghlGlobals) {
+          const global = (window as any)[globalName];
+          if (global) {
+            console.log(`🔍 Step 5 - Found global ${globalName}:`, typeof global === 'object' ? Object.keys(global) : global);
+            if (global.locationId) {
+              urlLocationId = global.locationId;
+              console.log(`✅ Got locationId from ${globalName}.locationId:`, urlLocationId);
+              break;
+            }
+            if (global.location?.id) {
+              urlLocationId = global.location.id;
+              console.log(`✅ Got locationId from ${globalName}.location.id:`, urlLocationId);
+              break;
+            }
+          }
+        }
+      }
+
+      // OPTION B: Try to access ancestor frames (will fail cross-origin but log the attempt)
+      if (!urlLocationId) {
+        try {
+          if (window.parent !== window) {
+            console.log('🔍 Step 6 - Attempting window.parent.location access...');
+            const parentHref = window.parent.location.href;
+            console.log('✅ Parent location accessible (same origin):', parentHref);
+            const match = parentHref.match(/\/location\/([a-zA-Z0-9]+)/);
+            if (match) {
+              urlLocationId = match[1];
+              console.log('✅ Got locationId from parent URL:', urlLocationId);
+            }
+          }
+        } catch (e) {
+          console.log('ℹ️ Cross-origin: Cannot access parent location (expected in GHL iframe)');
+        }
+      }
+
       // Summary logging
       console.log('🔍 LocationId extraction SUMMARY:', {
         queryParam: params.get('locationId') || 'none',
         pathname: window.location.pathname,
         referrer: document.referrer || 'none',
+        windowName: window.name || 'none',
         extracted: urlLocationId || 'none'
       });
 
@@ -153,7 +227,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         try {
           // Try up to 2 times with increasing timeout
           for (let attempt = 1; attempt <= 2; attempt++) {
-            const timeoutMs = 3000 * attempt; // 3s first, 6s second
+            const timeoutMs = 5000 * attempt; // OPTION A: Increased to 5s first, 10s second
 
             encryptedData = await new Promise<string>((resolve) => {
               const timeout = setTimeout(() => {
@@ -206,7 +280,25 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           console.warn('PostMessage failed:', e);
         }
       }
-      
+
+      // OPTION A: Try exposeSessionDetails as fallback (undocumented but might work in iframe)
+      if (!encryptedData) {
+        console.log('🔄 PostMessage failed, trying exposeSessionDetails fallback...');
+        if (typeof (window as any).exposeSessionDetails === 'function') {
+          try {
+            const sessionData = await (window as any).exposeSessionDetails('68ae6ca8bb70273ca2ca7e24');
+            if (sessionData) {
+              console.log('✅ exposeSessionDetails returned data!');
+              encryptedData = sessionData;
+            }
+          } catch (e) {
+            console.log('❌ exposeSessionDetails failed:', e);
+          }
+        } else {
+          console.log('ℹ️ exposeSessionDetails not available (expected for iframe)');
+        }
+      }
+
       // Make the app-context API call
       const response = await apiFetch(
         `/api/app-context${locationId ? `?locationId=${locationId}` : ''}`,
@@ -361,6 +453,22 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     loadAppContext();
   }, []); // Only run once on mount
+
+  // OPTION A: Global message listener to see ALL postMessages (debugging)
+  useEffect(() => {
+    const debugHandler = (event: MessageEvent) => {
+      console.log('📨 [DEBUG] All postMessage received:', {
+        origin: event.origin,
+        type: typeof event.data,
+        message: event.data?.message || '(none)',
+        keys: event.data ? Object.keys(event.data) : [],
+        timestamp: Date.now()
+      });
+    };
+    window.addEventListener('message', debugHandler);
+    console.log('🔧 [DEBUG] Global postMessage listener installed');
+    return () => window.removeEventListener('message', debugHandler);
+  }, []);
 
   const value: AppContextValue = {
     user,
