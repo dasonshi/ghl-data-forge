@@ -13,18 +13,39 @@ import { FeedbackModal } from "@/components/FeedbackModal";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAppContext } from "@/hooks/useAppContext";
 import { useAgencyBranding } from "@/hooks/useAgencyBranding";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, ExternalLink, MessageCircle } from "lucide-react";
+import { AlertTriangle, ExternalLink, MessageCircle, KeyRound } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [manualLocationId, setManualLocationId] = useState("");
+  const [isSubmittingLocation, setIsSubmittingLocation] = useState(false);
   const { loading, error, refreshContext } = useAppContext();
   const { branding } = useAgencyBranding();
+
+  // Handle manual location ID submission
+  const handleManualLocationSubmit = async () => {
+    const trimmedId = manualLocationId.trim();
+    if (!trimmedId) return;
+
+    setIsSubmittingLocation(true);
+    try {
+      // Store in localStorage and refresh
+      localStorage.setItem('currentLocationId', trimmedId);
+      console.log('📝 Manual locationId saved:', trimmedId);
+
+      // Refresh the context to try auth with the new locationId
+      await refreshContext();
+    } finally {
+      setIsSubmittingLocation(false);
+    }
+  };
 
   // Update document title when branding changes
   useEffect(() => {
@@ -94,6 +115,71 @@ const Index = () => {
               No location ID found. Please access this app from within your CRM.
             </AlertDescription>
           </Alert>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle authentication_required - show manual locationId entry
+  if (error === 'authentication_required') {
+    return (
+      <div className="w-full h-full bg-gradient-subtle">
+        <Header />
+        <div className="container mx-auto px-4 py-8 max-w-7xl pb-16">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <Card className="max-w-lg w-full">
+              <CardContent className="p-6 space-y-6">
+                <div className="text-center space-y-2">
+                  <KeyRound className="h-12 w-12 text-muted-foreground mx-auto" />
+                  <h3 className="text-lg font-semibold">Unable to Detect Location</h3>
+                  <p className="text-sm text-muted-foreground">
+                    We couldn't automatically detect your location. This can happen due to browser privacy settings.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Enter Your Location ID</label>
+                    <p className="text-xs text-muted-foreground">
+                      You can find this in your browser's address bar. Look for the ID after "/location/" in the URL.
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono bg-muted p-2 rounded">
+                      Example: app.example.com/v2/location/<span className="text-primary font-bold">abc123XYZ</span>/...
+                    </p>
+                    <Input
+                      placeholder="Enter location ID (e.g., abc123XYZ)"
+                      value={manualLocationId}
+                      onChange={(e) => setManualLocationId(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleManualLocationSubmit()}
+                      disabled={isSubmittingLocation}
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleManualLocationSubmit}
+                    variant="gradient"
+                    className="w-full"
+                    disabled={!manualLocationId.trim() || isSubmittingLocation}
+                  >
+                    {isSubmittingLocation ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect'
+                    )}
+                  </Button>
+                </div>
+
+                <div className="text-center pt-4 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    If you continue to have issues, please contact support.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
