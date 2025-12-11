@@ -103,16 +103,23 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         extracted: urlLocationId || 'none'
       });
 
-      // Clear any old cached locationId when we have a new one from URL
-      if (urlLocationId) {
+      // Use localStorage as fallback when URL doesn't have locationId
+      // This helps Windows users where postMessage fails and cookies are blocked
+      let locationId = urlLocationId;
+      if (!locationId) {
         const storedLocationId = localStorage.getItem('currentLocationId');
-        if (storedLocationId && storedLocationId !== urlLocationId) {
+        if (storedLocationId) {
+          console.log('📦 Using stored locationId from localStorage:', storedLocationId);
+          locationId = storedLocationId;
+        }
+      } else {
+        // Clear old cached locationId when we have a new one from URL
+        const storedLocationId = localStorage.getItem('currentLocationId');
+        if (storedLocationId && storedLocationId !== locationId) {
           console.log('Clearing old cached locationId:', storedLocationId);
           localStorage.removeItem('currentLocationId');
         }
       }
-
-      const locationId = urlLocationId;
       
       console.log('Loading app context with locationId:', locationId);
       
@@ -308,14 +315,12 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Load on mount
   useEffect(() => {
-    // Clear any stale locationId on app startup if no URL param is provided
-    const urlLocationId = new URLSearchParams(window.location.search).get('locationId');
-    if (!urlLocationId) {
-      const storedLocationId = localStorage.getItem('currentLocationId');
-      if (storedLocationId) {
-        console.log('Clearing stale locationId on startup:', storedLocationId);
-        localStorage.removeItem('currentLocationId');
-      }
+    // Don't clear localStorage on startup - it's our fallback when postMessage fails
+    // (e.g., Windows users with third-party cookie blocking)
+    // localStorage will only be cleared when user explicitly disconnects
+    const storedLocationId = localStorage.getItem('currentLocationId');
+    if (storedLocationId) {
+      console.log('📦 Found stored locationId in localStorage:', storedLocationId);
     }
 
     loadAppContext();
