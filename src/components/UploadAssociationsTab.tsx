@@ -162,20 +162,45 @@ export function UploadAssociationsTab() {
 
   const handleRelationsFile = (file: File) => {
     setRelationsFile(file);
-    
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        if (results.errors.length > 0) {
+        // Check for field mismatch errors (rows with wrong number of columns)
+        const fieldMismatchErrors = results.errors.filter(
+          (err: any) => err.type === 'FieldMismatch'
+        );
+
+        if (fieldMismatchErrors.length > 0) {
+          console.log('CSV Field Mismatch Errors:', fieldMismatchErrors);
+          const affectedRows = fieldMismatchErrors.map((err: any) => err.row).slice(0, 10);
+          const moreCount = fieldMismatchErrors.length > 10 ? ` and ${fieldMismatchErrors.length - 10} more` : '';
+
+          toast({
+            title: "CSV Format Error",
+            description: `Your CSV has rows with inconsistent column counts. Affected rows: ${affectedRows.join(', ')}${moreCount}. Please wrap text fields containing commas in double quotes and re-upload.`,
+            variant: "destructive",
+          });
+          setRelationsFile(null);
+          return;
+        }
+
+        // Check for other critical parse errors
+        const criticalErrors = results.errors.filter(
+          (err: any) => err.type !== 'FieldMismatch'
+        );
+
+        if (criticalErrors.length > 0) {
           toast({
             title: "CSV Parse Error",
             description: "There was an error parsing your CSV file. Please check the format.",
             variant: "destructive",
           });
+          setRelationsFile(null);
           return;
         }
-        
+
         const data = results.data as Record<string, string>[];
         setRelationsData(data);
         setCurrentStep("preview");
@@ -186,6 +211,7 @@ export function UploadAssociationsTab() {
           description: "Failed to read CSV file. Please try again.",
           variant: "destructive",
         });
+        setRelationsFile(null);
       }
     });
   };

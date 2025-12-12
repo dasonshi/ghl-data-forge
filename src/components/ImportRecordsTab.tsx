@@ -249,21 +249,46 @@ const fetchObjects = async () => {
 
   const handleRecordsFile = (file: File) => {
     setRecordsFile(file);
-    
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        if (results.errors.length > 0) {
-          console.log('CSV Parse Errors:', results.errors);
+        // Check for field mismatch errors (rows with wrong number of columns)
+        const fieldMismatchErrors = results.errors.filter(
+          (err: any) => err.type === 'FieldMismatch'
+        );
+
+        if (fieldMismatchErrors.length > 0) {
+          console.log('CSV Field Mismatch Errors:', fieldMismatchErrors);
+          const affectedRows = fieldMismatchErrors.map((err: any) => err.row).slice(0, 10);
+          const moreCount = fieldMismatchErrors.length > 10 ? ` and ${fieldMismatchErrors.length - 10} more` : '';
+
           toast({
-            title: "CSV Parse Error",
-            description: `Parse error: ${results.errors[0].message || 'Please check the format.'}`,
+            title: "CSV Format Error",
+            description: `Your CSV has rows with inconsistent column counts. Affected rows: ${affectedRows.join(', ')}${moreCount}. This usually means some fields contain unescaped commas. Please wrap text fields containing commas in double quotes and re-upload.`,
             variant: "destructive",
           });
+          setRecordsFile(null);
           return;
         }
-        
+
+        // Check for other critical parse errors
+        const criticalErrors = results.errors.filter(
+          (err: any) => err.type !== 'FieldMismatch'
+        );
+
+        if (criticalErrors.length > 0) {
+          console.log('CSV Parse Errors:', criticalErrors);
+          toast({
+            title: "CSV Parse Error",
+            description: `Parse error: ${criticalErrors[0].message || 'Please check the format.'}`,
+            variant: "destructive",
+          });
+          setRecordsFile(null);
+          return;
+        }
+
         const data = results.data as Record<string, string>[];
         setRecordsData(data);
         setCurrentStep("preview");
@@ -274,6 +299,7 @@ const fetchObjects = async () => {
           description: "Failed to read CSV file. Please try again.",
           variant: "destructive",
         });
+        setRecordsFile(null);
       }
     });
   };
