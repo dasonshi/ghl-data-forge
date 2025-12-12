@@ -391,6 +391,36 @@ export function ImportObjectsTab() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Failed Objects */}
+          {result?.errors && result.errors.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Failed Objects ({result.errors.length})
+                </CardTitle>
+                <CardDescription>Objects that failed to import</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {result.errors.map((error: any, index: number) => (
+                    <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="font-medium text-red-800">
+                          Row {error.recordIndex !== undefined ? error.recordIndex + 2 : index + 2}: {error.name || 'Unknown'}
+                        </span>
+                        <span className="text-red-600 text-xs font-medium px-2 py-0.5 bg-red-100 rounded">
+                          {error.errorCode || 'Failed'}
+                        </span>
+                      </div>
+                      <p className="text-red-700 text-xs mt-1">{error.error}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 

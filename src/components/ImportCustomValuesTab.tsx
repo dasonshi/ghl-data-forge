@@ -539,14 +539,19 @@ export function ImportCustomValuesTab() {
                 <AlertTriangle className="h-4 w-4" />
                 Failed Imports ({importResult.errors.length})
               </h4>
-              <div className="space-y-2">
-                {importResult.errors.map((error, index) => (
-                  <Alert key={index} variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>{error.name || error.value || `Row ${index + 1}`}:</strong> {error.error || error.message || 'Unknown error'}
-                    </AlertDescription>
-                  </Alert>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {importResult.errors.map((error: any, index: number) => (
+                  <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="font-medium text-red-800">
+                        Row {error.recordIndex !== undefined ? error.recordIndex + 2 : index + 2}: {error.name || 'Unknown'}
+                      </span>
+                      <span className="text-red-600 text-xs font-medium px-2 py-0.5 bg-red-100 rounded">
+                        {error.errorCode || 'Failed'}
+                      </span>
+                    </div>
+                    <p className="text-red-700 text-xs mt-1">{error.error || error.message || 'Unknown error'}</p>
+                  </div>
                 ))}
               </div>
             </div>

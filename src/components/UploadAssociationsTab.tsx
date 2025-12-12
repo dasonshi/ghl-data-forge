@@ -616,17 +616,16 @@ export function UploadAssociationsTab() {
                     <CardDescription>Relations that failed to import</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
                       {result.errors.map((error: any, index: number) => (
                         <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
                           <div className="flex justify-between items-start gap-2">
                             <span className="font-medium text-red-800">
-                              {error.fromId && error.toId 
-                                ? `${error.fromId} → ${error.toId}`
-                                : `Relation ${index + 1}`
-                              }
+                              Row {error.recordIndex !== undefined ? error.recordIndex + 2 : index + 2}: {error.name || (error.fromId && error.toId ? `${error.fromId} → ${error.toId}` : 'Unknown')}
                             </span>
-                            <span className="text-red-600 text-xs">Failed</span>
+                            <span className="text-red-600 text-xs font-medium px-2 py-0.5 bg-red-100 rounded">
+                              {error.errorCode || 'Failed'}
+                            </span>
                           </div>
                           <p className="text-red-700 text-xs mt-1">{error.error || error.message}</p>
                         </div>
