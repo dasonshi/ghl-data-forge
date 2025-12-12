@@ -555,18 +555,32 @@ useEffect(() => {
     </div>
   );
 
-  const renderSuccess = () => (
+  const renderSuccess = () => {
+    const hasErrors = result?.errors && result.errors.length > 0;
+    const hasSuccesses = result?.created?.length > 0 || result?.summary?.successful > 0;
+
+    return (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
-        <CheckCircle2 className="h-16 w-16 mx-auto text-green-600" />
+        {hasErrors && !hasSuccesses ? (
+          <AlertTriangle className="h-16 w-16 mx-auto text-red-600" />
+        ) : hasErrors ? (
+          <AlertTriangle className="h-16 w-16 mx-auto text-yellow-600" />
+        ) : (
+          <CheckCircle2 className="h-16 w-16 mx-auto text-green-600" />
+        )}
         <h3 className="text-2xl font-bold">
-          {result?.success ? 'Records Imported Successfully!' : 'Import Completed with Issues'}
+          {hasErrors && !hasSuccesses
+            ? 'Import Failed'
+            : hasErrors
+              ? 'Import Completed with Errors'
+              : 'Records Imported Successfully!'}
         </h3>
         <p className="text-muted-foreground">
-          {result?.summary ? 
-            `${result.summary.created + result.summary.updated} imported, ${result.summary.skipped} skipped, ${result.summary.failed} failed` :
-            `${result?.stats?.recordsProcessed || recordsData.length} record${(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} imported to`
-          } {selectedObjectData?.labels.singular}
+          {result?.summary ?
+            `${result.summary.successful || 0} imported, ${result.summary.failed || 0} failed` :
+            `${result?.stats?.recordsProcessed || recordsData.length} record${(result?.stats?.recordsProcessed || recordsData.length) !== 1 ? 's' : ''} processed`
+          } for {selectedObjectData?.labels.singular}
         </p>
       </div>
 
@@ -729,14 +743,16 @@ useEffect(() => {
                 <CardDescription>Records that failed to import</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-60 overflow-y-auto">
                   {result.errors.map((error: any, index: number) => (
                     <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
                       <div className="flex justify-between items-start gap-2">
                         <span className="font-medium text-red-800">
-                          {error.id || error.name || `Record ${error.recordIndex ? error.recordIndex + 1 : index + 1}`}
+                          Row {error.recordIndex !== undefined ? error.recordIndex + 2 : index + 2}: {error.name || error.externalId || 'Unknown'}
                         </span>
-                        <span className="text-red-600 text-xs">Failed</span>
+                        <span className="text-red-600 text-xs font-medium px-2 py-0.5 bg-red-100 rounded">
+                          {error.errorCode || 'Failed'}
+                        </span>
                       </div>
                       <p className="text-red-700 text-xs mt-1">{error.error || error.message}</p>
                     </div>
@@ -753,6 +769,7 @@ useEffect(() => {
       </Button>
     </div>
   );
+  };
 
   const steps = ["Choose Object", "Download & Upload", "Preview Data", "Import Progress", "Review Results"];
   const stepMap = { select: 0, upload: 1, preview: 2, importing: 3, success: 4 };
