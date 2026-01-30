@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
 import { useAppContext } from '@/hooks/useAppContext';
+import { enrichErrors, getCommonErrorPatterns, type EnrichedError } from '@/lib/errorSuggestions';
 import Papa from "papaparse";
 
 interface CustomObject {
@@ -346,6 +347,10 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
 
       if (response.ok) {
         const result = await response.json();
+        // Enrich errors with helpful suggestions
+        if (result.errors && Array.isArray(result.errors)) {
+          result.errors = enrichErrors(result.errors);
+        }
         setResult(result);
         setCurrentStep("success");
         toast({
@@ -743,8 +748,38 @@ useEffect(() => {
                 <CardDescription>Records that failed to import</CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Bulk error summary for common issues */}
+                {result.errors.length > 10 && (() => {
+                  const commonPatterns = getCommonErrorPatterns(result.errors as EnrichedError[]);
+                  if (commonPatterns.length > 0) {
+                    return (
+                      <Alert className="mb-4 border-amber-200 bg-amber-50">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription>
+                          <p className="font-medium text-amber-800 mb-2">Common Issues Found:</p>
+                          <ul className="space-y-2">
+                            {commonPatterns.slice(0, 3).map((pattern, i) => (
+                              <li key={i} className="text-sm text-amber-700">
+                                <strong>{pattern.count} records:</strong> {pattern.suggestion}
+                                {pattern.action === 'download-template' && (
+                                  <button
+                                    onClick={downloadTemplate}
+                                    className="ml-2 text-amber-800 underline hover:text-amber-900"
+                                  >
+                                    Download Template
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  return null;
+                })()}
                 <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {result.errors.map((error: any, index: number) => (
+                  {result.errors.map((error: EnrichedError, index: number) => (
                     <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
                       <div className="flex justify-between items-start gap-2">
                         <span className="font-medium text-red-800">
@@ -754,7 +789,21 @@ useEffect(() => {
                           {error.errorCode || 'Failed'}
                         </span>
                       </div>
-                      <p className="text-red-700 text-xs mt-1">{error.error || error.message}</p>
+                      <p className="text-red-700 text-xs mt-1">{error.error || (error as any).message}</p>
+                      {error.suggestion && (
+                        <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+                          <span className="font-medium text-amber-800">Suggestion: </span>
+                          <span className="text-amber-700">{error.suggestion}</span>
+                          {error.action === 'download-template' && (
+                            <button
+                              onClick={downloadTemplate}
+                              className="ml-2 text-amber-800 underline hover:text-amber-900"
+                            >
+                              Download Template
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
