@@ -24,11 +24,7 @@ import {
 } from '@/lib/fieldMapping';
 import Papa from "papaparse";
 
-// Feature flag: Enable field mapping only for specific locations
-const MAPPING_ENABLED_LOCATIONS = [
-  'gdzneuvA9mUJoRroCv4O',  // Dev account
-  // Add more test location IDs here as needed
-];
+// Field mapping is now enabled for all users
 
 interface CustomObject {
   id: string;
@@ -109,8 +105,8 @@ export function ImportRecordsTab() {
   const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
-  // Check if field mapping is enabled for this location
-  const isMappingEnabled = MAPPING_ENABLED_LOCATIONS.includes(location?.id || '');
+  // Field mapping is now enabled for all users
+  const isMappingEnabled = true;
 
 // Clear all data when location switches
 useLocationSwitch(async () => {
