@@ -397,12 +397,8 @@ const fetchObjects = async () => {
   };
 
   const handleSingleImport = async (modifiedData: Record<string, string>[]) => {
-    // Convert modified data back to CSV
-    const csvHeaders = Object.keys(modifiedData[0]);
-    const csvRows = modifiedData.map(row =>
-      csvHeaders.map(header => row[header] || '').join(',')
-    );
-    const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+    // Convert modified data back to CSV using Papa.unparse for proper escaping
+    const csvContent = Papa.unparse(modifiedData);
 
     // Create new file with modified data
     const modifiedFile = new Blob([csvContent], { type: 'text/csv' });
@@ -475,12 +471,8 @@ const fetchObjects = async () => {
       setBatchProgress({ current: batchNum + 1, total: totalBatches });
       setProgress(Math.round(((batchNum + 0.5) / totalBatches) * 100));
 
-      // Convert batch to CSV
-      const csvHeaders = Object.keys(batchData[0]);
-      const csvRows = batchData.map(row =>
-        csvHeaders.map(header => row[header] || '').join(',')
-      );
-      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+      // Convert batch to CSV using Papa.unparse for proper escaping
+      const csvContent = Papa.unparse(batchData);
       const batchFile = new Blob([csvContent], { type: 'text/csv' });
 
       const formData = new FormData();
