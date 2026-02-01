@@ -59,6 +59,10 @@ interface Association {
 
 type ImportStep = "select" | "upload" | "mapping" | "preview" | "importing" | "success";
 
+// Threshold for chunked uploads - files larger than this will be sent in batches
+const CHUNK_THRESHOLD = 1000;
+const CHUNK_SIZE = 500;
+
 interface PhoneWarning {
   recordId: string;
   externalId: string;
@@ -102,6 +106,7 @@ export function ImportRecordsTab() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [fieldMapping, setFieldMapping] = useState<FieldMapping>({});
   const [mappingValidation, setMappingValidation] = useState<MappingValidation | null>(null);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
 
@@ -363,6 +368,7 @@ const fetchObjects = async () => {
 
     setCurrentStep("importing");
     setProgress(0);
+    setBatchProgress(null);
 
     try {
       // Apply field mapping if enabled, then add object_key
@@ -372,46 +378,13 @@ const fetchObjects = async () => {
         object_key: selectedObject.split('.').pop() // Extract just the object name from the full key
       }));
 
-      // Convert modified data back to CSV
-      const csvHeaders = Object.keys(modifiedData[0]);
-      const csvRows = modifiedData.map(row => 
-        csvHeaders.map(header => row[header] || '').join(',')
-      );
-      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
-
-      // Create new file with modified data
-      const modifiedFile = new Blob([csvContent], { type: 'text/csv' });
-      
-      const formData = new FormData();
-      formData.append('records', modifiedFile, recordsFile.name);
-
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
-
-const response = await apiFetch(`/api/objects/${selectedObject}/records/import`, {
-  method: 'POST',
-  body: formData,
-}, location?.id ?? undefined);
-
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      if (response.ok) {
-        const result = await response.json();
-        // Enrich errors with helpful suggestions
-        if (result.errors && Array.isArray(result.errors)) {
-          result.errors = enrichErrors(result.errors);
-        }
-        setResult(result);
-        setCurrentStep("success");
-        toast({
-          title: "Records Imported",
-          description: "Your records have been imported successfully.",
-        });
+      // Check if we need chunked upload (large file)
+      if (modifiedData.length > CHUNK_THRESHOLD) {
+        // Chunked upload for large files
+        await handleChunkedImport(modifiedData);
       } else {
-        throw new Error('Import failed');
+        // Standard single-request upload for smaller files
+        await handleSingleImport(modifiedData);
       }
     } catch (error) {
       toast({
@@ -421,6 +394,186 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
       });
       setCurrentStep("preview");
     }
+  };
+
+  const handleSingleImport = async (modifiedData: Record<string, string>[]) => {
+    // Convert modified data back to CSV
+    const csvHeaders = Object.keys(modifiedData[0]);
+    const csvRows = modifiedData.map(row =>
+      csvHeaders.map(header => row[header] || '').join(',')
+    );
+    const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+
+    // Create new file with modified data
+    const modifiedFile = new Blob([csvContent], { type: 'text/csv' });
+
+    const formData = new FormData();
+    formData.append('records', modifiedFile, recordsFile!.name);
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setProgress(prev => Math.min(prev + 10, 90));
+    }, 200);
+
+    const response = await apiFetch(`/api/objects/${selectedObject}/records/import`, {
+      method: 'POST',
+      body: formData,
+    }, location?.id ?? undefined);
+
+    clearInterval(progressInterval);
+    setProgress(100);
+
+    if (response.ok) {
+      const result = await response.json();
+      // Enrich errors with helpful suggestions
+      if (result.errors && Array.isArray(result.errors)) {
+        result.errors = enrichErrors(result.errors);
+      }
+      setResult(result);
+      setCurrentStep("success");
+      toast({
+        title: "Records Imported",
+        description: "Your records have been imported successfully.",
+      });
+    } else {
+      throw new Error('Import failed');
+    }
+  };
+
+  const handleChunkedImport = async (modifiedData: Record<string, string>[]) => {
+    const totalRecords = modifiedData.length;
+    const totalBatches = Math.ceil(totalRecords / CHUNK_SIZE);
+
+    // Initialize aggregate results
+    const aggregatedResult: ImportResult = {
+      ok: true,
+      success: true,
+      message: '',
+      stats: { recordsProcessed: 0 },
+      created: [],
+      updated: [],
+      skipped: [],
+      errors: [],
+      phoneWarnings: [],
+      summary: {
+        total: totalRecords,
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        failed: 0,
+        phoneAutoFormatted: 0
+      }
+    };
+
+    setBatchProgress({ current: 0, total: totalBatches });
+
+    for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+      const startIdx = batchNum * CHUNK_SIZE;
+      const endIdx = Math.min(startIdx + CHUNK_SIZE, totalRecords);
+      const batchData = modifiedData.slice(startIdx, endIdx);
+
+      setBatchProgress({ current: batchNum + 1, total: totalBatches });
+      setProgress(Math.round(((batchNum + 0.5) / totalBatches) * 100));
+
+      // Convert batch to CSV
+      const csvHeaders = Object.keys(batchData[0]);
+      const csvRows = batchData.map(row =>
+        csvHeaders.map(header => row[header] || '').join(',')
+      );
+      const csvContent = [csvHeaders.join(','), ...csvRows].join('\n');
+      const batchFile = new Blob([csvContent], { type: 'text/csv' });
+
+      const formData = new FormData();
+      formData.append('records', batchFile, `batch-${batchNum + 1}.csv`);
+
+      try {
+        const response = await apiFetch(`/api/objects/${selectedObject}/records/import`, {
+          method: 'POST',
+          body: formData,
+        }, location?.id ?? undefined);
+
+        if (response.ok) {
+          const batchResult = await response.json();
+
+          // Aggregate results
+          aggregatedResult.stats.recordsProcessed += batchResult.stats?.recordsProcessed || batchData.length;
+
+          if (batchResult.created) {
+            aggregatedResult.created!.push(...batchResult.created);
+          }
+          if (batchResult.updated) {
+            aggregatedResult.updated!.push(...batchResult.updated);
+          }
+          if (batchResult.skipped) {
+            aggregatedResult.skipped!.push(...batchResult.skipped);
+          }
+          if (batchResult.errors) {
+            // Adjust row indices to be relative to original file
+            const adjustedErrors = batchResult.errors.map((err: any) => ({
+              ...err,
+              recordIndex: err.recordIndex + startIdx
+            }));
+            aggregatedResult.errors!.push(...adjustedErrors);
+          }
+          if (batchResult.phoneWarnings) {
+            aggregatedResult.phoneWarnings!.push(...batchResult.phoneWarnings);
+          }
+
+          // Update summary
+          if (batchResult.summary) {
+            aggregatedResult.summary!.created += batchResult.summary.created || 0;
+            aggregatedResult.summary!.updated += batchResult.summary.updated || 0;
+            aggregatedResult.summary!.skipped += batchResult.summary.skipped || 0;
+            aggregatedResult.summary!.failed += batchResult.summary.failed || 0;
+            aggregatedResult.summary!.phoneAutoFormatted! += batchResult.summary.phoneAutoFormatted || 0;
+          }
+        } else {
+          // Batch failed - mark all records in batch as failed
+          for (let i = 0; i < batchData.length; i++) {
+            aggregatedResult.errors!.push({
+              recordIndex: startIdx + i,
+              error: `Batch ${batchNum + 1} failed`,
+              errorCode: 'BATCH_FAILED',
+              statusCode: response.status
+            } as any);
+          }
+          aggregatedResult.summary!.failed += batchData.length;
+        }
+      } catch (batchError) {
+        // Network error for batch - mark all as failed
+        for (let i = 0; i < batchData.length; i++) {
+          aggregatedResult.errors!.push({
+            recordIndex: startIdx + i,
+            error: `Network error on batch ${batchNum + 1}`,
+            errorCode: 'NETWORK_ERROR'
+          } as any);
+        }
+        aggregatedResult.summary!.failed += batchData.length;
+      }
+
+      // Update progress after each batch
+      setProgress(Math.round(((batchNum + 1) / totalBatches) * 100));
+    }
+
+    // Finalize aggregated result
+    aggregatedResult.success = aggregatedResult.errors!.length === 0;
+    aggregatedResult.ok = aggregatedResult.summary!.failed < totalRecords;
+    aggregatedResult.message = `Processed ${totalRecords} records in ${totalBatches} batches`;
+
+    // Enrich errors with helpful suggestions
+    if (aggregatedResult.errors && aggregatedResult.errors.length > 0) {
+      aggregatedResult.errors = enrichErrors(aggregatedResult.errors);
+    }
+
+    setResult(aggregatedResult);
+    setBatchProgress(null);
+    setCurrentStep("success");
+
+    toast({
+      title: aggregatedResult.summary!.failed > 0 ? "Import Completed with Errors" : "Records Imported",
+      description: `${aggregatedResult.summary!.created + aggregatedResult.summary!.updated} of ${totalRecords} records imported successfully.`,
+      variant: aggregatedResult.summary!.failed > 0 ? "destructive" : "default",
+    });
   };
 
   const handleStartOver = () => {
@@ -433,6 +586,7 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
     setResult(null);
     setFieldMapping({});
     setMappingValidation(null);
+    setBatchProgress(null);
   };
 
 useEffect(() => {
@@ -654,11 +808,23 @@ useEffect(() => {
         <p className="text-muted-foreground">
           Please wait while we import your records into {selectedObjectData?.labels.singular}
         </p>
+        {batchProgress && (
+          <p className="text-sm font-medium text-primary">
+            Processing batch {batchProgress.current} of {batchProgress.total}
+          </p>
+        )}
       </div>
-      
+
       <div className="space-y-2 max-w-md mx-auto">
         <Progress value={progress} className="w-full" />
-        <p className="text-sm text-muted-foreground">{progress}% complete</p>
+        <p className="text-sm text-muted-foreground">
+          {progress}% complete
+          {batchProgress && recordsData.length > CHUNK_THRESHOLD && (
+            <span className="block mt-1 text-xs">
+              Large file detected - importing in {batchProgress.total} batches of {CHUNK_SIZE} records
+            </span>
+          )}
+        </p>
       </div>
     </div>
   );
