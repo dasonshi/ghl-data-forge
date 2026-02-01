@@ -59,9 +59,12 @@ export function FieldMappingTable({
     });
   };
 
+  // Filter out empty column names (from trailing commas, etc.)
+  const validColumns = csvColumns.filter(col => col && col.trim() !== '');
+
   // Count mapped vs unmapped
   const mappedCount = Object.values(mapping).filter(m => m.ghlFieldKey !== null).length;
-  const totalColumns = csvColumns.length;
+  const totalColumns = validColumns.length;
 
   return (
     <Card>
@@ -87,7 +90,7 @@ export function FieldMappingTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {csvColumns.map((csvColumn) => {
+              {validColumns.map((csvColumn) => {
                 const entry = mapping[csvColumn] || { ghlFieldKey: null, autoMatched: false };
                 const availableFields = getAvailableFields(mapping, ghlFields, csvColumn);
                 const currentField = ghlFields.find(f => f.fieldKey === entry.ghlFieldKey);

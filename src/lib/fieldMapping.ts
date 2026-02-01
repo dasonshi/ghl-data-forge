@@ -158,8 +158,11 @@ export function autoMatchFields(
   const mapping: FieldMapping = {};
   const usedFieldKeys = new Set<string>();
 
+  // Filter out empty column names (from trailing commas, etc.)
+  const validColumns = csvColumns.filter(col => col && col.trim() !== '');
+
   // First pass: find high-confidence matches
-  for (const csvColumn of csvColumns) {
+  for (const csvColumn of validColumns) {
     // Skip system columns that shouldn't be mapped
     const lowerCol = csvColumn.toLowerCase().trim();
     if (['id', 'external_id', 'object_key', 'created_at', 'updated_at'].includes(lowerCol)) {
