@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
 import { useAppContext } from '@/hooks/useAppContext';
-import { enrichErrors, getCommonErrorPatterns, type EnrichedError } from '@/lib/errorSuggestions';
+import { enrichErrors, groupErrorsByMessage, formatRowNumbers, type EnrichedError, type GroupedError } from '@/lib/errorSuggestions';
 import { FieldMappingTable } from '@/components/FieldMappingTable';
 import {
   type FieldMapping,
@@ -836,7 +836,7 @@ useEffect(() => {
             </Card>
           )}
 
-          {/* Failed Records */}
+          {/* Failed Records - Grouped by Error */}
           {result.errors && result.errors.length > 0 && (
             <Card>
               <CardHeader>
@@ -844,56 +844,31 @@ useEffect(() => {
                   <AlertTriangle className="h-5 w-5" />
                   Failed Records ({result.errors.length})
                 </CardTitle>
-                <CardDescription>Records that failed to import</CardDescription>
+                <CardDescription>Records that failed to import, grouped by error type</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Bulk error summary for common issues */}
-                {result.errors.length > 10 && (() => {
-                  const commonPatterns = getCommonErrorPatterns(result.errors as EnrichedError[]);
-                  if (commonPatterns.length > 0) {
-                    return (
-                      <Alert className="mb-4 border-amber-200 bg-amber-50">
-                        <AlertTriangle className="h-4 w-4 text-amber-600" />
-                        <AlertDescription>
-                          <p className="font-medium text-amber-800 mb-2">Common Issues Found:</p>
-                          <ul className="space-y-2">
-                            {commonPatterns.slice(0, 3).map((pattern, i) => (
-                              <li key={i} className="text-sm text-amber-700">
-                                <strong>{pattern.count} records:</strong> {pattern.suggestion}
-                                {pattern.action === 'download-template' && (
-                                  <button
-                                    onClick={downloadTemplate}
-                                    className="ml-2 text-amber-800 underline hover:text-amber-900"
-                                  >
-                                    Download Template
-                                  </button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                    );
-                  }
-                  return null;
-                })()}
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {result.errors.map((error: EnrichedError, index: number) => (
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {groupErrorsByMessage(result.errors as EnrichedError[]).map((group: GroupedError, index: number) => (
                     <div key={index} className="text-sm bg-red-50 border border-red-200 rounded p-3">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="font-medium text-red-800">
-                          Row {error.recordIndex !== undefined ? error.recordIndex + 2 : index + 2}: {error.name || error.externalId || 'Unknown'}
-                        </span>
                         <span className="text-red-600 text-xs font-medium px-2 py-0.5 bg-red-100 rounded">
-                          {error.errorCode || 'Failed'}
+                          {group.rows.length} record{group.rows.length !== 1 ? 's' : ''}
                         </span>
+                        {group.errorCode && (
+                          <span className="text-red-500 text-xs">
+                            {group.errorCode}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-red-700 text-xs mt-1">{error.error || (error as any).message}</p>
-                      {error.suggestion && (
+                      <p className="text-red-700 text-sm mt-2">{group.error}</p>
+                      <p className="text-red-500 text-xs mt-1">
+                        {formatRowNumbers(group.rows, 8)}
+                      </p>
+                      {group.suggestion && (
                         <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
                           <span className="font-medium text-amber-800">Suggestion: </span>
-                          <span className="text-amber-700">{error.suggestion}</span>
-                          {error.action === 'download-template' && (
+                          <span className="text-amber-700">{group.suggestion}</span>
+                          {group.action === 'download-template' && (
                             <button
                               onClick={downloadTemplate}
                               className="ml-2 text-amber-800 underline hover:text-amber-900"

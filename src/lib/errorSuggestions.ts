@@ -159,3 +159,58 @@ export function getCommonErrorPatterns(errors: EnrichedError[]): Array<{ suggest
       action: errs[0]?.action
     }));
 }
+
+export interface GroupedError {
+  error: string;
+  rows: number[];
+  suggestion?: string;
+  action?: string;
+  errorCode?: string;
+}
+
+/**
+ * Group errors by their error message for compact display
+ * Returns array of grouped errors with row numbers
+ */
+export function groupErrorsByMessage(errors: EnrichedError[]): GroupedError[] {
+  const groups = new Map<string, GroupedError>();
+
+  for (const error of errors) {
+    const key = error.error || 'Unknown error';
+    const rowNum = error.recordIndex !== undefined ? error.recordIndex + 2 : 0;
+
+    if (groups.has(key)) {
+      groups.get(key)!.rows.push(rowNum);
+    } else {
+      groups.set(key, {
+        error: key,
+        rows: [rowNum],
+        suggestion: error.suggestion,
+        action: error.action,
+        errorCode: error.errorCode
+      });
+    }
+  }
+
+  // Sort by number of affected rows (descending)
+  return Array.from(groups.values()).sort((a, b) => b.rows.length - a.rows.length);
+}
+
+/**
+ * Format row numbers for display with truncation
+ * e.g., "2, 3, 4, 5, 6" or "2, 3, 4 and 5 more"
+ */
+export function formatRowNumbers(rows: number[], maxShow: number = 5): string {
+  if (rows.length === 0) return '';
+  if (rows.length === 1) return `Row ${rows[0]}`;
+
+  const sorted = [...rows].sort((a, b) => a - b);
+
+  if (sorted.length <= maxShow) {
+    return `Rows ${sorted.join(', ')}`;
+  }
+
+  const shown = sorted.slice(0, maxShow);
+  const remaining = sorted.length - maxShow;
+  return `Rows ${shown.join(', ')} and ${remaining} more`;
+}
