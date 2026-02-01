@@ -13,7 +13,22 @@ import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
 import { useAppContext } from '@/hooks/useAppContext';
 import { enrichErrors, getCommonErrorPatterns, type EnrichedError } from '@/lib/errorSuggestions';
+import { FieldMappingTable } from '@/components/FieldMappingTable';
+import {
+  type FieldMapping,
+  type MappingValidation,
+  autoMatchFields,
+  validateMapping,
+  applyMapping,
+  type CustomField as MappingCustomField
+} from '@/lib/fieldMapping';
 import Papa from "papaparse";
+
+// Feature flag: Enable field mapping only for specific locations
+const MAPPING_ENABLED_LOCATIONS = [
+  'gdzneuvA9mUJoRroCv4O',  // Dev account
+  // Add more test location IDs here as needed
+];
 
 interface CustomObject {
   id: string;
@@ -46,7 +61,7 @@ interface Association {
   associationType?: string;
 }
 
-type ImportStep = "select" | "upload" | "preview" | "importing" | "success";
+type ImportStep = "select" | "upload" | "mapping" | "preview" | "importing" | "success";
 
 interface ImportResult {
   ok: boolean;
@@ -81,8 +96,13 @@ export function ImportRecordsTab() {
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [fieldMapping, setFieldMapping] = useState<FieldMapping>({});
+  const [mappingValidation, setMappingValidation] = useState<MappingValidation | null>(null);
   const { location, refreshContext } = useAppContext();
   const { toast } = useToast();
+
+  // Check if field mapping is enabled for this location
+  const isMappingEnabled = MAPPING_ENABLED_LOCATIONS.includes(location?.id || '');
 
 // Clear all data when location switches
 useLocationSwitch(async () => {
@@ -96,6 +116,8 @@ useLocationSwitch(async () => {
   setRecordsData([]);
   setProgress(0);
   setResult(null);
+  setFieldMapping({});
+  setMappingValidation(null);
 
   await refreshContext();
   await fetchObjects();
@@ -292,7 +314,18 @@ const fetchObjects = async () => {
 
         const data = results.data as Record<string, string>[];
         setRecordsData(data);
-        setCurrentStep("preview");
+
+        if (isMappingEnabled && data.length > 0) {
+          // New flow: go to mapping step
+          const csvColumns = Object.keys(data[0]);
+          const initialMapping = autoMatchFields(csvColumns, fieldsData as MappingCustomField[]);
+          setFieldMapping(initialMapping);
+          setMappingValidation(null);
+          setCurrentStep("mapping");
+        } else {
+          // Current flow: skip directly to preview
+          setCurrentStep("preview");
+        }
       },
       error: (error) => {
         toast({
@@ -305,6 +338,21 @@ const fetchObjects = async () => {
     });
   };
 
+  const handleContinueToPreview = () => {
+    const validation = validateMapping(fieldMapping, fieldsData as MappingCustomField[]);
+    setMappingValidation(validation);
+
+    if (!validation.canProceed) {
+      toast({
+        title: "Mapping Incomplete",
+        description: validation.errors[0] || "Please map all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCurrentStep("preview");
+  };
 
   const handleImport = async () => {
     if (!recordsFile || !selectedObject) return;
@@ -313,8 +361,9 @@ const fetchObjects = async () => {
     setProgress(0);
 
     try {
-      // Add object_key to each record in the CSV data
-      const modifiedData = recordsData.map(record => ({
+      // Apply field mapping if enabled, then add object_key
+      const dataToImport = isMappingEnabled ? applyMapping(recordsData, fieldMapping) : recordsData;
+      const modifiedData = dataToImport.map(record => ({
         ...record,
         object_key: selectedObject.split('.').pop() // Extract just the object name from the full key
       }));
@@ -378,6 +427,8 @@ const response = await apiFetch(`/api/objects/${selectedObject}/records/import`,
     setRecordsData([]);
     setProgress(0);
     setResult(null);
+    setFieldMapping({});
+    setMappingValidation(null);
   };
 
 useEffect(() => {
@@ -509,6 +560,49 @@ useEffect(() => {
     </div>
   );
 
+  const renderMapping = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Map CSV Columns</h3>
+          <p className="text-sm text-muted-foreground">
+            Match your CSV columns to {selectedObjectData?.labels.singular} fields
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+
+      <Alert>
+        <Database className="h-4 w-4" />
+        <AlertDescription>
+          Map each CSV column to a field in your custom object. Columns marked "Skip" will not be imported.
+        </AlertDescription>
+      </Alert>
+
+      <FieldMappingTable
+        csvColumns={recordsData.length > 0 ? Object.keys(recordsData[0]) : []}
+        ghlFields={fieldsData as MappingCustomField[]}
+        mapping={fieldMapping}
+        onMappingChange={setFieldMapping}
+        sampleData={recordsData[0] || {}}
+        validation={mappingValidation}
+      />
+
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <Button variant="gradient" onClick={handleContinueToPreview}>
+          Continue to Preview
+        </Button>
+      </div>
+    </div>
+  );
+
   const renderPreview = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -525,14 +619,19 @@ useEffect(() => {
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          Review your data before importing. All CSV columns will be imported as-is.
+          {isMappingEnabled
+            ? "Review your mapped data before importing. Only mapped columns will be imported."
+            : "Review your data before importing. All CSV columns will be imported as-is."
+          }
         </AlertDescription>
       </Alert>
 
-      <DataPreviewTable data={recordsData} />
+      <DataPreviewTable
+        data={isMappingEnabled ? applyMapping(recordsData, fieldMapping) : recordsData}
+      />
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+        <Button variant="outline" onClick={() => setCurrentStep(isMappingEnabled ? "mapping" : "upload")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
@@ -820,8 +919,13 @@ useEffect(() => {
   );
   };
 
-  const steps = ["Choose Object", "Download & Upload", "Preview Data", "Import Progress", "Review Results"];
-  const stepMap = { select: 0, upload: 1, preview: 2, importing: 3, success: 4 };
+  // Conditionally show 5 or 6 steps based on feature flag
+  const steps = isMappingEnabled
+    ? ["Choose Object", "Upload CSV", "Map Fields", "Preview Data", "Import Progress", "Review Results"]
+    : ["Choose Object", "Download & Upload", "Preview Data", "Import Progress", "Review Results"];
+  const stepMap = isMappingEnabled
+    ? { select: 0, upload: 1, mapping: 2, preview: 3, importing: 4, success: 5 }
+    : { select: 0, upload: 1, mapping: 1, preview: 2, importing: 3, success: 4 };
 
   return (
     <div className="space-y-6">
@@ -840,6 +944,7 @@ useEffect(() => {
 
       {currentStep === "select" && renderSelect()}
       {currentStep === "upload" && renderUpload()}
+      {currentStep === "mapping" && renderMapping()}
       {currentStep === "preview" && renderPreview()}
       {currentStep === "importing" && renderImporting()}
       {currentStep === "success" && renderSuccess()}
