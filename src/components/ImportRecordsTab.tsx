@@ -63,6 +63,12 @@ interface Association {
 
 type ImportStep = "select" | "upload" | "mapping" | "preview" | "importing" | "success";
 
+interface PhoneWarning {
+  recordId: string;
+  externalId: string;
+  warnings: Array<{ field: string; warning: string }>;
+}
+
 interface ImportResult {
   ok: boolean;
   success?: boolean;
@@ -71,12 +77,14 @@ interface ImportResult {
     recordsProcessed: number;
   };
   errors?: Array<{ recordIndex: number; error: string }>;
+  phoneWarnings?: PhoneWarning[];
   summary?: {
     total: number;
     created: number;
     updated: number;
     skipped: number;
     failed: number;
+    phoneAutoFormatted?: number;
   };
   // Additional properties for detailed results
   created?: Array<any>;
@@ -727,6 +735,12 @@ useEffect(() => {
                   <span className="font-medium text-red-600">{result.summary.failed}</span>
                 </div>
               )}
+              {result.summary.phoneAutoFormatted && result.summary.phoneAutoFormatted > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-blue-600">Phones Auto-Formatted:</span>
+                  <span className="font-medium text-blue-600">{result.summary.phoneAutoFormatted}</span>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -880,6 +894,39 @@ useEffect(() => {
                       )}
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Phone Number Formatting Warnings */}
+          {result.phoneWarnings && result.phoneWarnings.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Phone Numbers Auto-Formatted ({result.phoneWarnings.length})
+                </CardTitle>
+                <CardDescription>
+                  These phone numbers were automatically reformatted. Please verify they are correct.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {result.phoneWarnings.slice(0, 20).map((warning: PhoneWarning, index: number) => (
+                    <div key={index} className="text-sm bg-blue-50 border border-blue-200 rounded p-2">
+                      {warning.warnings.map((w, wIdx) => (
+                        <p key={wIdx} className="text-blue-700 text-xs">
+                          <span className="font-medium">{w.field}:</span> {w.warning}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                  {result.phoneWarnings.length > 20 && (
+                    <p className="text-sm text-blue-600 italic">
+                      And {result.phoneWarnings.length - 20} more...
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
