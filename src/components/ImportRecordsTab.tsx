@@ -610,17 +610,21 @@ useEffect(() => {
               <SelectValue placeholder="Select a custom object" />
             </SelectTrigger>
             <SelectContent>
-              {objects.map((object) => (
-                <SelectItem key={object.id} value={object.key}>
-                  {object.labels.singular} ({object.key})
-                </SelectItem>
-              ))}
+              {objects
+                .filter((obj) => !['contact', 'opportunity', 'business'].includes(obj.key))
+                .map((object) => (
+                  <SelectItem key={object.id} value={object.key}>
+                    {object.labels.singular} ({object.key})
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
 
-          {objects.length === 0 && (
+          {objects.filter((obj) => !['contact', 'opportunity', 'business'].includes(obj.key)).length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
               No custom objects found. Create custom objects first before importing records.
+              <br />
+              <span className="text-xs">(Standard objects like Contact, Opportunity, Business can be imported via GHL's native import)</span>
             </p>
           )}
 
