@@ -598,11 +598,15 @@ export function BulkDeleteTab() {
     }
   };
 
+  // Convert steps to string array and find current index for StepIndicator
+  const stepLabels = steps.map(s => s.label);
+  const currentStepIndex = steps.findIndex(s => s.id === currentStep);
+
   return (
     <div className="space-y-8">
       <StepIndicator
-        steps={steps}
-        currentStep={currentStep}
+        steps={stepLabels}
+        currentStep={currentStepIndex >= 0 ? currentStepIndex : 0}
       />
       {renderCurrentStep()}
     </div>
