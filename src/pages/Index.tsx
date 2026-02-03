@@ -7,6 +7,7 @@ import { AddFieldsTab } from "@/components/AddFieldsTab";
 import { ImportRecordsTab } from "@/components/ImportRecordsTab";
 import { UpdateRecordsTab } from "@/components/UpdateRecordsTab";
 import { ExportRecordsTab } from "@/components/ExportRecordsTab";
+import { BulkDeleteTab } from "@/components/BulkDeleteTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { UploadAssociationsTab } from "@/components/UploadAssociationsTab";
 import { FeedbackModal } from "@/components/FeedbackModal";
@@ -254,26 +255,31 @@ const Index = () => {
               
               <TabsContent value="records" className="mt-0">
                 <Tabs defaultValue="import-records" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="import-records">Import Records</TabsTrigger>
                     <TabsTrigger value="update-records">Update Records</TabsTrigger>
                     <TabsTrigger value="export-records">Export Records</TabsTrigger>
-                    <TabsTrigger value="upload-associations">Import Record Relations</TabsTrigger>
+                    <TabsTrigger value="delete-records">Delete Records</TabsTrigger>
+                    <TabsTrigger value="upload-associations">Record Relations</TabsTrigger>
                   </TabsList>
-                  
+
                   <div className="mt-6">
                     <TabsContent value="import-records" className="mt-0">
                       <ImportRecordsTab />
                     </TabsContent>
-                    
+
                     <TabsContent value="update-records" className="mt-0">
                       <UpdateRecordsTab />
                     </TabsContent>
-                    
+
                     <TabsContent value="export-records" className="mt-0">
                       <ExportRecordsTab />
                     </TabsContent>
-                    
+
+                    <TabsContent value="delete-records" className="mt-0">
+                      <BulkDeleteTab />
+                    </TabsContent>
+
                     <TabsContent value="upload-associations" className="mt-0">
                       <UploadAssociationsTab />
                     </TabsContent>
