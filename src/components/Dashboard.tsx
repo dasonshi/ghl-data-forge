@@ -306,7 +306,7 @@ export function Dashboard() {
                                   )}
                                 </div>
                                 <Badge variant="outline" className="text-xs">
-                                  {field.dataType}
+                                  {typeof field.dataType === 'string' ? field.dataType : (field.dataType?.id || field.dataType?.label || 'TEXT')}
                                 </Badge>
                               </div>
                             ))}
