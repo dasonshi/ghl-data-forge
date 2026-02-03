@@ -221,6 +221,7 @@ export function UploadAssociationsTab() {
     try {
       const formData = new FormData();
       formData.append('relations', relationsFile, relationsFile.name);
+      formData.append('associationId', selectedAssociation?.id || '');
 
       // Simulate progress
       const progressInterval = setInterval(() => {
