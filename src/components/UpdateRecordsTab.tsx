@@ -450,7 +450,7 @@ export function UpdateRecordsTab() {
                 <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded flex justify-between items-center">
                   <span>{field.fieldKey || field.name}</span>
                   <span className="text-xs text-muted-foreground font-mono bg-background px-1 rounded">
-                    {field.dataType}
+                    {typeof field.dataType === 'string' ? field.dataType : (field.dataType?.id || field.dataType?.label || 'TEXT')}
                   </span>
                 </div>
               ))

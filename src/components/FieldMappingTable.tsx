@@ -127,7 +127,7 @@ export function FieldMappingTable({
                               <div className="flex items-center gap-2">
                                 <span>{currentField?.name || getFieldDisplayName(entry.ghlFieldKey)}</span>
                                 <span className="text-xs text-muted-foreground font-mono">
-                                  ({currentField?.dataType || 'TEXT'})
+                                  ({typeof currentField?.dataType === 'string' ? currentField?.dataType : (currentField?.dataType?.id || currentField?.dataType?.label || 'TEXT')})
                                 </span>
                                 {currentField?.required && (
                                   <span className="text-xs text-red-500">*</span>
@@ -156,7 +156,7 @@ export function FieldMappingTable({
                               <div className="flex items-center gap-2">
                                 <span>{field.name}</span>
                                 <span className="text-xs text-muted-foreground font-mono">
-                                  ({field.dataType})
+                                  ({typeof field.dataType === 'string' ? field.dataType : (field.dataType?.id || field.dataType?.label || 'TEXT')})
                                 </span>
                                 {field.required && (
                                   <span className="text-xs text-red-500">*</span>
