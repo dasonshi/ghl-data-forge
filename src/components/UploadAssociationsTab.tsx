@@ -49,7 +49,7 @@ interface ImportResult {
 }
 
 export function UploadAssociationsTab() {
-  const [currentStep, setCurrentStep] = useState<ImportStep>("select");
+  const [currentStep, setCurrentStep] = useState<ImportStep>("selectAssociation");
   const [objects, setObjects] = useState<CustomObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<string>("");
   const [selectedAssociation, setSelectedAssociation] = useState<Association | null>(null);
@@ -79,13 +79,14 @@ export function UploadAssociationsTab() {
     }
   };
 
-  // Fetch associations for the selected object
+  // Fetch ALL associations (including system associations like Contact-Business)
   const fetchAssociations = async () => {
-    if (!selectedObject || !location?.id) return;
-    
+    if (!location?.id) return;
+
     setAssociationsLoading(true);
     try {
-      const response = await apiFetch(`/api/objects/${selectedObject}/associations`, {}, location.id);
+      // Fetch all associations, not just for a specific object
+      const response = await apiFetch('/api/associations', {}, location.id);
       if (response.ok) {
         const data = await response.json();
         setAssociations(data.associations || []);
@@ -97,24 +98,18 @@ export function UploadAssociationsTab() {
     }
   };
 
-  // Fetch objects when component mounts
+  // Fetch objects and associations when component mounts
   useEffect(() => {
     if (location?.id) {
       fetchObjects();
+      fetchAssociations(); // Fetch ALL associations on mount
     }
   }, [location?.id]);
-
-  // Fetch associations when selected object changes
-  useEffect(() => {
-    if (selectedObject) {
-      fetchAssociations();
-    }
-  }, [selectedObject, location?.id]);
 
   // Clear all data when location switches
   useLocationSwitch(async () => {
     console.log('🔄 UploadAssociationsTab: Clearing data for location switch');
-    setCurrentStep("select");
+    setCurrentStep("selectAssociation");
     setObjects([]);
     setSelectedObject("");
     setSelectedAssociation(null);
@@ -123,9 +118,10 @@ export function UploadAssociationsTab() {
     setAssociations([]);
     setProgress(0);
     setResult(null);
-    
+
     await refreshContext();
     await fetchObjects();
+    await fetchAssociations();
   });
 
   const downloadTemplate = async () => {
@@ -263,14 +259,15 @@ export function UploadAssociationsTab() {
   };
 
   const handleStartOver = () => {
-    setCurrentStep("select");
+    setCurrentStep("selectAssociation");
     setSelectedObject("");
     setSelectedAssociation(null);
     setRelationsFile(null);
     setRelationsData([]);
-    setAssociations([]);
     setProgress(0);
     setResult(null);
+    // Re-fetch associations in case they changed
+    fetchAssociations();
   };
 
   const renderSelect = () => (
@@ -318,17 +315,11 @@ export function UploadAssociationsTab() {
 
   const renderSelectAssociation = () => (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Select Association</h2>
-          <p className="text-muted-foreground">
-            Choose which association type to import relations for
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => setCurrentStep("select")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Change Object
-        </Button>
+      <div>
+        <h2 className="text-2xl font-bold">Select Association</h2>
+        <p className="text-muted-foreground">
+          Choose which association type to import relations for (includes Contact-Business)
+        </p>
       </div>
 
       <AssociationsTable 
@@ -647,18 +638,16 @@ export function UploadAssociationsTab() {
 
   return (
     <div className="space-y-6">
-      <StepIndicator 
-        steps={["Select Object", "Select Association", "Upload", "Preview", "Importing", "Complete"]}
+      <StepIndicator
+        steps={["Select Association", "Upload", "Preview", "Importing", "Complete"]}
         currentStep={
-          currentStep === "select" ? 0 : 
-          currentStep === "selectAssociation" ? 1 : 
-          currentStep === "upload" ? 2 : 
-          currentStep === "preview" ? 3 : 
-          currentStep === "importing" ? 4 : 5
+          currentStep === "selectAssociation" ? 0 :
+          currentStep === "upload" ? 1 :
+          currentStep === "preview" ? 2 :
+          currentStep === "importing" ? 3 : 4
         }
       />
 
-      {currentStep === "select" && renderSelect()}
       {currentStep === "selectAssociation" && renderSelectAssociation()}
       {currentStep === "upload" && renderUpload()}
       {currentStep === "preview" && renderPreview()}
