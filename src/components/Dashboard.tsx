@@ -10,6 +10,7 @@ import { apiFetch, API_BASE } from "@/lib/api";
 import { useAppContext } from "@/hooks/useAppContext";
 import { copyToClipboard } from "@/lib/clipboard";
 import { HelpDocumentation } from "@/components/HelpDocumentation";
+import { getDataTypeDisplay } from "@/lib/fieldUtils";
 
 interface CustomObject {
   id: string;
@@ -306,7 +307,7 @@ export function Dashboard() {
                                   )}
                                 </div>
                                 <Badge variant="outline" className="text-xs">
-                                  {typeof field.dataType === 'string' ? field.dataType : (field.dataType?.id || field.dataType?.label || 'TEXT')}
+                                  {getDataTypeDisplay(field.dataType)}
                                 </Badge>
                               </div>
                             ))}

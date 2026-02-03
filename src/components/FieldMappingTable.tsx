@@ -9,6 +9,7 @@ import {
   type CustomField,
   getAvailableFields
 } from "@/lib/fieldMapping";
+import { getDataTypeDisplay } from "@/lib/fieldUtils";
 
 interface FieldMappingTableProps {
   csvColumns: string[];
@@ -127,7 +128,7 @@ export function FieldMappingTable({
                               <div className="flex items-center gap-2">
                                 <span>{currentField?.name || getFieldDisplayName(entry.ghlFieldKey)}</span>
                                 <span className="text-xs text-muted-foreground font-mono">
-                                  ({typeof currentField?.dataType === 'string' ? currentField?.dataType : (currentField?.dataType?.id || currentField?.dataType?.label || 'TEXT')})
+                                  ({getDataTypeDisplay(currentField?.dataType)})
                                 </span>
                                 {currentField?.required && (
                                   <span className="text-xs text-red-500">*</span>
@@ -156,7 +157,7 @@ export function FieldMappingTable({
                               <div className="flex items-center gap-2">
                                 <span>{field.name}</span>
                                 <span className="text-xs text-muted-foreground font-mono">
-                                  ({typeof field.dataType === 'string' ? field.dataType : (field.dataType?.id || field.dataType?.label || 'TEXT')})
+                                  ({getDataTypeDisplay(field.dataType)})
                                 </span>
                                 {field.required && (
                                   <span className="text-xs text-red-500">*</span>

@@ -13,6 +13,7 @@ import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
 import { useAppContext } from '@/hooks/useAppContext';
 import Papa from "papaparse";
+import { getDataTypeDisplay } from "@/lib/fieldUtils";
 
 interface CustomObject {
   id: string;
@@ -450,7 +451,7 @@ export function UpdateRecordsTab() {
                 <div key={index} className="text-sm bg-muted/50 px-2 py-1 rounded flex justify-between items-center">
                   <span>{field.fieldKey || field.name}</span>
                   <span className="text-xs text-muted-foreground font-mono bg-background px-1 rounded">
-                    {typeof field.dataType === 'string' ? field.dataType : (field.dataType?.id || field.dataType?.label || 'TEXT')}
+                    {getDataTypeDisplay(field.dataType)}
                   </span>
                 </div>
               ))
