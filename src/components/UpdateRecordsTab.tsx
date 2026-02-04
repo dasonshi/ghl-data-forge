@@ -44,6 +44,17 @@ interface CustomField {
 
 type UpdateStep = "select" | "upload" | "mapping" | "preview" | "updating" | "success";
 
+// Virtual field representing the record ID — used in the mapping table so users
+// can explicitly pick which CSV column holds the record identifier.
+// fieldKey uses a dot so extractFieldName() produces "id" in applyMapping output.
+const RECORD_ID_FIELD: MappingCustomField = {
+  id: 'system_id',
+  fieldKey: 'system.id',
+  name: 'Record ID',
+  dataType: 'TEXT',
+  required: true
+};
+
 interface UpdateResult {
   ok: boolean;
   success?: boolean;
@@ -295,6 +306,13 @@ export function UpdateRecordsTab() {
         // Auto-match CSV columns to GHL fields
         const csvColumns = Object.keys(data[0]);
         const initialMapping = autoMatchFields(csvColumns, fieldsData as MappingCustomField[]);
+
+        // For updates, auto-map the "id" column to Record ID (autoMatchFields skips it by default)
+        const idCol = csvColumns.find(c => c.toLowerCase().trim() === 'id');
+        if (idCol) {
+          initialMapping[idCol] = { ghlFieldKey: RECORD_ID_FIELD.fieldKey, autoMatched: true };
+        }
+
         setFieldMapping(initialMapping);
         setMappingValidation(null);
         setCurrentStep("mapping");
@@ -372,7 +390,7 @@ export function UpdateRecordsTab() {
   };
 
   const handleContinueToPreview = () => {
-    const validation = validateMapping(fieldMapping, fieldsData as MappingCustomField[]);
+    const validation = validateMapping(fieldMapping, mappingFields);
     setMappingValidation(validation);
 
     if (!validation.canProceed) {
@@ -403,6 +421,13 @@ export function UpdateRecordsTab() {
   }, [location?.id]);
 
   const selectedObjectData = objects.find(obj => obj.key === selectedObject);
+
+  // Extended fields list: prepend the virtual Record ID field so it appears
+  // in the mapping dropdown and validation checks.
+  const mappingFields: MappingCustomField[] = [
+    RECORD_ID_FIELD,
+    ...(fieldsData as MappingCustomField[])
+  ];
 
   const renderSelect = () => (
     <div className="space-y-6">
@@ -561,7 +586,7 @@ export function UpdateRecordsTab() {
 
       <FieldMappingTable
         csvColumns={recordsData.length > 0 ? Object.keys(recordsData[0]) : []}
-        ghlFields={fieldsData as MappingCustomField[]}
+        ghlFields={mappingFields}
         mapping={fieldMapping}
         onMappingChange={setFieldMapping}
         sampleData={recordsData[0] || {}}
