@@ -7,11 +7,20 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
+import { FieldMappingTable } from '@/components/FieldMappingTable';
 import { Download, Database, CheckCircle2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
 import { useAppContext } from '@/hooks/useAppContext';
+import {
+  type FieldMapping,
+  type MappingValidation,
+  autoMatchFields,
+  validateMapping,
+  applyMapping,
+  type CustomField as MappingCustomField
+} from '@/lib/fieldMapping';
 import Papa from "papaparse";
 import { getDataTypeDisplay } from "@/lib/fieldUtils";
 
@@ -33,7 +42,7 @@ interface CustomField {
   picklistValues?: Array<{ value: string; label: string }>;
 }
 
-type UpdateStep = "select" | "upload" | "preview" | "updating" | "success";
+type UpdateStep = "select" | "upload" | "mapping" | "preview" | "updating" | "success";
 
 interface UpdateResult {
   ok: boolean;
@@ -64,6 +73,8 @@ export function UpdateRecordsTab() {
   
   const [recordsFile, setRecordsFile] = useState<File | null>(null);
   const [recordsData, setRecordsData] = useState<Record<string, string>[]>([]);
+  const [fieldMapping, setFieldMapping] = useState<FieldMapping>({});
+  const [mappingValidation, setMappingValidation] = useState<MappingValidation | null>(null);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<UpdateResult | null>(null);
   const { location, refreshContext } = useAppContext();
@@ -79,6 +90,8 @@ export function UpdateRecordsTab() {
     setFieldsData([]);
     setRecordsFile(null);
     setRecordsData([]);
+    setFieldMapping({});
+    setMappingValidation(null);
     setProgress(0);
     setResult(null);
 
@@ -278,7 +291,13 @@ export function UpdateRecordsTab() {
 
         const data = results.data as Record<string, string>[];
         setRecordsData(data);
-        setCurrentStep("preview");
+
+        // Auto-match CSV columns to GHL fields
+        const csvColumns = Object.keys(data[0]);
+        const initialMapping = autoMatchFields(csvColumns, fieldsData as MappingCustomField[]);
+        setFieldMapping(initialMapping);
+        setMappingValidation(null);
+        setCurrentStep("mapping");
       },
       error: (error) => {
         toast({
@@ -298,8 +317,9 @@ export function UpdateRecordsTab() {
     setProgress(0);
 
     try {
-      // Add object_key to each record in the CSV data
-      const modifiedData = recordsData.map(record => ({
+      // Apply field mapping, then add object_key to each record
+      const mappedData = applyMapping(recordsData, fieldMapping);
+      const modifiedData = mappedData.map(record => ({
         ...record,
         object_key: selectedObject.split('.').pop()
       }));
@@ -351,12 +371,29 @@ export function UpdateRecordsTab() {
     }
   };
 
+  const handleContinueToPreview = () => {
+    const validation = validateMapping(fieldMapping, fieldsData as MappingCustomField[]);
+    setMappingValidation(validation);
+
+    if (!validation.canProceed) {
+      toast({
+        title: "Mapping Issues",
+        description: validation.errors[0] || "Please fix mapping issues before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCurrentStep("preview");
+  };
+
   const handleStartOver = () => {
     setCurrentStep("select");
     setSelectedObject("");
     setAvailableFields([]);
     setRecordsFile(null);
     setRecordsData([]);
+    setFieldMapping({});
+    setMappingValidation(null);
     setProgress(0);
     setResult(null);
   };
@@ -500,6 +537,49 @@ export function UpdateRecordsTab() {
     </div>
   );
 
+  const renderMapping = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Map CSV Columns</h3>
+          <p className="text-sm text-muted-foreground">
+            Match your CSV columns to {selectedObjectData?.labels.singular} fields
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      </div>
+
+      <Alert>
+        <Database className="h-4 w-4" />
+        <AlertDescription>
+          Map each CSV column to a field in your custom object. The "id" column must be mapped to identify which records to update. Columns marked "Skip" will not be updated.
+        </AlertDescription>
+      </Alert>
+
+      <FieldMappingTable
+        csvColumns={recordsData.length > 0 ? Object.keys(recordsData[0]) : []}
+        ghlFields={fieldsData as MappingCustomField[]}
+        mapping={fieldMapping}
+        onMappingChange={setFieldMapping}
+        sampleData={recordsData[0] || {}}
+        validation={mappingValidation}
+      />
+
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <Button variant="gradient" onClick={handleContinueToPreview}>
+          Continue to Preview
+        </Button>
+      </div>
+    </div>
+  );
+
   const renderPreview = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -520,10 +600,10 @@ export function UpdateRecordsTab() {
         </AlertDescription>
       </Alert>
 
-      <DataPreviewTable data={recordsData} />
+      <DataPreviewTable data={applyMapping(recordsData, fieldMapping)} />
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={() => setCurrentStep("upload")}>
+        <Button variant="outline" onClick={() => setCurrentStep("mapping")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
@@ -731,8 +811,8 @@ export function UpdateRecordsTab() {
   );
   };
 
-  const steps = ["Choose Object", "Download & Upload", "Preview Data", "Update Progress", "Review Results"];
-  const stepMap = { select: 0, upload: 1, preview: 2, updating: 3, success: 4 };
+  const steps = ["Choose Object", "Download & Upload", "Map Fields", "Preview Data", "Update Progress", "Review Results"];
+  const stepMap: Record<UpdateStep, number> = { select: 0, upload: 1, mapping: 2, preview: 3, updating: 4, success: 5 };
 
   return (
     <div className="space-y-6">
@@ -751,6 +831,7 @@ export function UpdateRecordsTab() {
 
       {currentStep === "select" && renderSelect()}
       {currentStep === "upload" && renderUpload()}
+      {currentStep === "mapping" && renderMapping()}
       {currentStep === "preview" && renderPreview()}
       {currentStep === "updating" && renderUpdating()}
       {currentStep === "success" && renderSuccess()}
