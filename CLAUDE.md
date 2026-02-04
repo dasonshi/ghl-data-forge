@@ -41,14 +41,37 @@
 
 ## API Endpoints Used
 
-All calls go to the backend API:
+All calls go to the backend API (base: `https://importer.api.savvysales.ai`):
 
 ```
-POST /api/imports/objects/:objectKey/fields/import   - Import fields
-POST /api/imports/objects/:objectKey/records/import  - Import records
-GET  /api/objects                                     - List custom objects
-GET  /api/objects/:objectKey/fields                  - Get fields for object
+POST /api/objects/:objectKey/fields/import    - Import fields
+POST /api/objects/:objectKey/records/import   - Import records
+POST /api/objects/:objectKey/records/delete   - Delete records
+GET  /api/objects                             - List custom objects
+GET  /api/objects/:objectKey/fields           - Get fields for object
 ```
+
+**Note:** The imports router is mounted at `/api`, NOT `/api/imports`. Check `server.js` in the backend to verify mount points.
+
+---
+
+## Debugging Checklist
+
+### API 404 Errors
+When frontend gets 404 from backend:
+1. Check the **exact URL** being called (browser Network tab)
+2. Verify the **router mount point** in backend `server.js`
+3. Don't assume paths based on file structure - always verify
+
+### URL Path Gotchas
+- Express doesn't match dots (`.`) in path params by default
+- `custom_objects.product` in URL breaks `:objectKey` matching
+- Always strip prefixes before putting in URL: `objectKey.replace(/^custom_objects\./, '')`
+
+### React "Objects are not valid as React child" (Error #31)
+- Component expects `string` but receives object like `{id, label}`
+- Check component interface vs actual props passed
+- Common fix: extract the string property (e.g., `steps.map(s => s.label)`)
 
 ---
 
