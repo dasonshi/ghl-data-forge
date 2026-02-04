@@ -155,12 +155,8 @@ export function BulkDeleteTab() {
 
         setSelectedIdColumn(detectedIdColumn);
 
-        // If auto-detected or single column, skip mapping step
-        if (detectedIdColumn) {
-          setCurrentStep("preview");
-        } else {
-          setCurrentStep("mapping");
-        }
+        // Always show mapping step so user can verify/change selection
+        setCurrentStep("mapping");
       },
       error: (error) => {
         toast({
@@ -265,9 +261,7 @@ export function BulkDeleteTab() {
   const steps = [
     { id: "select", label: "Choose Object" },
     { id: "upload", label: "Upload CSV" },
-    ...(csvColumns.length > 1 && !ID_COLUMN_CANDIDATES.some(c => csvColumns.map(col => col.toLowerCase()).includes(c))
-      ? [{ id: "mapping", label: "Select ID Column" }]
-      : []),
+    { id: "mapping", label: "Select ID Column" },
     { id: "preview", label: "Confirm Delete" },
     { id: "deleting", label: "Deleting" },
     { id: "success", label: "Complete" }
@@ -458,7 +452,7 @@ export function BulkDeleteTab() {
         </Card>
 
         <div className="flex justify-between">
-          <Button variant="outline" onClick={() => setCurrentStep(csvColumns.length > 1 ? "mapping" : "upload")}>
+          <Button variant="outline" onClick={() => setCurrentStep("mapping")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
