@@ -216,7 +216,7 @@ export function BulkDeleteTab() {
       // Strip custom_objects. prefix if present (Express doesn't match dots in path params)
       const cleanObjectKey = selectedObject.replace(/^custom_objects\./, '');
 
-      const response = await apiFetch(`/api/imports/objects/${cleanObjectKey}/records/delete`, {
+      const response = await apiFetch(`/api/objects/${cleanObjectKey}/records/delete`, {
         method: 'POST',
         body: formData,
       }, location?.id ?? undefined);
