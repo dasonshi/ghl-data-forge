@@ -360,7 +360,8 @@ export function UpdateRecordsTab() {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      const response = await apiFetch(`/api/objects/${selectedObject}/records/update`, {
+      const cleanObjectKey = selectedObject.replace(/^custom_objects\./, '');
+      const response = await apiFetch(`/api/objects/${cleanObjectKey}/records/update`, {
         method: 'POST',
         body: formData,
       }, location?.id ?? undefined);
