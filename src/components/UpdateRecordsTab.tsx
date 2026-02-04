@@ -361,7 +361,7 @@ export function UpdateRecordsTab() {
       }, 200);
 
       const cleanObjectKey = selectedObject.replace(/^custom_objects\./, '');
-      const response = await apiFetch(`/api/objects/${cleanObjectKey}/records/update`, {
+      const response = await apiFetch(`/api/objects/${cleanObjectKey}/records/import`, {
         method: 'POST',
         body: formData,
       }, location?.id ?? undefined);
