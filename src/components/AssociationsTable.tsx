@@ -7,7 +7,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 interface Association {
   id: string;
   key: string;
-  description: string;
+  relationshipName?: string;
   relationTo: string;
   isFirst: boolean;
   firstObjectLabel?: string;
@@ -78,7 +78,7 @@ export function AssociationsTable({ associations, loading }: AssociationsTablePr
           <TableHeader>
             <TableRow>
               <TableHead>Association ID</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Relationship</TableHead>
               <TableHead>From Object</TableHead>
               <TableHead>To Object</TableHead>
               <TableHead>Actions</TableHead>
@@ -93,7 +93,7 @@ export function AssociationsTable({ associations, loading }: AssociationsTablePr
                 >
                   {association.id}
                 </TableCell>
-                <TableCell>{association.description}</TableCell>
+                <TableCell>{association.relationshipName || '—'}</TableCell>
                 <TableCell>
                   <div className="space-y-1">
                     <div className="font-medium">{association.firstObjectLabel}</div>

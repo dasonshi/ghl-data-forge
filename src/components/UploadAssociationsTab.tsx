@@ -27,7 +27,7 @@ interface CustomObject {
 interface Association {
   id: string;
   key: string;
-  description: string;
+  relationshipName?: string;
   relationTo: string;
   isFirst: boolean;
   firstObjectLabel?: string;
@@ -351,10 +351,14 @@ export function UploadAssociationsTab() {
                 {associations.map((association) => (
                   <SelectItem key={association.id} value={association.id}>
                     <div className="flex flex-col">
-                      <span className="font-medium">{association.description}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="font-medium">
                         {association.firstObjectLabel} → {association.secondObjectLabel}
                       </span>
+                      {association.relationshipName && association.relationshipName !== 'System' && (
+                        <span className="text-xs text-muted-foreground">
+                          {association.relationshipName}
+                        </span>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
