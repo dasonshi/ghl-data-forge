@@ -240,10 +240,29 @@ export function UploadAssociationsTab() {
         const result = await response.json();
         setResult(result);
         setCurrentStep("success");
-        toast({
-          title: "Relations Updated",
-          description: "Your record relations have been updated successfully.",
-        });
+
+        const createdCount = Array.isArray(result.created) ? result.created.length : 0;
+        const skippedCount = Array.isArray(result.skipped) ? result.skipped.length : 0;
+        const errorCount = Array.isArray(result.errors) ? result.errors.length : 0;
+        const hasSuccesses = createdCount > 0 || skippedCount > 0;
+
+        if (errorCount > 0 && !hasSuccesses) {
+          toast({
+            title: "Relations Import Failed",
+            description: `${errorCount} relation${errorCount !== 1 ? "s" : ""} failed to import. Review the errors below.`,
+            variant: "destructive",
+          });
+        } else if (errorCount > 0) {
+          toast({
+            title: "Relations Import Completed with Errors",
+            description: `${createdCount} created, ${skippedCount} skipped, ${errorCount} failed.`,
+          });
+        } else {
+          toast({
+            title: "Relations Updated",
+            description: "Your record relations have been updated successfully.",
+          });
+        }
       } else {
         const errorText = await response.text();
         console.error('Import failed:', response.status, errorText);
@@ -483,20 +502,47 @@ export function UploadAssociationsTab() {
 
   const renderSuccess = () => {
     console.log('renderSuccess called, currentStep:', currentStep, 'result:', result);
+    const createdCount = Array.isArray(result?.created) ? result.created.length : 0;
+    const skippedCount = Array.isArray(result?.skipped) ? result.skipped.length : 0;
+    const errorCount = Array.isArray(result?.errors) ? result.errors.length : 0;
+    const hasErrors = errorCount > 0;
+    const hasSuccesses = createdCount > 0 || skippedCount > 0;
+    const importFailed = hasErrors && !hasSuccesses;
+    const importPartial = hasErrors && hasSuccesses;
     
     return (
       <div className="space-y-6">
         <div className="text-center space-y-6">
           <div className="flex justify-center">
-            <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            <div className={`h-16 w-16 rounded-full flex items-center justify-center ${
+              importFailed
+                ? "bg-red-100"
+                : importPartial
+                  ? "bg-yellow-100"
+                  : "bg-green-100"
+            }`}>
+              {importFailed || importPartial ? (
+                <AlertTriangle className={`h-8 w-8 ${importFailed ? "text-red-600" : "text-yellow-600"}`} />
+              ) : (
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              )}
             </div>
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-foreground">Relations Updated Successfully!</h3>
+            <h3 className="text-xl font-semibold text-foreground">
+              {importFailed
+                ? "Relations Import Failed"
+                : importPartial
+                  ? "Relations Import Completed with Errors"
+                  : "Relations Updated Successfully!"}
+            </h3>
             <p className="text-muted-foreground">
-              Your record relations have been processed successfully.
+              {importFailed
+                ? "None of the relations were imported. Review the errors below."
+                : importPartial
+                  ? "Some relations were imported, but some failed. Review the details below."
+                  : "Your record relations have been processed successfully."}
             </p>
           </div>
 
