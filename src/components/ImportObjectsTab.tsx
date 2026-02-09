@@ -6,11 +6,12 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { Download, CheckCircle2, AlertTriangle, Upload, ArrowLeft, Database, Info, HelpCircle } from "lucide-react";
+import { Download, CheckCircle2, AlertTriangle, Upload, ArrowLeft, Database, Info, HelpCircle, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useProgressInterval } from "@/hooks/useProgressInterval";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
+import { buildObjectDestinationUrl } from "@/lib/ghlLinks";
 import { useLocationId } from "@/hooks/useLocationId";
 import Papa from "papaparse";
 
@@ -333,7 +334,10 @@ export function ImportObjectsTab() {
     </div>
   );
 
-  const renderSuccess = () => (
+  const renderSuccess = () => {
+    const objectDestinationUrl = buildObjectDestinationUrl(locationId, 'custom_objects');
+
+    return (
     <div className="space-y-6 text-center">
       <div className="space-y-4">
         <CheckCircle2 className="h-16 w-16 mx-auto text-green-600" />
@@ -358,6 +362,21 @@ export function ImportObjectsTab() {
           </div>
         </CardContent>
       </Card>
+
+      {objectDestinationUrl && (
+        <div className="flex justify-center">
+          <Button variant="outline" asChild>
+            <a
+              href={objectDestinationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Objects in CRM
+              <ExternalLink className="h-4 w-4 ml-2" />
+            </a>
+          </Button>
+        </div>
+      )}
 
       {/* Detailed Results - Show created objects */}
       {result && (result.created || objectsData.length > 0) && (
@@ -429,6 +448,7 @@ export function ImportObjectsTab() {
       </Button>
     </div>
   );
+  };
 
   const steps = ["Download & Upload", "Preview Data", "Import Progress", "Review Results"];
   const stepMap = { upload: 0, preview: 1, importing: 2, success: 3 };

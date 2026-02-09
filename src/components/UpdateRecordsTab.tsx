@@ -8,7 +8,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
 import { FieldMappingTable } from '@/components/FieldMappingTable';
-import { Download, Database, CheckCircle2, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Download, Database, CheckCircle2, AlertTriangle, ArrowLeft, ExternalLink } from "lucide-react";
+import { buildContactRecordUrl, buildObjectDestinationUrl, isContactObject } from "@/lib/ghlLinks";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
@@ -660,6 +661,11 @@ export function UpdateRecordsTab() {
   const renderSuccess = () => {
     const hasErrors = result?.errors && result.errors.length > 0;
     const hasSuccesses = result?.updated?.length > 0 || result?.summary?.updated > 0;
+    const isContact = isContactObject(selectedObject);
+    const objectDestinationUrl = buildObjectDestinationUrl(location?.id, selectedObject);
+    const objectDestinationLabel = isContact
+      ? 'Open Contacts in CRM'
+      : `Open ${selectedObjectData?.labels.singular || 'Object'} in CRM`;
 
     return (
     <div className="space-y-6 text-center">
@@ -735,6 +741,21 @@ export function UpdateRecordsTab() {
         </CardContent>
       </Card>
 
+      {objectDestinationUrl && (
+        <div className="flex justify-center">
+          <Button variant="outline" asChild>
+            <a
+              href={objectDestinationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {objectDestinationLabel}
+              <ExternalLink className="h-4 w-4 ml-2" />
+            </a>
+          </Button>
+        </div>
+      )}
+
       {/* Detailed Results */}
       {result && (result.updated || result.skipped || result.errors) && (
         <div className="space-y-4 max-w-4xl mx-auto">
@@ -750,19 +771,36 @@ export function UpdateRecordsTab() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {result.updated.map((record: any, index: number) => (
-                    <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-green-800">
-                          {record.id || record.name || `Record ${index + 1}`}
-                        </span>
-                        <span className="text-green-600 text-xs">Updated</span>
+                  {result.updated.map((record: any, index: number) => {
+                    const contactRecordUrl = isContact
+                      ? buildContactRecordUrl(location?.id, record?.id ? String(record.id) : null)
+                      : null;
+
+                    return (
+                      <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-green-800">
+                            {record.id || record.name || `Record ${index + 1}`}
+                          </span>
+                          <span className="text-green-600 text-xs">Updated</span>
+                        </div>
+                        {contactRecordUrl && (
+                          <a
+                            href={contactRecordUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-green-700 text-xs mt-1 underline"
+                          >
+                            Open Contact
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {record.details && (
+                          <p className="text-green-700 text-xs mt-1">{record.details}</p>
+                        )}
                       </div>
-                      {record.details && (
-                        <p className="text-green-700 text-xs mt-1">{record.details}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>

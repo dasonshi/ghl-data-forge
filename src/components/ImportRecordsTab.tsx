@@ -7,7 +7,8 @@ import { DataPreviewTable } from "@/components/DataPreviewTable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
-import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft } from "lucide-react";
+import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft, ExternalLink } from "lucide-react";
+import { buildObjectDestinationUrl, isContactObject } from "@/lib/ghlLinks";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
@@ -829,6 +830,10 @@ useEffect(() => {
   const renderSuccess = () => {
     const hasErrors = result?.errors && result.errors.length > 0;
     const hasSuccesses = result?.created?.length > 0 || result?.summary?.successful > 0;
+    const objectDestinationUrl = buildObjectDestinationUrl(location?.id, selectedObject);
+    const objectDestinationLabel = isContactObject(selectedObject)
+      ? 'Open Contacts in CRM'
+      : `Open ${selectedObjectData?.labels.singular || 'Object'} in CRM`;
 
     return (
     <div className="space-y-6 text-center">
@@ -915,6 +920,21 @@ useEffect(() => {
           )}
         </CardContent>
       </Card>
+
+      {objectDestinationUrl && (
+        <div className="flex justify-center">
+          <Button variant="outline" asChild>
+            <a
+              href={objectDestinationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {objectDestinationLabel}
+              <ExternalLink className="h-4 w-4 ml-2" />
+            </a>
+          </Button>
+        </div>
+      )}
 
       {/* Detailed Results */}
       {result && (result.created || result.updated || result.skipped || result.errors) && (
