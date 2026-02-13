@@ -14,6 +14,7 @@ import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from "@/lib/api";
 import { useAppContext } from "@/hooks/useAppContext";
 import Papa from "papaparse";
+import { triggerReviewRequestEvent } from "@/hooks/useReviewRequest";
 
 interface CustomValue {
   id: string;
@@ -221,7 +222,8 @@ export function ImportCustomValuesTab() {
           title: "Custom Values Imported",
           description: `${result.summary?.created || 0} created, ${result.summary?.updated || 0} updated`,
         });
-        
+        triggerReviewRequestEvent();
+
         // Refresh the custom values list
         await fetchCustomValues();
       } else {

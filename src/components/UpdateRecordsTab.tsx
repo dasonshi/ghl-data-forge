@@ -23,6 +23,7 @@ import {
   type CustomField as MappingCustomField
 } from '@/lib/fieldMapping';
 import Papa from "papaparse";
+import { triggerReviewRequestEvent } from "@/hooks/useReviewRequest";
 import { getDataTypeDisplay } from "@/lib/fieldUtils";
 
 interface CustomObject {
@@ -378,6 +379,7 @@ export function UpdateRecordsTab() {
           title: "Records Updated",
           description: "Your records have been updated successfully.",
         });
+        triggerReviewRequestEvent();
       } else {
         throw new Error('Update failed');
       }

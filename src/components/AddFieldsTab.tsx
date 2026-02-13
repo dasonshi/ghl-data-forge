@@ -15,6 +15,7 @@ import { apiFetch } from "@/lib/api";
 import { useAppContext } from "@/hooks/useAppContext";
 import { copyToClipboard } from "@/lib/clipboard";
 import Papa from "papaparse";
+import { triggerReviewRequestEvent } from "@/hooks/useReviewRequest";
 
 interface CustomObject {
   id: string;
@@ -275,6 +276,7 @@ const downloadTemplate = async () => {
           title: "Fields Imported Successfully",
           description: `${result.summary.created} fields created, ${result.summary.skipped} skipped, ${result.summary.failed} failed.`,
         });
+        triggerReviewRequestEvent();
       } else {
         setCurrentStep("success"); // Still go to success page to show detailed errors
         toast({

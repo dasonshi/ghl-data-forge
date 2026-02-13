@@ -25,6 +25,7 @@ import {
 } from '@/lib/fieldMapping';
 import Papa from "papaparse";
 import { getDataTypeDisplay } from "@/lib/fieldUtils";
+import { triggerReviewRequestEvent } from "@/hooks/useReviewRequest";
 
 // Field mapping is now enabled for all users
 
@@ -433,6 +434,7 @@ const fetchObjects = async () => {
         title: "Records Imported",
         description: "Your records have been imported successfully.",
       });
+      triggerReviewRequestEvent();
     } else {
       throw new Error('Import failed');
     }
@@ -568,6 +570,7 @@ const fetchObjects = async () => {
       description: `${aggregatedResult.summary!.created + aggregatedResult.summary!.updated} of ${totalRecords} records imported successfully.`,
       variant: aggregatedResult.summary!.failed > 0 ? "destructive" : "default",
     });
+    triggerReviewRequestEvent();
   };
 
   const handleStartOver = () => {

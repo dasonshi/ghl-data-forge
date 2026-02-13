@@ -11,12 +11,14 @@ import { BulkDeleteTab } from "@/components/BulkDeleteTab";
 import { ImportCustomValuesTab } from "@/components/ImportCustomValuesTab";
 import { UploadAssociationsTab } from "@/components/UploadAssociationsTab";
 import { FeedbackModal } from "@/components/FeedbackModal";
+import { ReviewRequestSheet } from "@/components/ReviewRequestSheet";
 import { Header } from "@/components/Header";
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppContext } from "@/hooks/useAppContext";
 import { useAgencyBranding } from "@/hooks/useAgencyBranding";
+import { useReviewRequest, REVIEW_REQUEST_EVENT } from "@/hooks/useReviewRequest";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, ExternalLink, MessageCircle, KeyRound } from "lucide-react";
@@ -27,8 +29,30 @@ const Index = () => {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [manualLocationId, setManualLocationId] = useState("");
   const [isSubmittingLocation, setIsSubmittingLocation] = useState(false);
-  const { loading, error, refreshContext } = useAppContext();
+  const { loading, error, refreshContext, currentLocationId } = useAppContext();
   const { branding } = useAgencyBranding();
+
+  // Review request modal
+  const {
+    showReviewRequest,
+    setShowReviewRequest,
+    triggerReviewCheck,
+    handleReview,
+    handleLater,
+    handleNever,
+  } = useReviewRequest(currentLocationId);
+
+  // Listen for review request triggers from child components
+  useEffect(() => {
+    const handleReviewTrigger = () => {
+      triggerReviewCheck();
+    };
+
+    window.addEventListener(REVIEW_REQUEST_EVENT, handleReviewTrigger);
+    return () => {
+      window.removeEventListener(REVIEW_REQUEST_EVENT, handleReviewTrigger);
+    };
+  }, [triggerReviewCheck]);
 
   // Handle manual location ID submission
   const handleManualLocationSubmit = async () => {
@@ -297,11 +321,20 @@ const Index = () => {
       
 
       {/* Feedback Modal */}
-      <FeedbackModal 
-        open={feedbackModalOpen} 
-        onOpenChange={setFeedbackModalOpen} 
+      <FeedbackModal
+        open={feedbackModalOpen}
+        onOpenChange={setFeedbackModalOpen}
       />
-      
+
+      {/* Review Request Sheet */}
+      <ReviewRequestSheet
+        open={showReviewRequest}
+        onOpenChange={setShowReviewRequest}
+        onReview={handleReview}
+        onLater={handleLater}
+        onNever={handleNever}
+      />
+
       <Toaster />
     </div>
   );

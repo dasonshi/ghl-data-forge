@@ -14,6 +14,7 @@ import { apiFetch } from "@/lib/api";
 import { buildObjectDestinationUrl } from "@/lib/ghlLinks";
 import { useLocationId } from "@/hooks/useLocationId";
 import Papa from "papaparse";
+import { triggerReviewRequestEvent } from "@/hooks/useReviewRequest";
 
 type ImportStep = "upload" | "preview" | "importing" | "success";
 
@@ -160,6 +161,7 @@ export function ImportObjectsTab() {
           title: "Objects Imported",
           description: "Your custom objects have been imported successfully.",
         });
+        triggerReviewRequestEvent();
       } else {
         throw new Error('Import failed');
       }

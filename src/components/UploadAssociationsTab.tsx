@@ -14,6 +14,7 @@ import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
 import { useAppContext } from '@/hooks/useAppContext';
 import Papa from "papaparse";
+import { triggerReviewRequestEvent } from "@/hooks/useReviewRequest";
 
 interface CustomObject {
   id: string;
@@ -262,6 +263,11 @@ export function UploadAssociationsTab() {
             title: "Relations Updated",
             description: "Your record relations have been updated successfully.",
           });
+        }
+
+        // Trigger review request if there were any successes
+        if (hasSuccesses) {
+          triggerReviewRequestEvent();
         }
       } else {
         const errorText = await response.text();
