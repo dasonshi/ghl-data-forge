@@ -14,6 +14,7 @@ const DEV_LOCATION_ID = 'gdzneuvA9mUJoRroCv4O';
 const ALLOWED_LOCATIONS = [DEV_LOCATION_ID]; // Expand later to include active users
 const COOLDOWN_DAYS = 14;
 const MIN_ACTIONS_AFTER_LATER = 3; // Require at least 3 actions after clicking "Later"
+const SHOW_DELAY_MS = 30000; // 30 second delay before showing modal
 
 // App store URL components
 const APP_INTEGRATION_ID = '68ae6ca8bb70273ca2ca7e24';
@@ -99,8 +100,11 @@ export function useReviewRequest(locationId: string | null): UseReviewRequestRet
     incrementActionCount();
 
     if (shouldShow()) {
-      setShowReviewRequest(true);
-      localStorage.setItem(STORAGE_KEYS.lastShown, new Date().toISOString());
+      // Delay showing by 30 seconds so it doesn't interrupt the user
+      setTimeout(() => {
+        setShowReviewRequest(true);
+        localStorage.setItem(STORAGE_KEYS.lastShown, new Date().toISOString());
+      }, SHOW_DELAY_MS);
     }
   }, [shouldShow, incrementActionCount]);
 
