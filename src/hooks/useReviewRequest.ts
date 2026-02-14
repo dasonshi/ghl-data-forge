@@ -45,7 +45,7 @@ export function useReviewRequest(locationId: string | null): UseReviewRequestRet
 
   // Get review URL for the GHL marketplace
   const getReviewUrl = useCallback((locId: string) => {
-    return `https://app.gohighlevel.com/v2/location/${locId}/integration/${APP_INTEGRATION_ID}/versions/${APP_VERSION_ID}?app_from=marketplace&view=agency`;
+    return `https://app.gohighlevel.com/v2/location/${locId}/integration/${APP_INTEGRATION_ID}/versions/${APP_VERSION_ID}?app_from=marketplace&view=agency#review-section`;
   }, []);
 
   // Check if enough time has passed since "Later"
