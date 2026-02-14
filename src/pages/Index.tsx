@@ -241,6 +241,20 @@ const Index = () => {
             </p>
           </div>
 
+          {/* Dev-only test button for review modal */}
+          {currentLocationId === 'gdzneuvA9mUJoRroCv4O' && (
+            <div className="text-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowReviewRequest(true)}
+                className="text-xs text-muted-foreground"
+              >
+                [DEV] Test Review Modal
+              </Button>
+            </div>
+          )}
+
           {/* Authentication Status */}
           <AuthStatus />
 
