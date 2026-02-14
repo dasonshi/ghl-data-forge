@@ -22,7 +22,7 @@
 - **Build:** Vite
 - **UI Components:** shadcn/ui + Tailwind CSS
 - **CSV Parsing:** PapaParse (client-side)
-- **Deployment:** Lovable (NOT auto-deployed from git push - requires Lovable sync)
+- **Deployment:** Vercel (auto-deploys from git push)
 
 ---
 
@@ -78,5 +78,5 @@ When frontend gets 404 from backend:
 ## Development Notes
 
 - **Build:** `npm run build` (outputs to `dist/`)
-- **Lovable:** Changes must be synced through Lovable to deploy
-- **Git push:** Does NOT auto-deploy - only updates GitHub repo
+- **Deploy:** `git push` triggers auto-deploy on Vercel
+- **URL:** https://ghl-data-forge.vercel.app
