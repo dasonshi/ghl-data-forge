@@ -48,3 +48,15 @@ export const buildContactRecordUrl = (
   const origin = getGhlOrigin();
   return `${origin}/v2/location/${encodeURIComponent(locationId)}/contacts/detail/${encodeURIComponent(recordId)}`;
 };
+
+export const buildCustomObjectRecordUrl = (
+  locationId?: string | null,
+  objectKey?: string | null,
+  recordId?: string | null
+): string | null => {
+  if (!locationId || !objectKey || !recordId) return null;
+
+  const origin = getGhlOrigin();
+  const normalizedKey = normalizeObjectKey(objectKey);
+  return `${origin}/v2/location/${encodeURIComponent(locationId)}/objects/${encodeURIComponent(normalizedKey)}/records/${encodeURIComponent(recordId)}`;
+};

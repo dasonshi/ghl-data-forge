@@ -224,10 +224,29 @@ export function BulkDeleteTab() {
         const result = await response.json();
         setResult(result);
         setCurrentStep("success");
-        toast({
-          title: "Deletion Complete",
-          description: `Successfully deleted ${result.summary?.deleted || 0} records.`,
-        });
+
+        // Compute counts for toast notification
+        const errorCount = result.errors?.length || result.summary?.failed || 0;
+        const successCount = result.summary?.deleted || 0;
+        const hasSuccesses = successCount > 0;
+
+        if (errorCount > 0 && !hasSuccesses) {
+          toast({
+            title: "Deletion Failed",
+            description: `${errorCount} record${errorCount !== 1 ? 's' : ''} failed to delete.`,
+            variant: "destructive",
+          });
+        } else if (errorCount > 0) {
+          toast({
+            title: "Deletion Completed with Errors",
+            description: `${successCount} deleted, ${errorCount} failed.`,
+          });
+        } else {
+          toast({
+            title: "Deletion Complete",
+            description: `Successfully deleted ${successCount} records.`,
+          });
+        }
       } else {
         const errorData = await response.json();
         toast({

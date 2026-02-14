@@ -218,11 +218,34 @@ export function ImportCustomValuesTab() {
         const result = await response.json();
         setImportResult(result);
         setCurrentStep("success");
-        toast({
-          title: "Custom Values Imported",
-          description: `${result.summary?.created || 0} created, ${result.summary?.updated || 0} updated`,
-        });
-        triggerReviewRequestEvent();
+
+        // Compute counts for toast notification
+        const errorCount = result.errors?.length || result.summary?.failed || 0;
+        const successCount = (result.summary?.created || 0) + (result.summary?.updated || 0);
+        const hasSuccesses = successCount > 0;
+
+        if (errorCount > 0 && !hasSuccesses) {
+          toast({
+            title: "Import Failed",
+            description: `${errorCount} value${errorCount !== 1 ? 's' : ''} failed to import.`,
+            variant: "destructive",
+          });
+        } else if (errorCount > 0) {
+          toast({
+            title: "Import Completed with Errors",
+            description: `${successCount} succeeded, ${errorCount} failed.`,
+          });
+        } else {
+          toast({
+            title: "Custom Values Imported",
+            description: `${result.summary?.created || 0} created, ${result.summary?.updated || 0} updated`,
+          });
+        }
+
+        // Only trigger review request on actual success
+        if (hasSuccesses) {
+          triggerReviewRequestEvent();
+        }
 
         // Refresh the custom values list
         await fetchCustomValues();

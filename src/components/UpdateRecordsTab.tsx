@@ -375,11 +375,34 @@ export function UpdateRecordsTab() {
         const result = await response.json();
         setResult(result);
         setCurrentStep("success");
-        toast({
-          title: "Records Updated",
-          description: "Your records have been updated successfully.",
-        });
-        triggerReviewRequestEvent();
+
+        // Compute counts for toast notification
+        const errorCount = result.errors?.length || 0;
+        const successCount = (result.summary?.updated || 0) + (result.summary?.created || 0);
+        const hasSuccesses = successCount > 0;
+
+        if (errorCount > 0 && !hasSuccesses) {
+          toast({
+            title: "Update Failed",
+            description: `${errorCount} record${errorCount !== 1 ? 's' : ''} failed to update.`,
+            variant: "destructive",
+          });
+        } else if (errorCount > 0) {
+          toast({
+            title: "Update Completed with Errors",
+            description: `${successCount} succeeded, ${errorCount} failed.`,
+          });
+        } else {
+          toast({
+            title: "Records Updated",
+            description: "Your records have been updated successfully.",
+          });
+        }
+
+        // Only trigger review request on actual success
+        if (hasSuccesses) {
+          triggerReviewRequestEvent();
+        }
       } else {
         throw new Error('Update failed');
       }

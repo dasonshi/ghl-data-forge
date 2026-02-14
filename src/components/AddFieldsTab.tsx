@@ -269,21 +269,34 @@ const downloadTemplate = async () => {
 
       const result = await response.json();
       setResult(result);
-      
-      if (response.ok && result.success) {
-        setCurrentStep("success");
-        toast({
-          title: "Fields Imported Successfully",
-          description: `${result.summary.created} fields created, ${result.summary.skipped} skipped, ${result.summary.failed} failed.`,
-        });
-        triggerReviewRequestEvent();
-      } else {
-        setCurrentStep("success"); // Still go to success page to show detailed errors
+      setCurrentStep("success"); // Always go to success page to show detailed results
+
+      // Compute counts for toast notification
+      const errorCount = result.errors?.length || result.summary?.failed || 0;
+      const successCount = (result.summary?.created || 0);
+      const hasSuccesses = successCount > 0;
+
+      if (errorCount > 0 && !hasSuccesses) {
         toast({
           title: "Import Failed",
-          description: result.message || "Import completed with errors. Check details below.",
+          description: `${errorCount} field${errorCount !== 1 ? 's' : ''} failed to import.`,
           variant: "destructive",
         });
+      } else if (errorCount > 0) {
+        toast({
+          title: "Import Completed with Errors",
+          description: `${successCount} created, ${result.summary?.skipped || 0} skipped, ${errorCount} failed.`,
+        });
+      } else {
+        toast({
+          title: "Fields Imported Successfully",
+          description: `${successCount} fields created, ${result.summary?.skipped || 0} skipped.`,
+        });
+      }
+
+      // Only trigger review request on actual success
+      if (hasSuccesses) {
+        triggerReviewRequestEvent();
       }
     } catch (error) {
       // For network errors or unexpected failures, stay on preview

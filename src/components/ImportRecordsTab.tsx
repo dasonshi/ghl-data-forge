@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { StepIndicator } from "@/components/StepIndicator";
 import { Download, Database, CheckCircle2, AlertTriangle, Upload, ArrowLeft, ExternalLink } from "lucide-react";
-import { buildObjectDestinationUrl, isContactObject } from "@/lib/ghlLinks";
+import { buildObjectDestinationUrl, isContactObject, buildCustomObjectRecordUrl } from "@/lib/ghlLinks";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationSwitch } from "@/hooks/useLocationSwitch";
 import { apiFetch } from '@/lib/api';
@@ -430,11 +430,34 @@ const fetchObjects = async () => {
       }
       setResult(result);
       setCurrentStep("success");
-      toast({
-        title: "Records Imported",
-        description: "Your records have been imported successfully.",
-      });
-      triggerReviewRequestEvent();
+
+      // Compute counts for toast notification
+      const errorCount = result.errors?.length || 0;
+      const successCount = (result.summary?.created || 0) + (result.summary?.updated || 0);
+      const hasSuccesses = successCount > 0;
+
+      if (errorCount > 0 && !hasSuccesses) {
+        toast({
+          title: "Import Failed",
+          description: `${errorCount} record${errorCount !== 1 ? 's' : ''} failed to import.`,
+          variant: "destructive",
+        });
+      } else if (errorCount > 0) {
+        toast({
+          title: "Import Completed with Errors",
+          description: `${successCount} succeeded, ${errorCount} failed.`,
+        });
+      } else {
+        toast({
+          title: "Records Imported",
+          description: "Your records have been imported successfully.",
+        });
+      }
+
+      // Only trigger review request on actual success
+      if (hasSuccesses) {
+        triggerReviewRequestEvent();
+      }
     } else {
       throw new Error('Import failed');
     }
@@ -565,12 +588,33 @@ const fetchObjects = async () => {
     setBatchProgress(null);
     setCurrentStep("success");
 
-    toast({
-      title: aggregatedResult.summary!.failed > 0 ? "Import Completed with Errors" : "Records Imported",
-      description: `${aggregatedResult.summary!.created + aggregatedResult.summary!.updated} of ${totalRecords} records imported successfully.`,
-      variant: aggregatedResult.summary!.failed > 0 ? "destructive" : "default",
-    });
-    triggerReviewRequestEvent();
+    // Compute counts for toast notification
+    const errorCount = aggregatedResult.summary!.failed;
+    const successCount = aggregatedResult.summary!.created + aggregatedResult.summary!.updated;
+    const hasSuccesses = successCount > 0;
+
+    if (errorCount > 0 && !hasSuccesses) {
+      toast({
+        title: "Import Failed",
+        description: `${errorCount} record${errorCount !== 1 ? 's' : ''} failed to import.`,
+        variant: "destructive",
+      });
+    } else if (errorCount > 0) {
+      toast({
+        title: "Import Completed with Errors",
+        description: `${successCount} of ${totalRecords} records imported successfully, ${errorCount} failed.`,
+      });
+    } else {
+      toast({
+        title: "Records Imported",
+        description: `${successCount} of ${totalRecords} records imported successfully.`,
+      });
+    }
+
+    // Only trigger review request on actual success
+    if (hasSuccesses) {
+      triggerReviewRequestEvent();
+    }
   };
 
   const handleStartOver = () => {
@@ -902,12 +946,6 @@ useEffect(() => {
                   <span className="font-medium text-red-600">{result.summary.failed}</span>
                 </div>
               )}
-              {result.summary.phoneAutoFormatted && result.summary.phoneAutoFormatted > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-blue-600">Phones Auto-Formatted:</span>
-                  <span className="font-medium text-blue-600">{result.summary.phoneAutoFormatted}</span>
-                </div>
-              )}
             </>
           ) : (
             <>
@@ -954,19 +992,34 @@ useEffect(() => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {result.created.map((record: any, index: number) => (
-                    <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-green-800">
-                          {record.id || record.name || `Record ${index + 1}`}
-                        </span>
-                        <span className="text-green-600 text-xs">Created</span>
+                  {result.created.map((record: any, index: number) => {
+                    const recordUrl = record.id ? buildCustomObjectRecordUrl(location?.id, selectedObject, record.id) : null;
+                    return (
+                      <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                        <div className="flex justify-between items-center">
+                          {recordUrl ? (
+                            <a
+                              href={recordUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-green-800 hover:underline flex items-center gap-1"
+                            >
+                              {record.id}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="font-medium text-green-800">
+                              {record.id || record.name || `Record ${index + 1}`}
+                            </span>
+                          )}
+                          <span className="text-green-600 text-xs">Created</span>
+                        </div>
+                        {record.details && (
+                          <p className="text-green-700 text-xs mt-1">{record.details}</p>
+                        )}
                       </div>
-                      {record.details && (
-                        <p className="text-green-700 text-xs mt-1">{record.details}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -984,19 +1037,34 @@ useEffect(() => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {result.updated.map((record: any, index: number) => (
-                    <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-green-800">
-                          {record.id || record.name || `Record ${index + 1}`}
-                        </span>
-                        <span className="text-green-600 text-xs">Updated</span>
+                  {result.updated.map((record: any, index: number) => {
+                    const recordUrl = record.id ? buildCustomObjectRecordUrl(location?.id, selectedObject, record.id) : null;
+                    return (
+                      <div key={index} className="text-sm bg-green-50 border border-green-200 rounded p-3">
+                        <div className="flex justify-between items-center">
+                          {recordUrl ? (
+                            <a
+                              href={recordUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-green-800 hover:underline flex items-center gap-1"
+                            >
+                              {record.id}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="font-medium text-green-800">
+                              {record.id || record.name || `Record ${index + 1}`}
+                            </span>
+                          )}
+                          <span className="text-green-600 text-xs">Updated</span>
+                        </div>
+                        {record.details && (
+                          <p className="text-green-700 text-xs mt-1">{record.details}</p>
+                        )}
                       </div>
-                      {record.details && (
-                        <p className="text-green-700 text-xs mt-1">{record.details}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -1081,38 +1149,6 @@ useEffect(() => {
             </Card>
           )}
 
-          {/* Phone Number Formatting Warnings */}
-          {result.phoneWarnings && result.phoneWarnings.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-600">
-                  <AlertTriangle className="h-5 w-5" />
-                  Phone Numbers Auto-Formatted ({result.phoneWarnings.length})
-                </CardTitle>
-                <CardDescription>
-                  These phone numbers were automatically reformatted. Please verify they are correct.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {result.phoneWarnings.slice(0, 20).map((warning: PhoneWarning, index: number) => (
-                    <div key={index} className="text-sm bg-blue-50 border border-blue-200 rounded p-2">
-                      {warning.warnings.map((w, wIdx) => (
-                        <p key={wIdx} className="text-blue-700 text-xs">
-                          <span className="font-medium">{w.field}:</span> {w.warning}
-                        </p>
-                      ))}
-                    </div>
-                  ))}
-                  {result.phoneWarnings.length > 20 && (
-                    <p className="text-sm text-blue-600 italic">
-                      And {result.phoneWarnings.length - 20} more...
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
 

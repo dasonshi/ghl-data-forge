@@ -157,11 +157,34 @@ export function ImportObjectsTab() {
         setResult(result);
         completeProgress();
         setCurrentStep("success");
-        toast({
-          title: "Objects Imported",
-          description: "Your custom objects have been imported successfully.",
-        });
-        triggerReviewRequestEvent();
+
+        // Compute counts for toast notification
+        const errorCount = result.errors?.length || 0;
+        const successCount = result.created?.length || result.stats?.objectsProcessed || 0;
+        const hasSuccesses = successCount > 0;
+
+        if (errorCount > 0 && !hasSuccesses) {
+          toast({
+            title: "Import Failed",
+            description: `${errorCount} object${errorCount !== 1 ? 's' : ''} failed to import.`,
+            variant: "destructive",
+          });
+        } else if (errorCount > 0) {
+          toast({
+            title: "Import Completed with Errors",
+            description: `${successCount} succeeded, ${errorCount} failed.`,
+          });
+        } else {
+          toast({
+            title: "Objects Imported",
+            description: "Your custom objects have been imported successfully.",
+          });
+        }
+
+        // Only trigger review request on actual success
+        if (hasSuccesses) {
+          triggerReviewRequestEvent();
+        }
       } else {
         throw new Error('Import failed');
       }
