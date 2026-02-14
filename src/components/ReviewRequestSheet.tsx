@@ -31,7 +31,7 @@ export function ReviewRequestSheet({
           <SheetHeader className="space-y-3 text-center">
             <div className="flex items-center justify-center gap-2">
               <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-              <SheetTitle>Enjoying Data Forge?</SheetTitle>
+              <SheetTitle>Enjoying Custom Data Importer?</SheetTitle>
             </div>
             <SheetDescription className="text-base">
               If you're finding this tool useful, we'd really appreciate a quick review

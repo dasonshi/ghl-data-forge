@@ -1,4 +1,7 @@
-# Claude Code Project Context
+# Custom Data Importer - Frontend
+
+> **Official App Name:** Custom Data Importer
+> **Repo Name:** ghl-data-forge (legacy)
 
 ## Project Architecture
 

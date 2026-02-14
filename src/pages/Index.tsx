@@ -75,7 +75,7 @@ const Index = () => {
   // Update document title when branding changes
   useEffect(() => {
     const companyName = branding?.companyName || 'CRM';
-    document.title = `${companyName} - Data Importer`;
+    document.title = `${companyName} - Custom Data Importer`;
   }, [branding]);
 
   const handleConnect = () => {

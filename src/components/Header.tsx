@@ -37,7 +37,7 @@ export function Header() {
       .slice(0, 2);
   };
 
-  const displayName = branding?.companyName || branding?.locationName || location?.name || 'Data Importer';
+  const displayName = branding?.companyName || branding?.locationName || location?.name || 'Custom Data Importer';
 
   return (
     <>
